@@ -1,8 +1,20 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import SignInForm from "@/components/auth/SignInForm";
+import { getAuthFormErrorMessage } from "@/lib/auth-response";
+import { getSignInFieldError, type FieldErrors, type SignInField, type ValidationCode } from "@/lib/auth-validation";
 
-const error = Astro.url.searchParams.get("error");
+const error = getAuthFormErrorMessage("signin", Astro.url.searchParams.get("error"));
+const initialErrors: FieldErrors<SignInField> = {};
+if (Astro.url.searchParams.get("error") === "validation") {
+  for (const entry of Astro.url.searchParams.get("fields")?.split(",") ?? []) {
+    const [field, code] = entry.split(":");
+    if (field === "email" || field === "password") {
+      const message = getSignInFieldError(field, code as ValidationCode);
+      if (message) initialErrors[field] = message;
+    }
+  }
+}
 ---
 
 <Layout title="Sign in">
@@ -11,7 +23,7 @@ const error = Astro.url.searchParams.get("error");
       <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
         Sign in
       </h1>
-      <SignInForm serverError={error} client:load />
+      <SignInForm serverError={error} initialErrors={initialErrors} client:load />
       <p class="mt-4 text-center text-sm text-blue-100/60">
         Don't have an account?{" "}
         <a href="/auth/signup" class="text-purple-300 hover:underline">

@@ -1,10 +1,15 @@
 import type { APIRoute } from "astro";
-import { createClient } from "@/lib/supabase";
+import { signOutPreservingCookies } from "@/lib/auth-errors";
+import { createAuthUnavailableResponse } from "@/lib/auth-response";
 
 export const POST: APIRoute = async (context) => {
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (supabase) {
-    await supabase.auth.signOut();
+  const supabase = context.locals.supabase;
+  if (!supabase || context.locals.authUnavailable) {
+    return createAuthUnavailableResponse({ kind: "signout" });
   }
+
+  const result = await signOutPreservingCookies(supabase, context.locals.authCookies);
+  if (result === "unavailable") return createAuthUnavailableResponse({ kind: "signout" });
+
   return context.redirect("/");
 };
