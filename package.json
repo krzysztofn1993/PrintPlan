@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "test:auth": "node --experimental-strip-types --test scripts/auth-contracts.test.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

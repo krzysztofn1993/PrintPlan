@@ -4,47 +4,28 @@ import { FormField } from "@/components/auth/FormField";
 import { PasswordToggle } from "@/components/auth/PasswordToggle";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ServerError } from "@/components/auth/ServerError";
-
-const MIN_PASSWORD_LENGTH = 6;
+import { MIN_PASSWORD_LENGTH, validateSignUpInput, type FieldErrors, type SignUpField } from "@/lib/auth-validation";
 
 interface Props {
   serverError?: string | null;
+  initialErrors?: FieldErrors<SignUpField>;
 }
 
-export default function SignUpForm({ serverError }: Props) {
+export default function SignUpForm({ serverError, initialErrors }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<FieldErrors<SignUpField>>(initialErrors ?? {});
 
   function validate() {
-    const next: typeof errors = {};
-
-    if (!email.trim()) {
-      next.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      next.email = "Enter a valid email address";
-    }
-
-    if (!password) {
-      next.password = "Password is required";
-    } else if (password.length < MIN_PASSWORD_LENGTH) {
-      next.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-    }
-
-    if (!confirmPassword) {
-      next.confirmPassword = "Please confirm your password";
-    } else if (password !== confirmPassword) {
-      next.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    const validation = validateSignUpInput({ email, password, confirmPassword });
+    setErrors(validation.errors);
+    return Boolean(validation.data);
   }
 
-  function clearError(field: keyof typeof errors) {
+  function clearError(field: SignUpField) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 

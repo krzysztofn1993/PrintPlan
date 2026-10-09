@@ -4,32 +4,26 @@ import { FormField } from "@/components/auth/FormField";
 import { PasswordToggle } from "@/components/auth/PasswordToggle";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ServerError } from "@/components/auth/ServerError";
+import { validateSignInInput, type FieldErrors, type SignInField } from "@/lib/auth-validation";
 
 interface Props {
   serverError?: string | null;
+  initialErrors?: FieldErrors<SignInField>;
 }
 
-export default function SignInForm({ serverError }: Props) {
+export default function SignInForm({ serverError, initialErrors }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<FieldErrors<SignInField>>(initialErrors ?? {});
 
   function validate() {
-    const next: typeof errors = {};
-    if (!email.trim()) {
-      next.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      next.email = "Enter a valid email address";
-    }
-    if (!password) {
-      next.password = "Password is required";
-    }
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    const validation = validateSignInInput({ email, password });
+    setErrors(validation.errors);
+    return Boolean(validation.data);
   }
 
-  function clearError(field: keyof typeof errors) {
+  function clearError(field: SignInField) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
