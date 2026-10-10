@@ -1,10 +1,10 @@
 ---
 change_id: verified-account-access
 title: Verified account access
-status: impl_reviewed
+status: archived
 created: 2026-10-09
 updated: 2026-10-10
-archived_at: null
+archived_at: 2026-10-10T13:08:13Z
 ---
 
 ## Notes
