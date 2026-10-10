@@ -1,0 +1,63 @@
+---
+import Layout from "@/layouts/Layout.astro";
+
+const status = Astro.url.searchParams.get("status");
+const isReady = status === "ready" && Astro.locals.user !== null;
+
+const content =
+  status === "pending"
+    ? {
+        emoji: "📧",
+        heading: "Check your email",
+        description:
+          "If an account can be created for this address, we'll send a confirmation link. Check your inbox and spam folder for next steps.",
+        links: [{ href: "/auth/signin", text: "Back to sign in" }],
+      }
+    : status === "invalid"
+      ? {
+          emoji: "⚠️",
+          heading: "This confirmation link is no longer valid",
+          description:
+            "The link may be expired or already used. Sign in if your account is confirmed, or sign up to request a new link.",
+          links: [
+            { href: "/auth/signin", text: "Go to sign in" },
+            { href: "/auth/signup", text: "Sign up" },
+          ],
+        }
+      : isReady
+        ? {
+            emoji: "✅",
+            heading: "Registration successful",
+            description: "Your account is ready, and you are signed in.",
+            links: [{ href: "/dashboard", text: "Continue to your account" }],
+          }
+        : {
+            emoji: "✉️",
+            heading: "Email confirmation",
+            description:
+              "If you started signing up, check your email for next steps. You can sign in if your account is ready or sign up to begin.",
+            links: [
+              { href: "/auth/signin", text: "Go to sign in" },
+              { href: "/auth/signup", text: "Sign up" },
+            ],
+          };
+---
+
+<Layout title={content.heading}>
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
+      <div class="mb-4 text-5xl">{content.emoji}</div>
+      <h1 class="mb-3 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+        {content.heading}
+      </h1>
+      <p class="mb-6 text-blue-100/80">{content.description}</p>
+      <div class="flex flex-col items-center gap-3">
+        {content.links.map((link) => (
+          <a href={link.href} class="text-sm text-purple-300 hover:underline">
+            {link.text}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</Layout>
