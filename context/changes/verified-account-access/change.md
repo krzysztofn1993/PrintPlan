@@ -3,7 +3,7 @@ change_id: verified-account-access
 title: Verified account access
 status: implementing
 created: 2026-10-09
-updated: 2026-10-09
+updated: 2026-10-10
 archived_at: null
 ---
 
