@@ -6,6 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "worker:dev": "npm run build && wrangler dev",
+    "worker:deploy": "npm run build && wrangler deploy",
     "clean:cache": "node scripts/clean-app-cache.mjs && astro sync",
     "astro": "astro",
     "lint": "eslint .",
