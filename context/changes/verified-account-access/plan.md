@@ -316,23 +316,23 @@ Keep intermediate phases verifiable with their listed checks; do not claim full 
 
 #### Automated
 
-- [x] 1.1 Auth boundary tests pass: `npm run test:auth`.
-- [x] 1.2 Lint, Astro synchronization, type checks and build pass: `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`.
+- [x] 1.1 Auth boundary tests pass: `npm run test:auth`. — a81264b
+- [x] 1.2 Lint, Astro synchronization, type checks and build pass: `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`. — a81264b
 
 #### Manual
 
-- [x] 1.3 Direct signup POSTs with missing or mismatched confirmation return a readable form error and do not create an account; anonymous dashboard access still redirects to sign-in.
+- [x] 1.3 Direct signup POSTs with missing or mismatched confirmation return a readable form error and do not create an account; anonymous dashboard access still redirects to sign-in. — a81264b
 
 ### Phase 2: Local email confirmation
 
 #### Automated
 
-- [ ] 2.1 Auth tests, lint, Astro synchronization, type checks and build pass: `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`.
+- [x] 2.1 Auth tests, lint, Astro synchronization, type checks and build pass: `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`.
 
 #### Manual
 
-- [ ] 2.2 A unique signup receives a local Mailpit message; correct-password signin before confirmation fails, and the delivered link establishes dashboard access in a fresh browser context.
-- [ ] 2.3 Pending, invalid-link and direct-visit result pages show accurate English messages; consumed-link replay cannot create a fresh session.
+- [x] 2.2 A unique signup receives a local Mailpit message; correct-password signin before confirmation fails, and the delivered link establishes dashboard access in a fresh browser context.
+- [x] 2.3 Pending, invalid-link and direct-visit result pages show accurate English messages; consumed-link replay cannot create a fresh session.
 
 ### Phase 3: Reliable auth smoke
 

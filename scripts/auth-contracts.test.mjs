@@ -195,6 +195,10 @@ test("auth outage responses are private 503s with a usable retry", async () => {
   assert.equal(signoutResponse.status, 503);
   assert.match(await signoutResponse.text(), /action="\/api\/auth\/signout"/);
 
+  const confirmationResponse = createAuthUnavailableResponse({ kind: "reload" });
+  assert.equal(confirmationResponse.status, 503);
+  assert.match(await confirmationResponse.text(), /window\.location\.reload\(\)/);
+
   const accumulated = new Headers({ Expires: "0", Pragma: "no-cache" });
   const refreshedResponse = applyAuthResponseHeaders(new Response("ok"), accumulated);
   assert.equal(refreshedResponse.headers.get("Expires"), "0");
