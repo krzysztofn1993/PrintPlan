@@ -338,24 +338,24 @@ Keep intermediate phases verifiable with their listed checks; do not claim full 
 
 #### Automated
 
-- [x] 3.1 Built-preview smoke proves pending signup, denied unconfirmed login, native Mailpit confirmation, successful callback, and rejected malformed or consumed links: `npm run smoke`.
-- [x] 3.2 Built-preview smoke proves independent wrong/correct password login, correct dashboard identity, malformed POST rejection, and strict redirects: `npm run smoke`.
-- [x] 3.3 Built-preview smoke proves actual-expiry refresh and rotation, revoked-refresh rejection, cookie deletion, repeat-request persistence, and denial after signout: `npm run smoke`.
-- [x] 3.4 Built-preview smoke verifies SDK cache headers on cookie-writing page and redirect responses and exits nonzero on missing prerequisites or exceeded timeouts: `npm run smoke`.
-- [x] 3.5 Auth contract tests and lint pass: `npm run test:auth` and `npm run lint`.
+- [x] 3.1 Built-preview smoke proves pending signup, denied unconfirmed login, native Mailpit confirmation, successful callback, and rejected malformed or consumed links: `npm run smoke`. — 0f6c24b
+- [x] 3.2 Built-preview smoke proves independent wrong/correct password login, correct dashboard identity, malformed POST rejection, and strict redirects: `npm run smoke`. — 0f6c24b
+- [x] 3.3 Built-preview smoke proves actual-expiry refresh and rotation, revoked-refresh rejection, cookie deletion, repeat-request persistence, and denial after signout: `npm run smoke`. — 0f6c24b
+- [x] 3.4 Built-preview smoke verifies SDK cache headers on cookie-writing page and redirect responses and exits nonzero on missing prerequisites or exceeded timeouts: `npm run smoke`. — 0f6c24b
+- [x] 3.5 Auth contract tests and lint pass: `npm run test:auth` and `npm run lint`. — 0f6c24b
 
 #### Manual
 
-- [x] 3.6 During controlled local Auth unavailability, protected access and failed signout return 503 with retry guidance, signup/signin report a retryable form error, and recovery restores access without a false logout-success message.
+- [x] 3.6 During controlled local Auth unavailability, protected access and failed signout return 503 with retry guidance, signup/signin report a retryable form error, and recovery restores access without a false logout-success message. — 0f6c24b
 
 ### Phase 4: CI and acceptance evidence
 
 #### Automated
 
-- [ ] 4.1 The documented local CI-equivalent sequence passes with confirmed-email configuration: `npm ci`, `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, `npm run build`, production preview, and `npm run smoke`.
-- [ ] 4.2 CI includes Mailpit, explicit app/mail origins, auth contract tests, bounded readiness, smoke and cleanup; the verification document records actual local results and any separately observed CI run.
+- [x] 4.1 The documented local CI-equivalent sequence passes with confirmed-email configuration: `npm ci`, `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, `npm run build`, production preview, and `npm run smoke`.
+- [x] 4.2 CI includes Mailpit, explicit app/mail origins, auth contract tests, bounded readiness, smoke and cleanup; the verification document records actual local results and any separately observed CI run.
 
 #### Manual
 
-- [ ] 4.3 Chrome, Firefox and mobile acceptance pass for forms, confirmation in a clean context, session reload, logout denial and outage guidance; results are recorded in `verification.md`.
-- [ ] 4.4 A JavaScript-disabled signup obeys server validation and completes the native confirmation flow; results are recorded in `verification.md`.
+- [x] 4.3 Chrome, Firefox and mobile acceptance pass for forms, confirmation in a clean context, session reload, logout denial and outage guidance; results are recorded in `verification.md`.
+- [x] 4.4 A JavaScript-disabled signup obeys server validation and completes the native confirmation flow; results are recorded in `verification.md`.
