@@ -352,10 +352,10 @@ Keep intermediate phases verifiable with their listed checks; do not claim full 
 
 #### Automated
 
-- [x] 4.1 The documented local CI-equivalent sequence passes with confirmed-email configuration: `npm ci`, `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, `npm run build`, production preview, and `npm run smoke`.
-- [x] 4.2 CI includes Mailpit, explicit app/mail origins, auth contract tests, bounded readiness, smoke and cleanup; the verification document records actual local results and any separately observed CI run.
+- [x] 4.1 The documented local CI-equivalent sequence passes with confirmed-email configuration: `npm ci`, `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, `npm run build`, production preview, and `npm run smoke`. — 8b903ed
+- [x] 4.2 CI includes Mailpit, explicit app/mail origins, auth contract tests, bounded readiness, smoke and cleanup; the verification document records actual local results and any separately observed CI run. — 8b903ed
 
 #### Manual
 
-- [x] 4.3 Chrome, Firefox and mobile acceptance pass for forms, confirmation in a clean context, session reload, logout denial and outage guidance; results are recorded in `verification.md`.
-- [x] 4.4 A JavaScript-disabled signup obeys server validation and completes the native confirmation flow; results are recorded in `verification.md`.
+- [x] 4.3 Chrome, Firefox and mobile acceptance pass for forms, confirmation in a clean context, session reload, logout denial and outage guidance; results are recorded in `verification.md`. — 8b903ed
+- [x] 4.4 A JavaScript-disabled signup obeys server validation and completes the native confirmation flow; results are recorded in `verification.md`. — 8b903ed
