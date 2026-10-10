@@ -13,9 +13,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.22.3
           cache: npm
       - run: npm ci
+      - run: npm run test:auth
       - run: npx astro sync
       - run: npm run lint
       - run: npx astro check
@@ -26,30 +27,67 @@ jobs:
 
   smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.22.3
           cache: npm
       - uses: supabase/setup-cli@v1
         with:
           version: latest
       - run: npm ci
-      - name: Start local Supabase
+      - name: Start local Supabase with Mailpit
         run: |
-          supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
-          supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > supabase.env
-      - name: Configure secrets for build and preview
+          umask 077
+          if ! supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor > "$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            echo "::error::Local Supabase failed to start. Its output is withheld because it can contain generated credentials."
+            exit 1
+          fi
+      - name: Wait for Mailpit
         run: |
-          source supabase.env
-          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\n' "$API_URL" "$ANON_KEY" > .env
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --max-time 2 --output /dev/null http://127.0.0.1:54324/api/v1/info; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Mailpit did not become ready within the bounded wait."
+          exit 1
+      - name: Configure local credentials for build and preview
+        run: |
+          set -euo pipefail
+          umask 077
+          if [[ -e .env || -e .dev.vars ]]; then
+            echo "::error::Ignored credential files already exist; refusing to overwrite them."
+            exit 1
+          fi
+          status_env="$RUNNER_TEMP/supabase-status.env"
+          supabase status -o env | grep -E '^(API_URL|ANON_KEY|PUBLISHABLE_KEY)=' > "$status_env"
+          set -a
+          source "$status_env"
+          set +a
+          local_key="${PUBLISHABLE_KEY:-${ANON_KEY:-}}"
+          if [[ -z "${API_URL:-}" || -z "$local_key" ]]; then
+            echo "::error::Local Supabase did not provide an API URL and anon/publishable key."
+            exit 1
+          fi
+          printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\n' "$API_URL" "$local_key" > .env
           cp .env .dev.vars
       - run: npm run build
-      - name: Run smoke test against production preview
+      - name: Start production preview and wait until ready
         run: |
-          npm run preview -- --port 4321 &
-          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:4321/ && break; sleep 1; done
-          BASE_URL=http://localhost:4321 npm run smoke
+          npm run preview -- --host 127.0.0.1 --port 4321 > "$RUNNER_TEMP/astro-preview.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --max-time 2 --output /dev/null http://localhost:4321/; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Production preview did not become ready within the bounded wait."
+          exit 1
+      - name: Run smoke test against production preview
+        run: BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke
       - if: always()
         run: supabase stop --no-backup

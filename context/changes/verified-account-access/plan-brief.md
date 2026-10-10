@@ -53,7 +53,7 @@ Astro middleware creates one Supabase client per request, validates identity and
 | 3. Reliable auth smoke         | Exact assertions, independent login and actual-expiry checks.   | Inherited cookies or proactive refresh masking failures. |
 | 4. CI and acceptance evidence  | Mailpit-enabled CI, repeatable runbook and browser results.     | Treating unrun checks as completion.                     |
 
-**Prerequisites:** Node 22.14.0, `npm ci`, Docker with local Supabase, available local app/mail ports, and safely configured ignored environment files. Hosted credentials are unnecessary.
+**Prerequisites:** Node 22.22.3 (pinned in `.nvmrc`), `npm ci`, Docker with local Supabase, available local app/mail ports, and safely configured ignored environment files. Hosted credentials are unnecessary.
 **Estimated effort:** Approximately 3–4 focused evening sessions; container startup and browser verification may add time. Smoke has a 300-second total limit, including a 180-second refresh-wait limit.
 
 ## Open Risks & Assumptions
