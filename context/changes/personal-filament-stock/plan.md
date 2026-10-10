@@ -287,19 +287,19 @@ Rollback the application while retaining the additive table and stored data; do 
 
 #### Automated
 
-- [x] 1.1 A disposable local database rebuild applies the migration without a missing seed error: `npx supabase db reset --local`.
-- [x] 1.2 Database ownership and field-rule tests pass under restricted roles: `npx supabase test db`.
-- [x] 1.3 Regenerating public database types with `npx supabase gen types typescript --local --schema public` matches the committed `src/types/database.ts` after the repository's formatting convention.
-- [x] 1.4 Existing auth contracts, type checks, and lint pass: `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`.
+- [x] 1.1 A disposable local database rebuild applies the migration without a missing seed error: `npx supabase db reset --local`. — `ca76c6c`
+- [x] 1.2 Database ownership and field-rule tests pass under restricted roles: `npx supabase test db`. — `ca76c6c`
+- [x] 1.3 Regenerating public database types with `npx supabase gen types typescript --local --schema public` matches the committed `src/types/database.ts` after the repository's formatting convention. — `ca76c6c`
+- [x] 1.4 Existing auth contracts, type checks, and lint pass: `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`. — `ca76c6c`
 
 ### Phase 2: Stock operations and responses
 
 #### Automated
 
-- [ ] 2.1 Stock validation, response, and affected-row contracts pass: `npm run test:spools`.
-- [ ] 2.2 Real database constraints and isolation still pass: `npx supabase test db`.
-- [ ] 2.3 Auth contracts, sync, type checks, lint, and production build pass: `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`, `npm run build`.
-- [ ] 2.4 Complete inventory pagination and later-batch failure contracts pass for 0, 1,000, and 1,001 records: `npm run test:spools`.
+- [x] 2.1 Stock validation, response, and affected-row contracts pass: `npm run test:spools`.
+- [x] 2.2 Real database constraints and isolation still pass: `npx supabase test db`.
+- [x] 2.3 Auth contracts, sync, type checks, lint, and production build pass: `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`, `npm run build`.
+- [x] 2.4 Complete inventory pagination and later-batch failure contracts pass for 0, 1,000, and 1,001 records: `npm run test:spools`.
 
 ### Phase 3: Personal stock interface
 
