@@ -193,7 +193,12 @@ test("auth outage responses are private 503s with a usable retry", async () => {
 
   const signoutResponse = createAuthUnavailableResponse({ kind: "signout" });
   assert.equal(signoutResponse.status, 503);
-  assert.match(await signoutResponse.text(), /action="\/api\/auth\/signout"/);
+  const signoutBody = await signoutResponse.text();
+  assert.match(signoutBody, /We couldn't sign you out/);
+  assert.match(signoutBody, /Your session may still be active/);
+  assert.match(signoutBody, /action="\/api\/auth\/signout"/);
+  assert.match(signoutBody, /Retry sign out/);
+  assert.match(signoutBody, /<style>/);
 
   const confirmationResponse = createAuthUnavailableResponse({ kind: "reload" });
   assert.equal(confirmationResponse.status, 503);
@@ -203,6 +208,22 @@ test("auth outage responses are private 503s with a usable retry", async () => {
   const refreshedResponse = applyAuthResponseHeaders(new Response("ok"), accumulated);
   assert.equal(refreshedResponse.headers.get("Expires"), "0");
   assert.equal(refreshedResponse.headers.get("Pragma"), "no-cache");
+});
+
+test("finalized auth responses retain the full SDK cookie cache-header contract", () => {
+  const sdkHeaders = new Headers({
+    "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+    Expires: "0",
+    Pragma: "no-cache",
+  });
+  const response = applyAuthResponseHeaders(
+    new Response(null, { status: 302, headers: { Location: "/" } }),
+    sdkHeaders,
+  );
+
+  assert.equal(response.headers.get("Cache-Control"), "private, no-cache, no-store, must-revalidate, max-age=0");
+  assert.equal(response.headers.get("Expires"), "0");
+  assert.equal(response.headers.get("Pragma"), "no-cache");
 });
 
 const syntheticUser = {
