@@ -77,6 +77,15 @@ const scriptsConfig = defineConfig({
   rules: { "no-console": "off" },
 });
 
+const generatedDatabaseTypesConfig = defineConfig({
+  files: ["src/types/database.ts"],
+  rules: {
+    "@typescript-eslint/consistent-type-definitions": "off",
+    "@typescript-eslint/consistent-indexed-object-style": "off",
+    "@typescript-eslint/no-redundant-type-constituents": "off",
+  },
+});
+
 export default defineConfig(
   includeIgnoreFile(gitignorePath),
   globalIgnores([".agents/"]),
@@ -86,5 +95,6 @@ export default defineConfig(
   eslintPluginAstro.configs["flat/jsx-a11y-recommended"],
   astroConfig,
   scriptsConfig,
+  generatedDatabaseTypesConfig,
   eslintPluginPrettier,
 );
