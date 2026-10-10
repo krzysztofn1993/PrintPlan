@@ -12,7 +12,7 @@ export function getAuthFormErrorMessage(form: AuthForm, code: string | null): st
   return undefined;
 }
 
-export type AuthRetryTarget = { kind: "link"; href: string } | { kind: "signout" };
+export type AuthRetryTarget = { kind: "link"; href: string } | { kind: "signout" } | { kind: "reload" };
 
 export function applyAuthResponseHeaders(response: Response, accumulatedHeaders: Headers): Response {
   accumulatedHeaders.forEach((value, name) => {
@@ -30,7 +30,9 @@ export function createAuthUnavailableResponse(target: AuthRetryTarget): Response
   const retryMarkup =
     target.kind === "signout"
       ? '<form method="post" action="/api/auth/signout"><button type="submit">Retry sign out</button></form>'
-      : `<a href="${safeInternalHref(target.href)}">Try again</a>`;
+      : target.kind === "reload"
+        ? '<button type="button" onclick="window.location.reload()">Try again</button>'
+        : `<a href="${safeInternalHref(target.href)}">Try again</a>`;
   const body = `<!doctype html>
 <html lang="en">
   <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Authentication unavailable</title></head>

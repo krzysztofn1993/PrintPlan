@@ -23,12 +23,12 @@ export const POST: APIRoute = async (context) => {
   const supabase = context.locals.supabase;
   if (!supabase) return signupRedirect(context, "unavailable");
 
-  let error: unknown;
+  let signupResult: Awaited<ReturnType<typeof supabase.auth.signUp>>;
   try {
-    ({ error } = await supabase.auth.signUp({
+    signupResult = await supabase.auth.signUp({
       email: validation.data.email,
       password: validation.data.password,
-    }));
+    });
   } catch (cause) {
     if (classifyAuthError(cause, "credentials") === "unavailable") {
       return signupRedirect(context, "unavailable");
@@ -36,6 +36,7 @@ export const POST: APIRoute = async (context) => {
     throw cause;
   }
 
+  const { data, error } = signupResult;
   if (error) {
     const kind = classifyAuthError(error, "credentials");
     if (kind === "unavailable") return signupRedirect(context, "unavailable");
@@ -43,5 +44,5 @@ export const POST: APIRoute = async (context) => {
     throw new Error("Unexpected Supabase signup error", { cause: error });
   }
 
-  return context.redirect("/auth/confirm-email");
+  return context.redirect(data.session ? "/auth/confirm-email?status=ready" : "/auth/confirm-email?status=pending");
 };
