@@ -537,6 +537,16 @@ async function runSmoke() {
     assertRedirect(result, { path: "/auth/confirm-email", query: { status: "invalid" } });
   });
 
+  await step("unsupported confirmation type is rejected without establishing a session", async () => {
+    const jar = new CookieJar();
+    const result = await appRequest("/auth/confirm?token_hash=unsupported-type-token&type=recovery", { jar });
+    assertRedirect(result, { path: "/auth/confirm-email", query: { status: "invalid" } });
+    assertNoAuthCookies(jar, "An unsupported confirmation type unexpectedly established an auth session");
+
+    const dashboard = await appRequest("/dashboard", { jar });
+    assertRedirect(dashboard, { path: "/auth/signin" });
+  });
+
   await step("missing confirmation token is rejected", async () => {
     const result = await appRequest("/auth/confirm?type=email", { jar: new CookieJar() });
     assertRedirect(result, { path: "/auth/confirm-email", query: { status: "invalid" } });
