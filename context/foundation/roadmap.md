@@ -3,7 +3,7 @@ project: PrintPlan
 version: 2
 status: draft
 created: 2026-10-09
-updated: 2026-10-09
+updated: 2026-10-10
 prd_version: 2
 main_goal: speed
 top_blocker: decisions
@@ -43,7 +43,7 @@ The sequencing goal is `speed`, confirmed by the author. The principal constrain
 
 | ID   | Change ID                    | Outcome (user can …)                                                                                                                                                                        | Prerequisites | PRD refs                                                                                                   | Status   |
 | ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
-| F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | in-progress |
+| F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done |
 | F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | proposed |
 | S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | proposed |
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | proposed |
@@ -88,7 +88,7 @@ No domain glossary, lessons document, or technical-roadmap forwarding section wa
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Product slices need verified identity; reuse the scaffold and defer domain-data ownership checks to the first slices that persist that data.
-- **Status:** in-progress
+- **Status:** done
 
 ### F-02: Enable a hosted verification path
 
@@ -240,3 +240,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 ## Milestone History
 
 ## Done
+
+- **F-01: (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.** — Archived 2026-10-10 → `context/archive/2026-10-09-verified-account-access/`. Lesson: —.
