@@ -327,12 +327,12 @@ Keep intermediate phases verifiable with their listed checks; do not claim full 
 
 #### Automated
 
-- [x] 2.1 Auth tests, lint, Astro synchronization, type checks and build pass: `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`.
+- [x] 2.1 Auth tests, lint, Astro synchronization, type checks and build pass: `npm run test:auth`, `npm run lint`, `npx astro sync`, `npx astro check`, and `npm run build`. — cb1e1a1
 
 #### Manual
 
-- [x] 2.2 A unique signup receives a local Mailpit message; correct-password signin before confirmation fails, and the delivered link establishes dashboard access in a fresh browser context.
-- [x] 2.3 Pending, invalid-link and direct-visit result pages show accurate English messages; consumed-link replay cannot create a fresh session.
+- [x] 2.2 A unique signup receives a local Mailpit message; correct-password signin before confirmation fails, and the delivered link establishes dashboard access in a fresh browser context. — cb1e1a1
+- [x] 2.3 Pending, invalid-link and direct-visit result pages show accurate English messages; consumed-link replay cannot create a fresh session. — cb1e1a1
 
 ### Phase 3: Reliable auth smoke
 
