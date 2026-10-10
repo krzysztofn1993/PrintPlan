@@ -338,15 +338,15 @@ Keep intermediate phases verifiable with their listed checks; do not claim full 
 
 #### Automated
 
-- [ ] 3.1 Built-preview smoke proves pending signup, denied unconfirmed login, native Mailpit confirmation, successful callback, and rejected malformed or consumed links: `npm run smoke`.
-- [ ] 3.2 Built-preview smoke proves independent wrong/correct password login, correct dashboard identity, malformed POST rejection, and strict redirects: `npm run smoke`.
-- [ ] 3.3 Built-preview smoke proves actual-expiry refresh and rotation, revoked-refresh rejection, cookie deletion, repeat-request persistence, and denial after signout: `npm run smoke`.
-- [ ] 3.4 Built-preview smoke verifies SDK cache headers on cookie-writing page and redirect responses and exits nonzero on missing prerequisites or exceeded timeouts: `npm run smoke`.
-- [ ] 3.5 Auth contract tests and lint pass: `npm run test:auth` and `npm run lint`.
+- [x] 3.1 Built-preview smoke proves pending signup, denied unconfirmed login, native Mailpit confirmation, successful callback, and rejected malformed or consumed links: `npm run smoke`.
+- [x] 3.2 Built-preview smoke proves independent wrong/correct password login, correct dashboard identity, malformed POST rejection, and strict redirects: `npm run smoke`.
+- [x] 3.3 Built-preview smoke proves actual-expiry refresh and rotation, revoked-refresh rejection, cookie deletion, repeat-request persistence, and denial after signout: `npm run smoke`.
+- [x] 3.4 Built-preview smoke verifies SDK cache headers on cookie-writing page and redirect responses and exits nonzero on missing prerequisites or exceeded timeouts: `npm run smoke`.
+- [x] 3.5 Auth contract tests and lint pass: `npm run test:auth` and `npm run lint`.
 
 #### Manual
 
-- [ ] 3.6 During controlled local Auth unavailability, protected access and failed signout return 503 with retry guidance, signup/signin report a retryable form error, and recovery restores access without a false logout-success message.
+- [x] 3.6 During controlled local Auth unavailability, protected access and failed signout return 503 with retry guidance, signup/signin report a retryable form error, and recovery restores access without a false logout-success message.
 
 ### Phase 4: CI and acceptance evidence
 
