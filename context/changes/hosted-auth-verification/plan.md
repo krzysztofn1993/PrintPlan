@@ -99,6 +99,40 @@ Make deployment reproducible and document the agreed hosted setup while retainin
 
 **Contract**: The durable guide contains prerequisites, local-versus-hosted boundaries, Workers Builds settings, runtime secrets, hosted Supabase Auth settings, Brevo setup, manual acceptance steps, expiry restoration, account cleanup, and recovery instructions. README links to this guide and the archived F-01 local runbook. Documentation and application/source content remain English.
 
+#### 4. Hosted runtime corrections — accepted scope addendum
+
+**Files**: `src/lib/supabase.ts`, `src/middleware.ts`, `astro.config.mjs`
+
+**Acceptance date**: 2026-10-11, F6 implementation-review triage. The author accepted adding these
+existing runtime fixes and their validation to the plan. The fixes landed before this addendum;
+this records the reviewed final scope rather than claiming the original plan already included them.
+
+**HTTPS cookie correction**: Hosted response inspection found the session cookie lacked `Secure`.
+Commit `bdd22fd` adds a `secureCookies` argument to the request-scoped Supabase client and supplies
+`context.url.protocol === "https:"` from middleware. The SDK's `cookieOptions.secure` therefore
+enables `Secure` on hosted HTTPS responses while keeping local HTTP verification usable. Cookie
+finalization and SDK privacy headers are preserved. The existing SDK `HttpOnly` behavior is retained.
+
+**Unused Astro sessions**: The application authenticates through Supabase and does not use Astro's
+session API. Commit `5af6403` sets `session: false` so the Cloudflare adapter does not require an
+unused Astro session storage binding. This is independent of Supabase's cookie sessions.
+
+**Recorded validation**:
+
+- Review-local `npm ci` and `npm run verify:deploy` passed under Node `24.21.0`: all 13 auth contracts,
+  sync, lint, zero Astro diagnostics, and production build.
+- The existing local production-preview smoke passed native confirmation, real expiry, separate
+  access/refresh rotation, subsequent persistence, revoked-session denial, and signout.
+- Hosted signin and fresh confirmation observations record `Secure` and the expected privacy headers.
+  Owner-confirmed HTTPS browser persistence and refresh observations are attributed in verification.md.
+- Source commit `17e7ae4` contains both fixes. Owner-supplied build `e53e5b96` passed the deployment
+  gates and deployed version `62cb28c8-fcdf-4479-8065-37671e1c6f5e`. Its binding list includes
+  `IMAGES` and `ASSETS`, with no Astro session binding.
+
+See [verification.md](verification.md) and [the implementation review](reviews/impl-review.md) for
+the separate local, remote, and owner browser evidence. No runtime code or new test suite is added
+as part of this documentation follow-up.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -183,6 +217,12 @@ The implementer supplies local automation evidence and a precise checklist; the 
 
 **Contract**: Use two distinct fresh application accounts A/B with controlled deliverable addresses outside the Supabase team. Cover pending signup without a session, denied signin before confirmation, actual inbox receipt, confirmation in an empty browser context, matching dashboard identity, consumed-link rejection in another empty context, wrong-password rejection, independent password signin, reload persistence, successful signout, protected-page denial, and later signin. Cover Chrome and Firefox desktop and a phone/narrow mobile environment; record versions/device or viewport and fixture labels. Email confirmation is exercised on fresh accounts; existing confirmed accounts may be reused across browser signin checks. Include native submission with JavaScript disabled and server rejection of invalid signup. Observe redirects and privacy/cache headers locally in browser Network tools; do not export raw headers, cookies, or HAR files into evidence.
 
+**Acceptance amendment (2026-10-11, F4 triage)**: The author explicitly accepted Brave desktop in
+place of Chrome. The recorded matrix is Brave 1.95.104 / Chromium 153.0.8010.53, Firefox 157.0.1
+(64-bit), and a 427 × 952 pixel narrow viewport. Preserve the recorded A/B fixture labels and all
+account behavior checks. Earlier Chrome wording in Progress reflects the original summary; the
+accepted browser evidence is Brave, with no separate Chrome run claimed.
+
 #### 2. Real expiry and revoked-session procedure
 
 **Files**: `context/foundation/hosted-auth.md`, `context/changes/hosted-auth-verification/verification.md`
@@ -240,7 +280,7 @@ Retain the F-01 local production-preview/Mailpit smoke unchanged and execute it 
 
 ## Performance Considerations
 
-This is a small-user hosted verification foundation. The existing application request model is retained. Plan the manual run within the observed provider and Supabase quotas; do not loop signup requests to overcome rate limits. The expiry experiment requires approximately five minutes plus the stated skew allowance after the latest fresh session; provider activation and human/browser steps are additional elapsed time.
+This is a small-user hosted verification foundation. The existing application request model is retained. Plan the manual run within the observed provider and Supabase quotas; do not loop signup requests to overcome rate limits. The expiry wait depends on the recorded short temporary lifetime: wait beyond the latest actual issued expiry plus 30 seconds. A 300-second example lifetime gives approximately five and a half minutes after the latest fresh session; provider activation and human/browser steps are additional elapsed time.
 
 ## Migration Notes
 

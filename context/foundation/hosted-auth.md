@@ -71,8 +71,9 @@ Create a dedicated free-tier hosted Supabase project named `print-plan`. The loc
 hosted dashboard directly:
 
 1. Enable email/password signup and require email confirmation. Keep refresh token rotation enabled.
-2. Set the normal JWT expiry to **3600 seconds**. Change it to 300 seconds only for the controlled
-   expiry/revocation experiment below, then restore 3600 seconds even if the experiment is interrupted.
+2. Set the normal JWT expiry to **3600 seconds**. For the controlled expiry/revocation experiment
+   below, choose and record a short temporary lifetime, for example 300 seconds. Restore 3600 seconds
+   even if the experiment is interrupted.
 3. Set **Site URL** to the actual stable app origin, without a trailing slash. Add exact Redirect URLs
    for the app root (`<origin>/`) and `<origin>/auth/confirm`. Do not add broad preview wildcards for
    this single-origin setup.
@@ -132,8 +133,9 @@ secret values into evidence. Use two distinct fresh application accounts, A and 
 deliverable addresses outside the Supabase organization team. Keep the fixture-to-address mapping
 privately so the accounts can be deleted later.
 
-Run the account checks on current Chrome desktop, current Firefox desktop, and a phone or narrow mobile
-viewport. Record browser versions and the device or viewport with fixture labels only. In those
+Run the account checks on current Chrome or Brave desktop, current Firefox desktop, and a phone or
+narrow mobile viewport. Record the actual browser name and versions and the device or viewport with
+fixture labels only. In those
 environments, cover these behaviors:
 
 1. Submit valid signup for fresh accounts A and B. Each signup remains pending and has no authenticated
@@ -156,10 +158,11 @@ environments, cover these behaviors:
 Do not export HAR files, screenshots containing tokens or email addresses, or raw headers/cookies.
 Record only pass/fail, the route/behavior, browser/device details, and sanitized fixture labels.
 
-## 300-second expiry and revoked-session check
+## Short-expiry and revoked-session check
 
-Complete the normal browser checks first. Then change hosted JWT expiry to **300 seconds** and mint
-fresh password-signin sessions after the setting takes effect: one for A and two for B. Use persistent
+Complete the normal browser checks first. Then choose and record a short temporary hosted JWT expiry
+(for example, 300 seconds). Mint fresh password-signin sessions after the setting takes effect: one
+for A and two for B. Use persistent
 contexts A, B1, and B2: A is one context for the live refresh check; B1 and B2 share account B so global
 signout can revoke B2 while its existing cookies remain. Do not reuse sessions created before the
 expiry change.
@@ -239,8 +242,8 @@ value, and clear the clipboard afterward.
 })();
 ```
 
-Confirm each newly issued JWT has integer `iat` and `exp`, and `exp - iat` is 300 seconds. Record
-fingerprints and metadata only. The short fingerprints are comparison aids, not independent proof of
+Confirm each newly issued JWT has integer `iat` and `exp`, and `exp - iat` matches the selected short
+lifetime. Record fingerprints and metadata only. The short fingerprints are comparison aids, not independent proof of
 the JWT's cryptographic validity.
 
 ### Refresh and revocation sequence
@@ -255,12 +258,12 @@ the JWT's cryptographic validity.
 5. Observe the cookie-writing response privacy headers listed above in the browser Network tools.
 
 This sequence uses two distinct accounts because Supabase signout revokes sessions globally for the
-account. It demonstrates refresh/revocation at the selected 300-second setting; it does not require a
+account. It demonstrates refresh/revocation at the recorded short-expiry setting; it does not require a
 hosted runner or an externally decoded/manufactured JWT.
 
 ## Restore, verify, and clean up
 
-Restore hosted JWT expiry to **3600 seconds** as soon as the 300-second experiment ends, including if
+Restore hosted JWT expiry to **3600 seconds** as soon as the short-expiry experiment ends, including if
 the experiment fails or is interrupted. Before deleting fixtures, mint new password-signin sessions
 for A and B after restoration. Confirm their JWT metadata shows a 3600-second lifetime, then check
 dashboard access, reload persistence, and successful signout. This restoration check does not claim to
