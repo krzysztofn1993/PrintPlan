@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:auth
+      - run: npm run test:spools
       - run: npx astro sync
       - run: npm run lint
       - run: npx astro check
@@ -45,6 +46,8 @@ jobs:
             echo "::error::Local Supabase failed to start. Its output is withheld because it can contain generated credentials."
             exit 1
           fi
+      - name: Run database contract tests
+        run: supabase test db
       - name: Wait for Mailpit
         run: |
           for attempt in $(seq 1 60); do

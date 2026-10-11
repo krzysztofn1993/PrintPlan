@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "test:auth": "node --experimental-strip-types --test scripts/auth-contracts.test.mjs",
     "verify:deploy": "npm run test:auth && astro sync && npm run lint && astro check && npm run build",
+    "test:spools": "node --experimental-strip-types --test scripts/spool-contracts.test.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

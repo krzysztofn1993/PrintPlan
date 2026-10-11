@@ -4,6 +4,7 @@
 /* global AbortSignal, Blob, Buffer, FormData, Headers, URL, setTimeout */
 
 import { randomUUID } from "node:crypto";
+import { readLocalSupabaseConfig, runSpoolSmoke } from "./spool-smoke.mjs";
 
 const APP_URL = new URL(process.env.BASE_URL ?? "http://localhost:4321");
 const MAILPIT_URL = new URL(process.env.MAILPIT_URL ?? "http://127.0.0.1:54324");
@@ -209,7 +210,7 @@ async function appRequest(path, options = {}) {
 
   const jar = options.jar ?? new CookieJar();
   const headers = normalizeHeaders(options.headers);
-  headers.set("Origin", APP_ORIGIN);
+  headers.set("Origin", options.origin ?? APP_ORIGIN);
   if (jar.header()) headers.set("Cookie", jar.header());
 
   let body;
@@ -444,9 +445,14 @@ async function runSmoke() {
   ensure(["http:", "https:"].includes(MAILPIT_URL.protocol), "MAILPIT_URL must use HTTP or HTTPS");
   ensure(!MAILPIT_URL.username && !MAILPIT_URL.password, "MAILPIT_URL must not contain credentials");
   ensure(
-    typeof Headers.prototype.getSetCookie === "function",
-    "Use Node 22 or later to preserve separate Set-Cookie headers",
+    process.versions.node === "24.21.0",
+    "Run the smoke with the repository-pinned Node 24.21.0 version from .nvmrc",
   );
+  ensure(
+    typeof Headers.prototype.getSetCookie === "function",
+    "Use Node 24.21.0 from .nvmrc to preserve separate Set-Cookie headers",
+  );
+  const localSupabase = await readLocalSupabaseConfig();
 
   await step("local preview responds", async () => {
     const response = await appRequest("/");
@@ -723,6 +729,17 @@ async function runSmoke() {
     const dashboard = await appRequest("/dashboard", { jar: activeJarB });
     assertHttpStatus(dashboard, 200);
     assertBodyContains(dashboard, accountB.email, "The dashboard did not show account B identity after signin");
+  });
+
+  await runSpoolSmoke({
+    config: localSupabase,
+    appRequest,
+    CookieJar,
+    accountA,
+    accountB,
+    activeJarA,
+    activeJarB,
+    requestSignal,
   });
 
   const sessionA = activeJarA.session();
