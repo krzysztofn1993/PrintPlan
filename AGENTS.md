@@ -26,9 +26,9 @@ For domain distillation, read @.agents/skills/10x-domain-distillation/SKILL.md. 
 
 ## Commands and verification
 
-Use Node from @.nvmrc and `npm ci`. Scripts live in @package.json.
+Use Node 24.21.0 from @.nvmrc and `npm ci`. Scripts live in @package.json.
 
-CI on `master` runs `npx astro sync`, lint, `npx astro check`, and build; see @.github/workflows/ci.yml. Run `npm run smoke` against `npm run preview` with local Supabase configured; `BASE_URL` defaults to `http://localhost:4321`. @scripts/smoke.mjs covers auth redirects and cookie sessions; no unit or browser test runner is configured.
+CI on `master` runs the native auth and stock contract tests, `npx astro sync`, lint, `npx astro check`, and build; its integration job runs Supabase database tests and the expanded built-preview smoke against local Supabase and Mailpit. See @.github/workflows/ci.yml. Run `npm run smoke` against `npm run preview` with local Supabase configured; `BASE_URL` defaults to `http://localhost:4321`. @scripts/smoke.mjs covers auth redirects, cookie sessions, stock persistence, and owner isolation. No browser test runner is configured.
 
 ## Structure and conventions
 
