@@ -7,7 +7,7 @@ import { createClient, getRequestCookies } from "@/lib/supabase";
 export const onRequest = defineMiddleware(async (context, next) => {
   const cookies = createAuthCookieStore(getRequestCookies(context.request.headers));
   const responseHeaders = new Headers();
-  const supabase = createClient(cookies, responseHeaders);
+  const supabase = createClient(cookies, responseHeaders, context.url.protocol === "https:");
   const isCredentialPost =
     context.request.method === "POST" && ["/api/auth/signup", "/api/auth/signin"].includes(context.url.pathname);
 

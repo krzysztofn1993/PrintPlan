@@ -5,7 +5,7 @@ application is the account-access foundation; spool and reservation features are
 
 ## Local development
 
-Use the Node version in `.nvmrc` (currently `24`) and install the committed dependencies:
+Use the Node version in `.nvmrc` (currently `24.21.0`) and install the committed dependencies:
 
 ```sh
 nvm install
