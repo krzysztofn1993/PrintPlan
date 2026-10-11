@@ -317,12 +317,12 @@ Rollback the application while retaining the additive table and stored data; do 
 
 #### Automated
 
-- [x] 4.1 A fresh disposable local database passes migrations and database tests: `npx supabase db reset --local`, `npx supabase test db`.
-- [x] 4.2 All code-quality gates pass on Node 24.21.0 from `.nvmrc`: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
-- [x] 4.3 Built-preview smoke passes owner CRUD, logout/relogin persistence, direct REST isolation, hostile field requests, origin checks, and existing auth/session scenarios: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 A fresh disposable local database passes migrations and database tests: `npx supabase db reset --local`, `npx supabase test db`. — `4495fbc`
+- [x] 4.2 All code-quality gates pass on Node 24.21.0 from `.nvmrc`: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`. — `4495fbc`
+- [x] 4.3 Built-preview smoke passes owner CRUD, logout/relogin persistence, direct REST isolation, hostile field requests, origin checks, and existing auth/session scenarios: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — `4495fbc`
 
 #### Manual
 
-- [x] 4.4 In current Chrome and Firefox, a user completes add/correct/delete, sees truthful empty/error/success states, and sees persisted stock after refresh and logout/relogin.
-- [x] 4.5 On a phone, add a PLA spool labelled Black / Red / Gold with 150 g, correct it to 0 g, cancel one deletion, then confirm deletion; labels, explanations, errors, focus, and controls remain usable.
-- [x] 4.6 The verification record separates successful local checks and browser observations from any unperformed hosted or remote CI checks.
+- [x] 4.4 In current Chrome and Firefox, a user completes add/correct/delete, sees truthful empty/error/success states, and sees persisted stock after refresh and logout/relogin. — `4495fbc`
+- [x] 4.5 On a phone, add a PLA spool labelled Black / Red / Gold with 150 g, correct it to 0 g, cancel one deletion, then confirm deletion; labels, explanations, errors, focus, and controls remain usable. — `4495fbc`
+- [x] 4.6 The verification record separates successful local checks and browser observations from any unperformed hosted or remote CI checks. — `4495fbc`
