@@ -70,7 +70,8 @@ The Worker name remains `10x-astro-starter` (`wrangler.jsonc:3`), while the stac
 (`context/changes/bootstrap-verification/verification.md:1044`). Resolve the actual Worker identity before connecting
 Builds; the package name is not evidence of the remote deployment target (`package.json:2`).
 
-The repository pins Node to 22.22.3 in `.nvmrc:1`; GitHub Actions uses that value (`.github/workflows/ci.yml:16`).
+At research time, the repository pinned Node 22.22.3 in `.nvmrc:1` and GitHub Actions used that value.
+The repository now pins Node 24 in `.nvmrc`, and GitHub Actions reads the pinned version from that file.
 Workers Builds supports `.nvmrc` and `NODE_VERSION` for selecting Node. Preserve the pin and record the actual remote
 build runtime rather than relying on its changing default.
 [Workers Builds image](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).

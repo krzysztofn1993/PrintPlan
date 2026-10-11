@@ -7,7 +7,7 @@ explicit.
 
 ## Prerequisites and boundaries
 
-- Use the Node version in `.nvmrc` (`22.22.3` at this revision), npm, Git, and the repository's
+- Use the Node version in `.nvmrc` (`24` at this revision), npm, Git, and the repository's
   committed `package-lock.json`.
 - Have access to the GitHub repository, a Cloudflare account with Workers Builds, a new free-tier
   hosted Supabase project, and a Brevo account with transactional sending activated.
@@ -35,7 +35,7 @@ Use these production settings:
 | ----------------- | ---------------------------------------------------- |
 | Production branch | `master`                                             |
 | Preview builds    | Disabled                                             |
-| Node version      | The version in `.nvmrc` (`22.22.3` at this revision) |
+| Node version      | The version in `.nvmrc` (`24` at this revision)       |
 | Build variable    | `SKIP_DEPENDENCY_INSTALL=1`                          |
 | Build command     | `npm ci && npm run verify:deploy`                    |
 | Deploy command    | `npx wrangler deploy`                                |
