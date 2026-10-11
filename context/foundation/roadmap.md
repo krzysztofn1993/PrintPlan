@@ -204,7 +204,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 | ---------- | ---------------------------- | ------------------------------------------------- | --------------------- | --------------------------------------------------------------------- |
 | F-01       | verified-account-access      | Verify configured account access                  | yes                   | Run `/10x-plan verified-account-access`.                              |
 | F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; see `context/changes/hosted-auth-verification/verification.md`. |
-| S-01       | personal-filament-stock      | Record and inspect filament stock                 | yes                   | Prerequisite F-01 is complete; good next product slice.               |
+| S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Done; archived at `context/archive/2026-10-10-personal-filament-stock/`. |
 | S-02       | personal-planned-prints      | Maintain planned prints                           | yes                   | Prerequisite F-01 is complete; can proceed in parallel with S-01.     |
 | S-03       | reserve-and-release-material | Reserve and release material safely               | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
 | S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
