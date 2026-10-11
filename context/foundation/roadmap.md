@@ -242,3 +242,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 ## Done
 
 - **F-01: (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.** — Archived 2026-10-10 → `context/archive/2026-10-09-verified-account-access/`. Lesson: —.
+
+- **F-02: (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.** — Archived 2026-10-11 → `context/archive/2026-10-10-hosted-auth-verification/`. Lesson: —.
