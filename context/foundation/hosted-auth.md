@@ -7,7 +7,7 @@ explicit.
 
 ## Prerequisites and boundaries
 
-- Use the Node version in `.nvmrc` (`24` at this revision), npm, Git, and the repository's
+- Use the Node version in `.nvmrc` (`24.21.0` at this revision), npm, Git, and the repository's
   committed `package-lock.json`.
 - Have access to the GitHub repository, a Cloudflare account with Workers Builds, a new free-tier
   hosted Supabase project, and a Brevo account with transactional sending activated.
@@ -35,7 +35,7 @@ Use these production settings:
 | ----------------- | ---------------------------------------------------- |
 | Production branch | `master`                                             |
 | Preview builds    | Disabled                                             |
-| Node version      | The version in `.nvmrc` (`24` at this revision)       |
+| Node version      | The version in `.nvmrc` (`24.21.0` at this revision) |
 | Build variable    | `SKIP_DEPENDENCY_INSTALL=1`                          |
 | Build command     | `npm ci && npm run verify:deploy`                    |
 | Deploy command    | `npx wrangler deploy`                                |
@@ -149,7 +149,9 @@ environments, cover these behaviors:
 5. In browser Network tools, inspect confirmation, signin, refresh, and signout responses that write
    cookies. Require `Cache-Control` to contain `private`, `no-cache`, `no-store`, `must-revalidate`,
    and `max-age=0`, plus `Expires: 0` and `Pragma: no-cache`. Confirm session cookies persist in the
-   actual HTTPS browser. Local HTTP cookie jars do not prove browser enforcement of HTTPS attributes.
+   actual HTTPS browser and that hosted HTTPS session cookies include the `Secure` attribute. Supabase
+   SSR leaves `HttpOnly` false by default so its browser client can read the auth cookie. Local HTTP
+   cookie jars do not prove browser enforcement of HTTPS attributes.
 
 Do not export HAR files, screenshots containing tokens or email addresses, or raw headers/cookies.
 Record only pass/fail, the route/behavior, browser/device details, and sanitized fixture labels.

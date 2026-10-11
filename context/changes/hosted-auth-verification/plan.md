@@ -273,19 +273,22 @@ Before external configuration changes, record the previous non-secret settings a
 
 #### Automated
 
-- [ ] 2.1 The recorded stable HTTPS origin returns HTTP 200 for `/` in a credential-free bounded request.
+- [x] 2.1 The recorded stable HTTPS origin returns HTTP 200 for `/` in a credential-free bounded request.
 
 #### Manual
 
-- [ ] 2.2 The account owner confirms the dedicated Worker/project, one stable HTTPS origin, runtime Supabase configuration, required email confirmation, rotation, and the hosted callback template/settings.
-- [ ] 2.3 An observed Workers Builds run for the recorded `master` commit installs with `npm ci`, passes every deployment gate under the pinned Node version, and deploys the recorded Worker version.
-- [ ] 2.4 Brevo Free transactional sending is activated, the selected sender is verified, and custom SMTP settings are present in hosted Supabase without repository/application credential exposure.
+- [x] 2.2 The account owner confirms the dedicated Worker/project, one stable HTTPS origin, runtime Supabase configuration, required email confirmation, rotation, and the hosted callback template/settings. — owner-confirmed, including signup persistence in hosted Supabase, 2026-10-11
+- [x] 2.3 An observed Workers Builds run for the recorded `master` commit installs with `npm ci`, passes every deployment gate under the pinned Node version, and deploys the recorded Worker version. — build `bf72462e`, commit `b8c6423`, version `7176faa8-da59-43cc-8522-6764b18bbabe`
+  - The owner selected Node `24.21.0` as the common pin; the observed remote build used this version, and `.nvmrc` plus the runbook now match.
+- [x] 2.4 Brevo Free transactional sending is activated, the selected sender is verified, and custom SMTP settings are present in hosted Supabase without repository/application credential exposure. — owner reports sender issue resolved and sending works, 2026-10-11
 
 ### Phase 3: Verify hosted authentication and close the evidence record
 
 #### Manual
 
 - [ ] 3.1 The author confirms real non-team inbox delivery, fresh-context confirmation, consumed-link rejection, validation/credential rejection, HTTPS session persistence, signout denial, and later login in the documented browser matrix.
+  - Owner reports the six simplified browser checks passed manually on 2026-10-11, including Chrome, Firefox, and mobile/narrow viewport; JavaScript-disabled validation also passed.
+  - HTTPS signin and signout responses passed the privacy/cache header check. Confirmation and refresh response headers remain unverified. The source now adds `Secure` on HTTPS requests; verify this after the next Cloudflare deployment. Supabase SSR's default `HttpOnly=false` remains unchanged.
 - [ ] 3.2 The author confirms genuine 300-second expiry, A's access/refresh rotation and subsequent persistence, B2's revoked-session rejection/deletion, and cookie-writing response privacy headers.
 - [ ] 3.3 Hosted JWT expiry is restored to 3600 seconds and freshly minted sessions demonstrate that lifetime and successful dashboard/reload/signout.
 - [ ] 3.4 All application test accounts created during acceptance are deleted from the dedicated hosted project and test-browser cookie state is cleared.
