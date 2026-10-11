@@ -265,9 +265,9 @@ Before external configuration changes, record the previous non-secret settings a
 
 #### Automated
 
-- [x] 1.1 The deployment gate passes under the pinned Node version after `npm ci`: `npm run verify:deploy`.
-- [x] 1.2 The existing local production-preview regression passes with local Supabase and Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
-- [x] 1.3 The updated repository and durable runbook documentation passes targeted Prettier checking.
+- [x] 1.1 The deployment gate passes under the pinned Node version after `npm ci`: `npm run verify:deploy`. — f1f7365
+- [x] 1.2 The existing local production-preview regression passes with local Supabase and Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — f1f7365
+- [x] 1.3 The updated repository and durable runbook documentation passes targeted Prettier checking. — f1f7365
 
 ### Phase 2: Configure and publish the hosted instance
 
