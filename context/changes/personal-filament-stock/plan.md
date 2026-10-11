@@ -227,7 +227,7 @@ Prove real authenticated persistence and isolation through the built application
 #### Automated Verification:
 
 - A fresh disposable local database passes migrations and database tests: `npx supabase db reset --local`, `npx supabase test db`.
-- All code-quality gates pass on Node 22.22.3: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
+- All code-quality gates pass on Node 24.21.0 from `.nvmrc`: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
 - Built-preview smoke passes owner CRUD, logout/relogin persistence, direct REST isolation, hostile field requests, origin checks, and existing auth/session scenarios: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
 
 #### Manual Verification:
@@ -305,24 +305,24 @@ Rollback the application while retaining the additive table and stored data; do 
 
 #### Automated
 
-- [x] 3.1 Stock and auth contracts, sync, type checks, lint, and build pass: `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`, `npm run build`.
+- [x] 3.1 Stock and auth contracts, sync, type checks, lint, and build pass: `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npx astro check`, `npm run lint`, `npm run build`. — `e112387`
 
 #### Manual
 
-- [x] 3.2 Desktop keyboard interaction supports add/edit/delete/cancel, visible focus, associated field errors, announced feedback, and retention of inputs after a failed save.
-- [x] 3.3 At a phone viewport, long and three-colour labels wrap, controls remain usable, and the page has no horizontal overflow.
-- [x] 3.4 The UI shows 150 g recorded / 0 g reserved / 150 g available with estimate explanations; create rejects 0 g and editing to 0 g retains the spool with zero available grams.
+- [x] 3.2 Desktop keyboard interaction supports add/edit/delete/cancel, visible focus, associated field errors, announced feedback, and retention of inputs after a failed save. — `e112387`
+- [x] 3.3 At a phone viewport, long and three-colour labels wrap, controls remain usable, and the page has no horizontal overflow. — `e112387`
+- [x] 3.4 The UI shows 150 g recorded / 0 g reserved / 150 g available with estimate explanations; create rejects 0 g and editing to 0 g retains the spool with zero available grams. — `e112387`
 
 ### Phase 4: End-to-end verification and CI
 
 #### Automated
 
-- [ ] 4.1 A fresh disposable local database passes migrations and database tests: `npx supabase db reset --local`, `npx supabase test db`.
-- [ ] 4.2 All code-quality gates pass on Node 22.22.3: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
-- [ ] 4.3 Built-preview smoke passes owner CRUD, logout/relogin persistence, direct REST isolation, hostile field requests, origin checks, and existing auth/session scenarios: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 A fresh disposable local database passes migrations and database tests: `npx supabase db reset --local`, `npx supabase test db`.
+- [x] 4.2 All code-quality gates pass on Node 24.21.0 from `.nvmrc`: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
+- [x] 4.3 Built-preview smoke passes owner CRUD, logout/relogin persistence, direct REST isolation, hostile field requests, origin checks, and existing auth/session scenarios: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
 
 #### Manual
 
-- [ ] 4.4 In current Chrome and Firefox, a user completes add/correct/delete, sees truthful empty/error/success states, and sees persisted stock after refresh and logout/relogin.
-- [ ] 4.5 On a phone, add a PLA spool labelled Black / Red / Gold with 150 g, correct it to 0 g, cancel one deletion, then confirm deletion; labels, explanations, errors, focus, and controls remain usable.
-- [ ] 4.6 The verification record separates successful local checks and browser observations from any unperformed hosted or remote CI checks.
+- [x] 4.4 In current Chrome and Firefox, a user completes add/correct/delete, sees truthful empty/error/success states, and sees persisted stock after refresh and logout/relogin.
+- [x] 4.5 On a phone, add a PLA spool labelled Black / Red / Gold with 150 g, correct it to 0 g, cancel one deletion, then confirm deletion; labels, explanations, errors, focus, and controls remain usable.
+- [x] 4.6 The verification record separates successful local checks and browser observations from any unperformed hosted or remote CI checks.

@@ -50,7 +50,7 @@ An Astro SSR page supplies initial private inventory; a React island sends form-
 | 3. Personal stock interface       | Protected page, navigation, forms, confirmations, explained quantities             | Lost input, inaccessible feedback, or truncated multicolour labels |
 | 4. End-to-end verification and CI | Extended real HTTP/direct REST smoke, CI gates, recorded browser acceptance        | Mistaking local or mocked evidence for hosted/browser acceptance   |
 
-**Prerequisites:** completed F-01; Node 22.22.3; installed dependencies; Docker/local Supabase and Mailpit; local anon/publishable configuration; a disposable database for rebuild checks.
+**Prerequisites:** completed F-01; Node 24.21.0 from `.nvmrc`; installed dependencies; Docker/local Supabase and Mailpit; local anon/publishable configuration; a disposable database for rebuild checks.
 
 **Estimated effort:** approximately 4–6 focused after-hours sessions across four phases, including local integration and manual acceptance; this is a planning estimate.
 
