@@ -45,7 +45,7 @@ The sequencing goal is `speed`, confirmed by the author. The principal constrain
 | ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
 | F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done     |
 | F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done     |
-| S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | in-progress |
+| S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | done |
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | proposed |
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | blocked  |
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | blocked  |
@@ -119,7 +119,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Stock is an estimate; establish persistent, user-isolated inventory without suggesting that entered grams are a physical guarantee.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Maintain planned prints
 
@@ -244,3 +244,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 - **F-01: (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.** — Archived 2026-10-10 → `context/archive/2026-10-09-verified-account-access/`. Lesson: —.
 
 - **F-02: (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.** — Archived 2026-10-11 → `context/archive/2026-10-10-hosted-auth-verification/`. Lesson: —.
+
+- **S-01: user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.** — Archived 2026-10-11 → `context/archive/2026-10-10-personal-filament-stock/`. Lesson: —.
