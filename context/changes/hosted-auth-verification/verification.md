@@ -61,6 +61,20 @@ are disabled (2026-10-11); this is separate from the Worker `preview_urls` setti
 The build emitted npm install-script warnings, but `npm ci` returned success and all recorded gates
 completed.
 
+### Earlier Cloudflare branch preview
+
+The owner supplied a successful Cloudflare build log dated 2026-10-11 for branch `hosted-auth-verification`.
+Cloudflare installed 658 packages, `npm run build` passed, and `npx wrangler preview` created a remote
+preview named `hosted-auth-verification`. The reported preview URL was
+`https://hosted-auth-verification-print-plan.krzysztofn1993.workers.dev`; the deployment ID was
+`dff97f8a-0f73-4843-ba9f-84aea0a185c0`. The log excerpt did not include the source commit SHA.
+
+This was a preview deployment, not an update to the stable production Worker. This run used
+`npm run build` rather than `npm ci && npm run verify:deploy`, and `npx wrangler preview` rather than
+`npx wrangler deploy`. Therefore it proves the Astro production build completed for the branch, but it
+does not replace the production deployment gate or verify that the stable origin now sends `Secure`
+cookies. Wrangler documents `preview` as a remote Preview deployment in its [command implementation](https://github.com/cloudflare/workers-sdk/blob/main/packages/wrangler/src/preview/preview.ts).
+
 ## Hosted browser observations
 
 On 2026-10-11, the owner reports manually passing the six browser checks listed in the conversation:
@@ -69,8 +83,12 @@ matching accounts, consumed-link rejection, wrong-password rejection, signin/rel
 and later signin, and repetition in Chrome, Firefox, and a mobile or narrow viewport. These are
 owner-reported outcomes; browser versions, device/viewport details, and fixture labels were not supplied.
 
-The owner has since confirmed the JavaScript-disabled validation passed. The 300-second
-refresh/revocation experiment, restoring 3600 seconds, and fixture cleanup are still pending.
+The owner has since confirmed the JavaScript-disabled validation passed. For a short-expiry trial on
+2026-10-11, the owner set access-token expiry to 60 seconds, signed out B1, left A and B2 idle for about
+four minutes, and reports that A remained signed in while B2 was denied at the dashboard. The owner
+then restored the setting to 3600 seconds. This trial used 60 seconds rather than the planned 300; the
+owner did not provide token fingerprints or exact expiry timestamps. Test-account cleanup and browser
+state clearing were later confirmed complete by the owner on 2026-10-11.
 
 ### HTTPS response-header check
 
@@ -82,23 +100,51 @@ signin or deleted it on signout. The dashboard returned HTTP 200 and did not wri
 not include those headers. The check used a direct HTTPS client rather than browser DevTools; it also
 performed the app's global signout for this test account.
 
-The observed Supabase session cookie had `Path=/`, `SameSite=Lax`, and a 400-day `Max-Age`; it did not
-include `Secure`, and `HttpOnly` was false. Current Supabase SSR defaults document `HttpOnly: false`
-and omit `Secure` from the default options. The source now sets `Secure` when the request URL uses
-HTTPS; the updated behavior still needs a Cloudflare build/deploy and a fresh response check. This
-check does not establish browser enforcement. See [Supabase SSR cookie defaults](https://github.com/supabase/ssr/blob/main/_autodocs/configuration.md),
-checked 2026-10-11 using Context7. Confirmation-response and token-refresh-response headers were not
-checked here, so the complete cookie-writing response matrix remains pending.
+The first check found `Path=/`, `SameSite=Lax`, and a 400-day `Max-Age`, but no `Secure`; `HttpOnly`
+was false. Current Supabase SSR defaults document `HttpOnly: false` and omit `Secure` from the default
+options. See [Supabase SSR cookie defaults](https://github.com/supabase/ssr/blob/main/_autodocs/configuration.md),
+checked 2026-10-11 using Context7.
+
+After the owner confirmed the branch was merged and deployed, a fresh HTTPS check of the stable origin
+signed in with the existing test account. Signin returned HTTP 302 to `/` and set an auth cookie with
+`Secure`, `Path=/`, and `SameSite=Lax`; `HttpOnly` remained false. Its response included
+`Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0`, `Expires: 0`, and
+`Pragma: no-cache`. The authenticated dashboard returned HTTP 200. No credentials, cookie values, or
+account identifiers are retained. This direct HTTP check confirms the response attribute but does not
+establish browser cookie enforcement. The check created a session; no global signout was performed.
+
+The owner supplied the response headers from a fresh email-confirmation flow on 2026-10-11. It redirected
+to `/`, included `Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0`, `Expires: 0`,
+and `Pragma: no-cache`, and set the auth cookie with `Secure`, `Path=/`, and `SameSite=Lax`. `HttpOnly`
+was absent. The session payload reported a 3600-second access-token lifetime. No cookie or token values
+are retained here. The supplied response included the raw cookie value in the conversation; the owner was
+advised to revoke that session before continuing.
+
+For a short refresh check, the owner compared the session cookie before and after waiting more than 15
+seconds and requesting the dashboard. The cookie value changed and the dashboard remained available,
+according to the owner. The supplied cookie payloads showed a 15-second access-token lifetime. The
+owner later confirmed that the refresh response included `Set-Cookie` and supplied its privacy headers:
+`Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0`, `Expires: 0`, and
+`Pragma: no-cache`. The response status and cookie value are not retained here. After this exposure, the
+owner was advised to revoke the session. The owner then restored the normal
+3600-second setting, signed in again, and reports that the dashboard worked. A separate fresh HTTPS
+signin check after restoration returned HTTP 302 to `/` and issued a token with a 3600-second lifetime
+(`exp - iat`, decoded in memory; the token was not retained). It also set `Secure` and the expected
+signin privacy headers. The short-expiry refresh and 60-second A/B trial are accepted as behavior checks;
+the exact trial duration is not a product requirement.
 
 ## Acceptance status
 
 - **Phase 2 deployment and configuration:** Complete based on the recorded deployment and owner
   confirmations for items 2.2 and 2.4. Effective email sending limits remain to be recorded before
   further acceptance emails are sent.
-- **Phase 3 hosted authentication acceptance:** The owner-reported browser flow and JavaScript-disabled
-  validation passed. Signin/signout cache headers also passed the HTTPS response check. Full item 3.1
-  remains pending confirmation and refresh response headers; the session-expiry, restoration, and
-  cleanup checks remain pending.
+- **Phase 3 hosted authentication acceptance:** Complete based on the owner-reported browser flow,
+  JavaScript-disabled validation, short-expiry refresh and revocation checks, restored 3600-second
+  setting, and test-account cleanup. HTTPS signin, signout, confirmation, and refresh response privacy
+  headers passed; fresh signin and confirmation responses include `Secure`. The owner reports the
+  dashboard remained available after refresh and after a fresh signin with the restored setting. The
+  exact temporary expiry duration was not a product requirement. Browser versions and fixture labels
+  were not retained; no required hosted check remains pending.
 
 When observations are supplied, record the observer/date and sanitized results here. Keep local and
 hosted evidence separate. Do not include credentials, full recipient addresses, confirmation links

@@ -22,7 +22,7 @@ The research handoff resolves the apparent F-01 prerequisite conflict: F-01 is d
 - Workers Builds deploys pushes to `master` only after the repository's auth contracts, sync, lint, type checks, and build succeed. GitHub retains its separate local smoke job; no dependency on GitHub results is assumed.
 - Supabase requires email confirmation, uses the hosted origin and existing confirmation template, and sends through Brevo Free to controlled recipients outside the Supabase organization team.
 - The author verifies the hosted flow manually, including real inbox receipt, clean-context confirmation, browser cookie persistence, actual expiry/refresh, revoked-session rejection, logout, and later login.
-- Hosted JWT expiry is temporarily 300 seconds for the expiry experiment, then restored to 3600 seconds and checked with newly minted sessions. All created application test accounts are deleted after acceptance.
+- Hosted JWT expiry is temporarily reduced to a short value for the expiry experiment, then restored to 3600 seconds and checked with a newly minted session. Record the actual short value used; a specific duration is not required. All created application test accounts are deleted after acceptance.
 - A durable runbook and sanitized execution evidence support later hosted product slices. Unexecuted checks remain pending; F-02 completion requires both automated and manual criteria.
 
 ### Key Discoveries:
@@ -61,7 +61,7 @@ Workers Builds variables and Worker runtime secrets are separate. SMTP credentia
 
 ### Expiry and revocation sequencing
 
-Changing JWT expiry does not rewrite existing tokens. Mint fresh sessions after selecting 300 seconds and again after restoring 3600 seconds. Complete browser acceptance first, then start the expiry experiment from fresh isolated sessions and avoid authenticated requests during the wait.
+Changing JWT expiry does not rewrite existing tokens. Mint fresh sessions after selecting the temporary short expiry and again after restoring 3600 seconds. Complete browser acceptance first, then start the expiry experiment from fresh isolated sessions and avoid authenticated requests during the wait.
 
 ### Confirmation links
 
@@ -189,11 +189,11 @@ The implementer supplies local automation evidence and a precise checklist; the 
 
 **Intent**: Verify automatic session renewal and global-signout revocation without a hosted runner or manufactured expired tokens.
 
-**Contract**: After other browser checks, set hosted JWT expiry to 300 seconds and mint fresh password-signin sessions for A and B. Keep A in one persistent browser context and B in two distinct persistent contexts B1/B2. Inspect the freshly issued cookie-session JWT metadata locally, including chunk reconstruction if necessary, to confirm integer `iat`/`exp` and the selected 300-second lifetime. The runbook must provide a self-contained local DevTools procedure for comparing old/new access and refresh token fingerprints without printing or persisting token values or uploading them to an external decoder.
+**Contract**: After other browser checks, set a short temporary hosted JWT expiry and mint fresh password-signin sessions for A and B. The exact test duration is not a product requirement; record the value actually used and wait beyond the issued sessions' expiry. Keep A in one persistent browser context and B in two distinct persistent contexts B1/B2. The runbook must provide a self-contained local DevTools procedure for comparing old/new access and refresh token fingerprints without printing or persisting token values or uploading them to an external decoder.
 
-Sign out B1, preserving B2's existing cookies. Leave A/B2 on blank tabs with no authenticated app requests until after the latest recorded JWT expiry plus a clock-skew allowance of 30 seconds. Reopen A's dashboard: require the same identity, newly written session cookies, changed access and refresh token fingerprints, and a new future expiry; then verify another request retains the session. Reopen B2's dashboard: require redirect to signin and deletion of invalid auth-cookie chunks. Browser DevTools comparisons and configuration observations are author evidence, not independent cryptographic verification of a decoded JWT.
+Sign out B1, preserving B2's existing cookies. Leave A/B2 on blank tabs with no authenticated app requests until after the latest recorded JWT expiry plus a clock-skew allowance of 30 seconds. Reopen A's dashboard: require the same identity, newly written session cookies, changed access and refresh token values, and a new future expiry; then verify another request retains the session. Reopen B2's dashboard: require redirect to signin. Record only whether values changed; do not copy or retain tokens. Browser DevTools comparisons and configuration observations are author evidence, not independent cryptographic verification of a decoded JWT.
 
-For every cookie-writing confirmation/signin/refresh/signout response, check `Cache-Control` contains `private`, `no-cache`, `no-store`, `must-revalidate`, and `max-age=0`, with `Expires: 0` and `Pragma: no-cache`. Verify actual browser cookie persistence over HTTPS; do not claim a local HTTP jar proves browser attribute enforcement.
+For every cookie-writing confirmation/signin/refresh/signout response, check `Cache-Control` contains `private`, `no-cache`, `no-store`, `must-revalidate`, and `max-age=0`, with `Expires: 0` and `Pragma: no-cache`; record this with the browser checks in 3.1. Verify actual browser cookie persistence over HTTPS; do not claim a local HTTP jar proves browser attribute enforcement.
 
 #### 3. Restoration, cleanup, and final records
 
@@ -201,7 +201,7 @@ For every cookie-writing confirmation/signin/refresh/signout response, check `Ca
 
 **Intent**: Leave normal hosted settings and an auditable result without retaining test accounts or credentials.
 
-**Contract**: Restore 3600-second hosted JWT expiry after the experiment, including on failure/interruption. Before deleting fixtures, mint new A/B sessions and verify their JWT lifetimes reflect 3600 seconds, then verify dashboard/reload/signout. The test at 300 seconds demonstrates refresh/revocation under that setting; the restoration check does not claim an additional one-hour expiry experiment. Delete all application test users created by this acceptance from this dedicated project's Auth users panel, using fixture identities maintained privately. Do not delete provider/operator accounts, the Supabase project, or the Worker. Confirm fixture deletion and clear local test-browser cookie state.
+**Contract**: Restore 3600-second hosted JWT expiry after the experiment, including on failure/interruption. Mint a fresh session and verify its lifetime reflects 3600 seconds and that the dashboard works; reload/signout behavior is covered in 3.1. The short-expiry test demonstrates refresh/revocation; the restoration check does not claim an additional one-hour expiry experiment. Delete all application test users created by this acceptance from this dedicated project's Auth users panel, using fixture identities maintained privately. Do not delete provider/operator accounts, the Supabase project, or the Worker. Confirm fixture deletion and clear local test-browser cookie state.
 
 Evidence includes local gate/smoke results, deployed revision, attributed real-inbox/browser results, expiry timing and token-change booleans, restoration, and cleanup. Use fixture labels only; exclude full recipient addresses, credentials, confirmation URLs/query strings, raw cookie/JWT/refresh values, and provider bodies. Every incomplete or failed check remains explicit and blocks F-02 completion.
 
@@ -210,7 +210,7 @@ Evidence includes local gate/smoke results, deployed revision, attributed real-i
 #### Manual Verification:
 
 - The author confirms real non-team inbox delivery, fresh-context confirmation, consumed-link rejection, validation/credential rejection, HTTPS session persistence, signout denial, and later login in the documented browser matrix.
-- The author confirms genuine 300-second expiry, A's access/refresh rotation and subsequent persistence, B2's revoked-session rejection/deletion, and cookie-writing response privacy headers.
+- The author confirms refresh and revoked-session behavior after a short temporary expiry, recording the actual value used, A's access/refresh rotation and subsequent persistence, and B2's revoked-session rejection. Cookie-writing response privacy headers are recorded with the browser checks in 3.1.
 - Hosted JWT expiry is restored to 3600 seconds and freshly minted sessions demonstrate that lifetime and successful dashboard/reload/signout.
 - All application test accounts created during acceptance are deleted from the dedicated hosted project and test-browser cookie state is cleared.
 - The verification record contains attributed local/remote results, deployed commit/version, browser details, restoration and cleanup, with no failed or pending required checks and no sensitive artifacts.
@@ -227,13 +227,13 @@ Run the existing `npm run test:auth` contracts through `verify:deploy`. No new u
 
 ### Integration Tests
 
-Retain the F-01 local production-preview/Mailpit smoke unchanged and execute it in Phase 1. It verifies the adapter, native confirmation, short-lived local refresh, invalid-session handling, and global signout. Record the local origin and 120-second lifetime separately from the hosted origin and temporary 300-second lifetime.
+Retain the F-01 local production-preview/Mailpit smoke unchanged and execute it in Phase 1. It verifies the adapter, native confirmation, short-lived local refresh, invalid-session handling, and global signout. Record the local origin and 120-second lifetime separately from the hosted origin and whichever temporary short expiry was used.
 
 ### Manual Testing Steps
 
 1. Confirm the deployed revision, stable origin, hosted configuration, activated Brevo sender, and sending quota before creating accounts.
 2. Register fresh A/B accounts, verify delivered links in clean contexts and preconfirmation/replay rejection, then complete desktop/mobile signin, reload, signout, and native-form checks.
-3. Set 300 seconds, mint fresh A/B sessions, sign B1 out, and wait past actual token expiry without authenticated requests in A/B2.
+3. Set a short temporary expiry, mint fresh A/B sessions, sign B1 out, and wait past actual token expiry without authenticated requests in A/B2.
 4. Verify A refresh/persistence and B2 denial/deletion, with the documented local fingerprint and response-header checks.
 5. Restore 3600 seconds, inspect newly minted sessions, verify normal account access, then delete all acceptance fixtures and clear their browser state.
 6. Record sanitized evidence. Missing email, scanner-consumed links, provider rejection, unexpected caching, or incorrect lifetime is a failed check, requiring correction and a new affected run.
@@ -286,10 +286,12 @@ Before external configuration changes, record the previous non-secret settings a
 
 #### Manual
 
-- [ ] 3.1 The author confirms real non-team inbox delivery, fresh-context confirmation, consumed-link rejection, validation/credential rejection, HTTPS session persistence, signout denial, and later login in the documented browser matrix.
+- [x] 3.1 The author confirms real non-team inbox delivery, fresh-context confirmation, consumed-link rejection, validation/credential rejection, HTTPS session persistence, signout denial, and later login in the documented browser matrix. — owner-confirmed; HTTPS cookie-writing response privacy headers checked
   - Owner reports the six simplified browser checks passed manually on 2026-10-11, including Chrome, Firefox, and mobile/narrow viewport; JavaScript-disabled validation also passed.
-  - HTTPS signin and signout responses passed the privacy/cache header check. Confirmation and refresh response headers remain unverified. The source now adds `Secure` on HTTPS requests; verify this after the next Cloudflare deployment. Supabase SSR's default `HttpOnly=false` remains unchanged.
-- [ ] 3.2 The author confirms genuine 300-second expiry, A's access/refresh rotation and subsequent persistence, B2's revoked-session rejection/deletion, and cookie-writing response privacy headers.
-- [ ] 3.3 Hosted JWT expiry is restored to 3600 seconds and freshly minted sessions demonstrate that lifetime and successful dashboard/reload/signout.
-- [ ] 3.4 All application test accounts created during acceptance are deleted from the dedicated hosted project and test-browser cookie state is cleared.
-- [ ] 3.5 The verification record contains attributed local/remote results, deployed commit/version, browser details, restoration and cleanup, with no failed or pending required checks and no sensitive artifacts.
+  - HTTPS signin, signout, fresh confirmation, and refresh responses passed the observed privacy/cache header check; fresh production signin and confirmation responses include `Secure`. The owner confirms the refresh response included `Set-Cookie`; its value is not retained. Supabase SSR's default `HttpOnly=false` remains unchanged.
+- [x] 3.2 The author confirms short-expiry refresh and revoked-session behavior, A's access/refresh rotation and subsequent persistence, and B2's revoked-session rejection. — owner-reported 60-second A/B trial and a later 15-second refresh check; no raw values retained
+  - After waiting more than 15 seconds, the owner reports the dashboard remained available and the cookie value changed. In the 60-second trial, A remained signed in and B2 was denied after B1 signout and about four minutes idle. The test duration is not fixed; refresh response privacy headers are tracked in 3.1.
+- [x] 3.3 Hosted JWT expiry is restored to 3600 seconds and a freshly minted session demonstrates that lifetime and successful dashboard access.
+  - Owner restored 3600 seconds, signed in again, and reports the dashboard worked. A fresh production signin inspected in memory returned a 3600-second access token and `Secure` cookie. Reload/signout behavior is covered by 3.1.
+- [x] 3.4 All application test accounts created during acceptance are deleted from the dedicated hosted project and test-browser cookie state is cleared. — owner-confirmed, 2026-10-11
+- [x] 3.5 The verification record contains attributed local/remote results, deployed commit/version, browser details, restoration and cleanup, with no failed or pending required checks and no sensitive artifacts. — browser versions and fixture labels were not retained

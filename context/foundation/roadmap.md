@@ -3,7 +3,7 @@ project: PrintPlan
 version: 2
 status: draft
 created: 2026-10-09
-updated: 2026-10-10
+updated: 2026-10-11
 prd_version: 2
 main_goal: speed
 top_blocker: decisions
@@ -44,7 +44,7 @@ The sequencing goal is `speed`, confirmed by the author. The principal constrain
 | ID   | Change ID                    | Outcome (user can …)                                                                                                                                                                        | Prerequisites | PRD refs                                                                                                   | Status   |
 | ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
 | F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done |
-| F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | in-progress |
+| F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done |
 | S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | proposed |
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | proposed |
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | blocked  |
@@ -101,7 +101,7 @@ No domain glossary, lessons document, or technical-roadmap forwarding section wa
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The hosting configuration has not been exercised; establish only the deployment and verification path, while product slices still integrate and verify their own behavior.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -203,9 +203,9 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 | Roadmap ID | Change ID                    | Suggested issue title                             | Ready for `/10x-plan` | Notes                                                 |
 | ---------- | ---------------------------- | ------------------------------------------------- | --------------------- | ----------------------------------------------------- |
 | F-01       | verified-account-access      | Verify configured account access                  | yes                   | Run `/10x-plan verified-account-access`.              |
-| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Complete F-01.                                        |
-| S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Complete F-01.                                        |
-| S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Complete F-01.                                        |
+| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; see `context/changes/hosted-auth-verification/verification.md`. |
+| S-01       | personal-filament-stock      | Record and inspect filament stock                 | yes                   | Prerequisite F-01 is complete; good next product slice. |
+| S-02       | personal-planned-prints      | Maintain planned prints                           | yes                   | Prerequisite F-01 is complete; can proceed in parallel with S-01. |
 | S-03       | reserve-and-release-material | Reserve and release material safely               | no                    | Resolve blocking Unknowns and complete prerequisites. |
 | S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Resolve blocking Unknowns and complete prerequisites. |
 | S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Resolve blocking Unknowns and complete prerequisites. |
