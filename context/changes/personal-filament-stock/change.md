@@ -1,7 +1,7 @@
 ---
 change_id: personal-filament-stock
 title: Record and inspect personal filament stock
-status: implemented
+status: impl_reviewed
 created: 2026-10-10
 updated: 2026-10-11
 archived_at: null

@@ -21,7 +21,8 @@ export interface SpoolDto {
   availableGrams: number;
 }
 
-export type SpoolDatabaseResult<T> = { ok: true; value: T } | { ok: false; reason: "database_error"; error: unknown };
+export type SpoolDatabaseResult<T> =
+  { ok: true; value: T } | { ok: false; reason: "database_error"; error: unknown; status?: number };
 
 export type SpoolMutationResult<T> = SpoolDatabaseResult<T> | { ok: false; reason: "not_found" };
 
@@ -43,7 +44,7 @@ async function readSpoolPage(
   ownerId: string,
   from: number,
   to: number,
-): Promise<{ data: SpoolReadRow[] | null; error: unknown }> {
+): Promise<{ data: SpoolReadRow[] | null; error: unknown; status: number }> {
   const result = await client
     .from("spools")
     .select(SPOOL_READ_COLUMNS)
@@ -52,7 +53,7 @@ async function readSpoolPage(
     .order("id", { ascending: true })
     .range(from, to);
 
-  return { data: result.data, error: result.error };
+  return { data: result.data, error: result.error, status: result.status };
 }
 
 export async function listSpools(client: SpoolClient, ownerId: string): Promise<SpoolDatabaseResult<SpoolDto[]>> {
@@ -60,13 +61,13 @@ export async function listSpools(client: SpoolClient, ownerId: string): Promise<
   let from = 0;
 
   for (;;) {
-    let result: { data: SpoolReadRow[] | null; error: unknown };
+    let result: { data: SpoolReadRow[] | null; error: unknown; status: number };
     try {
       result = await readSpoolPage(client, ownerId, from, from + SPOOL_QUERY_BATCH_SIZE - 1);
     } catch (error) {
       return { ok: false, reason: "database_error", error };
     }
-    if (result.error) return { ok: false, reason: "database_error", error: result.error };
+    if (result.error) return { ok: false, reason: "database_error", error: result.error, status: result.status };
     if (!result.data || result.data.length > SPOOL_QUERY_BATCH_SIZE) {
       return {
         ok: false,
@@ -87,7 +88,7 @@ export async function createSpool(
   input: SpoolWriteInput,
 ): Promise<SpoolDatabaseResult<SpoolDto>> {
   try {
-    const { data, error } = await client
+    const { data, error, status } = await client
       .from("spools")
       .insert({
         user_id: ownerId,
@@ -98,7 +99,7 @@ export async function createSpool(
       .select(SPOOL_READ_COLUMNS)
       .maybeSingle();
 
-    if (error) return { ok: false, reason: "database_error", error };
+    if (error) return { ok: false, reason: "database_error", error, status };
     if (!data) {
       return {
         ok: false,
@@ -119,7 +120,7 @@ export async function updateSpool(
   input: SpoolWriteInput,
 ): Promise<SpoolMutationResult<SpoolDto>> {
   try {
-    const { data, error } = await client
+    const { data, error, status } = await client
       .from("spools")
       .update({ material: input.material, colour: input.colour, recorded_grams: input.recordedGrams })
       .eq("id", id)
@@ -127,7 +128,7 @@ export async function updateSpool(
       .select(SPOOL_READ_COLUMNS)
       .maybeSingle();
 
-    if (error) return { ok: false, reason: "database_error", error };
+    if (error) return { ok: false, reason: "database_error", error, status };
     if (!data) return { ok: false, reason: "not_found" };
     return { ok: true, value: toSpoolDto(data) };
   } catch (error) {
@@ -141,7 +142,7 @@ export async function deleteSpool(
   id: string,
 ): Promise<SpoolMutationResult<{ id: string }>> {
   try {
-    const { data, error } = await client
+    const { data, error, status } = await client
       .from("spools")
       .delete()
       .eq("id", id)
@@ -149,7 +150,7 @@ export async function deleteSpool(
       .select("id")
       .maybeSingle();
 
-    if (error) return { ok: false, reason: "database_error", error };
+    if (error) return { ok: false, reason: "database_error", error, status };
     if (!data) return { ok: false, reason: "not_found" };
     return { ok: true, value: { id: data.id } };
   } catch (error) {

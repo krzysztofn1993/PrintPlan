@@ -133,10 +133,12 @@ function namedConstraint(error: unknown, name: string): boolean {
   return new RegExp(`constraint\\s+['"]?${name}['"]?`, "i").test(text);
 }
 
-function isTransientDatabaseError(error: unknown): boolean {
+function isTransientDatabaseError(error: unknown, responseStatus?: number): boolean {
   const properties = errorProperties(error);
-  const status = properties.status;
-  if (typeof status === "number" && (status === 429 || status >= 500)) return true;
+  const status = responseStatus ?? properties.status;
+  if (typeof status === "number" && (status === 0 || status === 429 || (status >= 500 && status <= 599))) {
+    return true;
+  }
 
   const code = properties.code;
   if (typeof code === "string") {
@@ -157,7 +159,7 @@ function isTransientDatabaseError(error: unknown): boolean {
   return properties.name === "FetchError";
 }
 
-export function mapSpoolDatabaseError(error: unknown): MappedSpoolFailure {
+export function mapSpoolDatabaseError(error: unknown, responseStatus?: number): MappedSpoolFailure {
   const fieldErrors: SpoolFieldErrors = {};
   if (namedConstraint(error, "spools_material_length_check")) {
     fieldErrors.material = {
@@ -183,7 +185,7 @@ export function mapSpoolDatabaseError(error: unknown): MappedSpoolFailure {
     };
   }
 
-  if (isTransientDatabaseError(error)) {
+  if (isTransientDatabaseError(error, responseStatus)) {
     return {
       status: 503,
       body: {
@@ -204,10 +206,61 @@ export function mapSpoolDatabaseError(error: unknown): MappedSpoolFailure {
   };
 }
 
+export function reportSpoolFailure(failure: MappedSpoolFailure, boundary: "api" | "page"): void {
+  if (!failure.cause) return;
+
+  const names = new Set([
+    "Error",
+    "TypeError",
+    "RangeError",
+    "ReferenceError",
+    "SyntaxError",
+    "URIError",
+    "EvalError",
+    "AggregateError",
+    "FetchError",
+    "PostgrestError",
+    "AbortError",
+  ]);
+  const causes: { name: string; code?: string; frames: string[] }[] = [];
+  const seen = new Set<unknown>();
+  let cause: unknown = failure.cause;
+
+  while (cause !== undefined && cause !== null && causes.length < 5 && !seen.has(cause)) {
+    seen.add(cause);
+    const properties = errorProperties(cause);
+    const name = typeof properties.name === "string" && names.has(properties.name) ? properties.name : "UnknownError";
+    const code =
+      typeof properties.code === "string" && /^(?:[0-9A-Z]{5}|PGRST[0-9]{3})$/.test(properties.code)
+        ? properties.code
+        : undefined;
+    // Keep known code filenames and coordinates only; stack messages, URLs and arbitrary paths can contain secrets.
+    const frames =
+      typeof properties.stack === "string"
+        ? properties.stack
+            .split("\n")
+            .slice(1, 13)
+            .flatMap((frame) => {
+              const match =
+                /[/\\]((?:spool-response|spools|PostgrestBuilder|fetchWithRetry|index|update|delete|middleware|entry|worker)\.(?:[cm]?js|ts)):(\d+):(\d+)\)?$/.exec(
+                  frame,
+                );
+              return match ? [`${match[1]}:${match[2]}:${match[3]}`] : [];
+            })
+        : [];
+    causes.push({ name, code, frames });
+    cause = properties.cause;
+  }
+
+  // eslint-disable-next-line no-console -- Server diagnostic boundary; raw errors and request data are excluded.
+  console.error("Unexpected spool database failure", { boundary, causes });
+}
+
 export function createMappedSpoolFailureResponse(failure: MappedSpoolFailure): Response {
+  reportSpoolFailure(failure, "api");
   return createSpoolJsonResponse(failure.body, failure.status, failure.headers);
 }
 
-export function createSpoolDatabaseErrorResponse(error: unknown): Response {
-  return createMappedSpoolFailureResponse(mapSpoolDatabaseError(error));
+export function createSpoolDatabaseErrorResponse(error: unknown, responseStatus?: number): Response {
+  return createMappedSpoolFailureResponse(mapSpoolDatabaseError(error, responseStatus));
 }

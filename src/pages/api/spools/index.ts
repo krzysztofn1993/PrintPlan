@@ -21,7 +21,7 @@ export const GET: APIRoute = async (context) => {
   if (!user) return createSpoolUnauthorizedResponse();
 
   const result = await listSpools(client, user.id);
-  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error);
+  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error, result.status);
   return createSpoolJsonResponse({ spools: result.value });
 };
 
@@ -41,7 +41,7 @@ export const POST: APIRoute = async (context) => {
   if (!validation.data || validation.payloadError) return createSpoolValidationResponse(validation);
 
   const result = await insertSpool(client, user.id, validation.data);
-  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error);
+  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error, result.status);
   return createSpoolJsonResponse({ spool: result.value }, 201);
 };
 

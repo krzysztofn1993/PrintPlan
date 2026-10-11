@@ -13,6 +13,8 @@ import type { SpoolDto } from "@/lib/spools";
 interface SpoolFormProps {
   mode: "create" | "edit";
   spool?: SpoolDto;
+  mutationPending: boolean;
+  onPendingChange: (pending: boolean) => void;
   onSaved: (spool: SpoolDto) => void;
   onCancel: () => void;
 }
@@ -90,7 +92,7 @@ function describeField(field: ApiFieldName): string {
   return field === "material" ? "Material" : "Colour";
 }
 
-export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
+export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSaved, onCancel }: SpoolFormProps) {
   const prefix = mode === "create" ? "new-spool" : `edit-spool-${spool?.id ?? "item"}`;
   const [material, setMaterial] = useState(spool?.material ?? "");
   const [colour, setColour] = useState(spool?.colour ?? "");
@@ -110,7 +112,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
 
   function clearFieldError(field: ApiFieldName) {
     setFieldErrors((previous) => ({ ...previous, [field]: undefined }));
-    setRequestError(null);
+    setRequestError((previous) => (previous?.kind === "uncertain" ? previous : null));
   }
 
   function receiveValidationErrors(errors: SpoolFieldErrors) {
@@ -119,9 +121,14 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
     focusField(firstErrorField(errors));
   }
 
+  function updatePending(nextPending: boolean) {
+    setPending(nextPending);
+    onPendingChange(nextPending);
+  }
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending || requestError?.kind === "uncertain") return;
+    if (pending || mutationPending || requestError?.kind === "uncertain") return;
 
     const validation = validateSpoolInput({ material, colour, recordedGrams }, mode);
     if (!validation.data) {
@@ -131,7 +138,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
 
     setFieldErrors({});
     setRequestError(null);
-    setPending(true);
+    updatePending(true);
 
     const payload = new URLSearchParams({ material, colour, recordedGrams });
     const endpoint = mode === "create" ? "/api/spools" : `/api/spools/${spool?.id}/update`;
@@ -147,7 +154,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
         kind: "uncertain",
         message: "We couldn't confirm whether the save reached the server. Refresh stock before trying again.",
       });
-      setPending(false);
+      updatePending(false);
       return;
     }
 
@@ -163,6 +170,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
       if (response.status === expectedStatus) {
         const saved = isRecord(body) ? readSpool(body.spool) : undefined;
         if (saved) {
+          updatePending(false);
           onSaved(saved);
           return;
         }
@@ -171,7 +179,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
         kind: "uncertain",
         message: "The save may have completed, but its result could not be read. Refresh stock before trying again.",
       });
-      setPending(false);
+      updatePending(false);
       return;
     }
 
@@ -200,7 +208,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
     } else {
       setRequestError({ kind: "generic", message: "We couldn't save your changes. Please try again." });
     }
-    setPending(false);
+    updatePending(false);
   }
 
   return (
@@ -221,7 +229,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending}
+          disabled={pending || mutationPending}
           hint="Suggestions are optional. Enter any valid material label, up to 80 characters."
           error={fieldErrors.material?.message}
         />
@@ -244,7 +252,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending}
+          disabled={pending || mutationPending}
           hint="Keep multicolour names together, for example Black / Red / Gold."
           error={fieldErrors.colour?.message}
         />
@@ -268,7 +276,7 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
           min={mode === "create" ? 1 : 0}
           max={MAX_RECORDED_GRAMS}
           step={1}
-          disabled={pending}
+          disabled={pending || mutationPending}
           hint={
             mode === "create"
               ? "Enter 1 g or more in whole grams."
@@ -310,10 +318,10 @@ export function SpoolForm({ mode, spool, onSaved, onCancel }: SpoolFormProps) {
       )}
 
       <div className="flex flex-wrap gap-3 pt-1">
-        <Button type="submit" disabled={pending || requestError?.kind === "uncertain"}>
+        <Button type="submit" disabled={pending || mutationPending || requestError?.kind === "uncertain"}>
           {pending ? "Saving…" : mode === "create" ? "Add spool" : "Save changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={pending}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={pending || mutationPending}>
           Cancel
         </Button>
       </div>
