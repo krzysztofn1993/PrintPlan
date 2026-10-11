@@ -1,7 +1,8 @@
-/* global Blob, FormData, Request */
+/* global Blob, FormData, Request, Response */
 
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createClient } from "@supabase/supabase-js";
 import {
   MAX_RECORDED_GRAMS,
   hasSupportedSpoolFormContentType,
@@ -24,6 +25,7 @@ import {
   createSpoolUnavailableResponse,
   createSpoolValidationResponse,
   mapSpoolDatabaseError,
+  reportSpoolFailure,
 } from "../src/lib/spool-response.ts";
 import {
   createSpool,
@@ -111,7 +113,7 @@ function makeSpoolClient({ rows = [], mutationResponses = [] } = {}) {
           const matchingRows = rows
             .filter((item) => item.user_id === ownerFilter.value)
             .sort((left, right) => compareRows(left, right, state.orders));
-          return Promise.resolve({ data: matchingRows.slice(from, to + 1), error: null });
+          return Promise.resolve({ data: matchingRows.slice(from, to + 1), error: null, status: 200 });
         },
         insert(values) {
           state.operation = "insert";
@@ -146,6 +148,78 @@ function cacheHeaders(response) {
   assert.equal(response.headers.get("Expires"), "0");
   assert.equal(response.headers.get("Pragma"), "no-cache");
 }
+
+function makeSdkClient(fetch) {
+  return createClient("https://spools.test", "test-anon-key", {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch },
+  });
+}
+
+function stockOperations() {
+  const input = { material: "PLA", colour: "Blue", recordedGrams: 125 };
+  return [
+    ["list", (client) => listSpools(client, OWNER_ID)],
+    ["create", (client) => createSpool(client, OWNER_ID, input)],
+    ["update", (client) => updateSpool(client, OWNER_ID, SPOOL_ID, input)],
+    ["delete", (client) => deleteSpool(client, OWNER_ID, SPOOL_ID)],
+  ];
+}
+
+test("installed SDK connection failures retain transport status and produce private retryable responses", async () => {
+  for (const [operation, run] of stockOperations()) {
+    const client = makeSdkClient(async () => {
+      const cause = Object.assign(new Error("Connection refused"), { code: "ECONNREFUSED" });
+      throw new TypeError("fetch failed", { cause });
+    });
+    const result = await run(client);
+    assert.equal(result.ok, false, operation);
+    assert.equal(result.reason, "database_error", operation);
+    assert.equal(result.status, 0, operation);
+    assert.equal(result.error.code, "", operation);
+    assert.equal(Object.hasOwn(result.error, "status"), false, operation);
+
+    const response = createSpoolDatabaseErrorResponse(result.error, result.status);
+    assert.equal(response.status, 503, operation);
+    assert.equal(response.headers.get("Retry-After"), "30", operation);
+    cacheHeaders(response);
+    const body = await response.json();
+    assert.equal(body.error.code, "temporarily_unavailable", operation);
+    assert.equal(body.error.retryAfter, 30, operation);
+    assert.doesNotMatch(JSON.stringify(body), /ECONNREFUSED|fetch failed|Connection refused/, operation);
+  }
+});
+
+test("installed SDK gateway statuses survive every operation without hiding permanent failures", async (t) => {
+  const log = t.mock.method(console, "error", () => undefined);
+  for (const status of [429, 503, 520, 400]) {
+    for (const [operation, run] of stockOperations()) {
+      const client = makeSdkClient(async () =>
+        Response.json(
+          { message: "Private upstream failure", code: "", details: "Private diagnostic", hint: "" },
+          { status, headers: { "Retry-After": "0" } },
+        ),
+      );
+      const result = await run(client);
+      const context = `${operation}, upstream ${status}`;
+      assert.equal(result.ok, false, context);
+      assert.equal(result.status, status, context);
+      assert.equal(Object.hasOwn(result.error, "status"), false, context);
+      const response = createSpoolDatabaseErrorResponse(result.error, result.status);
+      assert.equal(response.status, status === 400 ? 500 : 503, context);
+      assert.equal(response.headers.get("Retry-After"), status === 400 ? null : "30", context);
+      cacheHeaders(response);
+      const body = await response.json();
+      assert.equal(body.error.code, status === 400 ? "internal_error" : "temporarily_unavailable", context);
+      assert.doesNotMatch(JSON.stringify(body), /Private upstream|Private diagnostic/, context);
+    }
+  }
+  assert.equal(log.mock.calls.length, 4);
+  assert.doesNotMatch(
+    JSON.stringify(log.mock.calls.map((call) => call.arguments)),
+    /Private upstream|Private diagnostic/,
+  );
+});
 
 test("stock form validation requires one text value for every editable field", () => {
   const missing = validateSpoolFormData(new FormData(), "create");
@@ -332,7 +406,7 @@ test("update and delete require a returned affected row", async () => {
     { field: "user_id", value: OWNER_ID },
   ]);
 
-  const response = createSpoolDatabaseErrorResponse({ status: 503, message: "temporary" });
+  const response = createSpoolDatabaseErrorResponse({ message: "temporary" }, 503);
   assert.equal(response.status, 503);
 });
 
@@ -355,7 +429,7 @@ test("list distinguishes empty inventory from database failure", async () => {
           return builder;
         },
         range() {
-          return Promise.resolve({ data: null, error: { status: 503, message: "database unavailable" } });
+          return Promise.resolve({ data: null, error: { message: "database unavailable" }, status: 503 });
         },
       };
       return builder;
@@ -364,7 +438,7 @@ test("list distinguishes empty inventory from database failure", async () => {
   const failed = await listSpools(failedClient, OWNER_ID);
   assert.equal(failed.ok, false);
   assert.equal(failed.reason, "database_error");
-  const mapped = createSpoolDatabaseErrorResponse(failed.error);
+  const mapped = createSpoolDatabaseErrorResponse(failed.error, failed.status);
   assert.equal(mapped.status, 503);
   assert.match((await mapped.json()).error.message, /temporarily unavailable/);
 });
@@ -421,9 +495,9 @@ test("a later page failure discards partial inventory and maps to an HTTP failur
         range(from, to) {
           calls.push({ from, to });
           if (from === 1_000)
-            return Promise.resolve({ data: null, error: { status: 503, message: "later page failed" } });
+            return Promise.resolve({ data: null, error: { message: "later page failed" }, status: 503 });
           const ordered = [...rows].sort((left, right) => compareRows(left, right, state.orders));
-          return Promise.resolve({ data: ordered.slice(from, to + 1), error: null });
+          return Promise.resolve({ data: ordered.slice(from, to + 1), error: null, status: 200 });
         },
       };
       return builder;
@@ -437,12 +511,13 @@ test("a later page failure discards partial inventory and maps to an HTTP failur
   ]);
   assert.equal(result.ok, false);
   assert.equal(Object.hasOwn(result, "value"), false);
-  const response = createSpoolDatabaseErrorResponse(result.error);
+  const response = createSpoolDatabaseErrorResponse(result.error, result.status);
   assert.equal(response.status, 503);
   assert.deepEqual((await response.json()).error.code, "temporarily_unavailable");
 });
 
-test("stock HTTP failures use stable authorization, validation, method and cache contracts", async () => {
+test("stock HTTP failures use stable authorization, validation, method and cache contracts", async (t) => {
+  const log = t.mock.method(console, "error", () => undefined);
   const unauthorized = createSpoolUnauthorizedResponse();
   assert.equal(unauthorized.status, 401);
   assert.equal((await unauthorized.json()).error.signInUrl, SPOOL_SIGN_IN_DESTINATION);
@@ -478,13 +553,51 @@ test("stock HTTP failures use stable authorization, validation, method and cache
   cacheHeaders(json);
   assert.equal(json.headers.get("Content-Type"), "application/json; charset=utf-8");
 
-  const unexpected = mapSpoolDatabaseError({ message: "private database detail" });
+  const original = Object.assign(new TypeError("private database detail"), {
+    code: "42P01",
+    details: "private form value",
+    stack:
+      "TypeError: private database detail\n    at query (https://private-key:private-token@provider.test/src/lib/spools.ts:91:4)\n    at private-caller (/private-path/private-form-value.js:1:2)",
+    cause: new RangeError("private nested error"),
+  });
+  const unexpected = mapSpoolDatabaseError(original);
   assert.equal(unexpected.status, 500);
   assert.equal(unexpected.cause.cause.message, "private database detail");
   const internalResponse = createMappedSpoolFailureResponse(unexpected);
   assert.equal(internalResponse.status, 500);
   assert.doesNotMatch(await internalResponse.text(), /private database detail/);
   cacheHeaders(internalResponse);
+  assert.equal(log.mock.calls.length, 1);
+  const [message, diagnostic] = log.mock.calls[0].arguments;
+  assert.equal(message, "Unexpected spool database failure");
+  assert.equal(diagnostic.boundary, "api");
+  assert.equal(diagnostic.causes[1].name, "TypeError");
+  assert.equal(diagnostic.causes[1].code, "42P01");
+  assert.deepEqual(diagnostic.causes[1].frames, ["spools.ts:91:4"]);
+  assert.equal(diagnostic.causes[2].name, "RangeError");
+  assert.doesNotMatch(
+    JSON.stringify(log.mock.calls.map((call) => call.arguments)),
+    /private-|private database|private form|private nested/,
+  );
+});
+
+test("page diagnostics retain safe database causes, stop at cycles, and skip expected failures", (t) => {
+  const log = t.mock.method(console, "error", () => undefined);
+  const hidden = { name: "private-user-name", code: "private-api-key", message: "private payload" };
+  hidden.cause = hidden;
+  const original = { code: "42501", message: "private database values", cause: hidden };
+  reportSpoolFailure(mapSpoolDatabaseError(original, 403), "page");
+  reportSpoolFailure(mapSpoolDatabaseError({ status: 503 }), "page");
+  reportSpoolFailure(mapSpoolDatabaseError({ message: 'violates constraint "spools_material_length_check"' }), "page");
+
+  assert.equal(log.mock.calls.length, 1);
+  const diagnostic = log.mock.calls[0].arguments[1];
+  assert.equal(diagnostic.boundary, "page");
+  assert.equal(diagnostic.causes.length, 3);
+  assert.equal(diagnostic.causes[1].code, "42501");
+  assert.equal(diagnostic.causes[2].name, "UnknownError");
+  assert.equal(diagnostic.causes[2].code, undefined);
+  assert.doesNotMatch(JSON.stringify(log.mock.calls.map((call) => call.arguments)), /private/);
 });
 
 test("stock POST content types and malformed form bodies are handled at the boundary", async () => {

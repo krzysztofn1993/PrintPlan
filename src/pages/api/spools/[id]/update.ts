@@ -41,7 +41,7 @@ export const POST: APIRoute = async (context) => {
   const result = await updateSpool(client, user.id, id, validation.data);
   if (!result.ok) {
     if (result.reason === "not_found") return createSpoolNotFoundResponse();
-    return createSpoolDatabaseErrorResponse(result.error);
+    return createSpoolDatabaseErrorResponse(result.error, result.status);
   }
   return createSpoolJsonResponse({ spool: result.value });
 };

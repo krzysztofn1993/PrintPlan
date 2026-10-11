@@ -2,7 +2,7 @@
 import { SpoolInventory } from "@/components/spools/SpoolInventory";
 import Topbar from "@/components/Topbar.astro";
 import Layout from "@/layouts/Layout.astro";
-import { applySpoolPrivateHeaders, mapSpoolDatabaseError } from "@/lib/spool-response";
+import { applySpoolPrivateHeaders, mapSpoolDatabaseError, reportSpoolFailure } from "@/lib/spool-response";
 import { listSpools, type SpoolDto } from "@/lib/spools";
 
 const { authUnavailable, supabase, user } = Astro.locals;
@@ -22,7 +22,8 @@ if (authUnavailable || !supabase) {
   if (result.ok) {
     initialSpools = result.value;
   } else {
-    const failure = mapSpoolDatabaseError(result.error);
+    const failure = mapSpoolDatabaseError(result.error, result.status);
+    reportSpoolFailure(failure, "page");
     const status = failure.status === 503 ? 503 : 500;
     Astro.response.status = status;
     pageError =

@@ -32,10 +32,12 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingSpoolId, setEditingSpoolId] = useState<string | null>(null);
   const [deleteSpoolId, setDeleteSpoolId] = useState<string | null>(null);
+  const [mutationPending, setMutationPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<DeleteError | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const focusTarget = useRef<string | null>(null);
+  const mutationPendingRef = useRef(false);
 
   useEffect(() => {
     const target = focusTarget.current;
@@ -44,7 +46,18 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     focusTarget.current = null;
   }, [createOpen, editingSpoolId, deleteSpoolId, spools]);
 
+  function updateMutationPending(pending: boolean) {
+    mutationPendingRef.current = pending;
+    setMutationPending(pending);
+  }
+
+  function updateDeletePending(pending: boolean) {
+    setDeletePending(pending);
+    updateMutationPending(pending);
+  }
+
   function openCreate() {
+    if (mutationPendingRef.current) return;
     setStatusMessage("");
     setDeleteSpoolId(null);
     setDeleteError(null);
@@ -53,6 +66,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   function openEdit(spoolId: string) {
+    if (mutationPendingRef.current) return;
     setStatusMessage("");
     setDeleteSpoolId(null);
     setDeleteError(null);
@@ -61,16 +75,19 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   function closeCreate() {
+    if (mutationPendingRef.current) return;
     focusTarget.current = "add-spool-button";
     setCreateOpen(false);
   }
 
   function closeEdit(spoolId: string) {
+    if (mutationPendingRef.current) return;
     focusTarget.current = `edit-spool-${spoolId}`;
     setEditingSpoolId(null);
   }
 
   function openDelete(spoolId: string) {
+    if (mutationPendingRef.current) return;
     setDeleteError(null);
     setStatusMessage("");
     focusTarget.current = `confirm-delete-${spoolId}`;
@@ -78,6 +95,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   function closeDelete(spoolId: string) {
+    if (mutationPendingRef.current) return;
     focusTarget.current = `delete-spool-${spoolId}`;
     setDeleteSpoolId(null);
     setDeleteError(null);
@@ -99,9 +117,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   async function confirmDelete(spool: SpoolDto) {
-    if (deletePending || deleteError?.kind === "uncertain") return;
+    if (mutationPendingRef.current || deleteError?.kind === "uncertain") return;
     setDeleteError(null);
-    setDeletePending(true);
+    updateDeletePending(true);
     let response: Response;
     try {
       response = await fetch(`/api/spools/${spool.id}/delete`, {
@@ -114,7 +132,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         kind: "uncertain",
         message: "We couldn't confirm whether deletion completed. Refresh stock before trying again.",
       });
-      setDeletePending(false);
+      updateDeletePending(false);
       return;
     }
 
@@ -131,7 +149,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       setDeleteError(null);
       setStatusMessage(`${describeSpool(spool)} deleted.`);
       focusTarget.current = "add-spool-button";
-      setDeletePending(false);
+      updateDeletePending(false);
       return;
     }
 
@@ -154,7 +172,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     } else {
       setDeleteError({ kind: "generic", message: "We couldn't delete this spool. Please try again." });
     }
-    setDeletePending(false);
+    updateDeletePending(false);
   }
 
   return (
@@ -168,7 +186,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             Each spool is tracked separately, even when its labels match another.
           </p>
         </div>
-        <Button id="add-spool-button" type="button" onClick={openCreate} disabled={createOpen}>
+        <Button id="add-spool-button" type="button" onClick={openCreate} disabled={createOpen || mutationPending}>
           Add a spool
         </Button>
       </div>
@@ -187,6 +205,8 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
           </h3>
           <SpoolForm
             mode="create"
+            mutationPending={mutationPending}
+            onPendingChange={updateMutationPending}
             onSaved={(saved) => {
               saveSpool(saved, "create");
             }}
@@ -235,6 +255,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           type="button"
                           size="sm"
                           variant="outline"
+                          disabled={mutationPending}
                           onClick={() => {
                             openEdit(spool.id);
                           }}
@@ -247,6 +268,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           type="button"
                           size="sm"
                           variant="ghost"
+                          disabled={mutationPending}
                           onClick={() => {
                             openDelete(spool.id);
                           }}
@@ -280,6 +302,8 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         key={spool.id}
                         mode="edit"
                         spool={spool}
+                        mutationPending={mutationPending}
+                        onPendingChange={updateMutationPending}
                         onSaved={(saved) => {
                           saveSpool(saved, "edit");
                         }}
@@ -332,7 +356,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           type="button"
                           variant="destructive"
                           onClick={() => void confirmDelete(spool)}
-                          disabled={deletePending || deleteError?.kind === "uncertain"}
+                          disabled={mutationPending || deleteError?.kind === "uncertain"}
                         >
                           {deletePending ? "Deleting…" : "Confirm deletion"}
                         </Button>
@@ -342,7 +366,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           onClick={() => {
                             closeDelete(spool.id);
                           }}
-                          disabled={deletePending}
+                          disabled={mutationPending}
                         >
                           Cancel
                         </Button>
