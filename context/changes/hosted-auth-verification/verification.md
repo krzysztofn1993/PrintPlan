@@ -14,9 +14,9 @@ section. They were not rerun while preparing this Phase 2 evidence record.
 
 | Check                                                            | Recorded outcome | Source                                      |
 | ---------------------------------------------------------------- | ---------------- | ------------------------------------------- |
-| `npm run verify:deploy`                                          | Pass             | Phase 1, item 1.1; closing commit `f1f7365` |
-| Local production-preview smoke with Supabase and Mailpit         | Pass             | Phase 1, item 1.2; closing commit `f1f7365` |
-| Targeted Prettier check for repository and runbook documentation | Pass             | Phase 1, item 1.3; closing commit `f1f7365` |
+| `npm run verify:deploy`                                          | Pass             | Phase 1, item 1.1; closing commit `dbeddfa` |
+| Local production-preview smoke with Supabase and Mailpit         | Pass             | Phase 1, item 1.2; closing commit `dbeddfa` |
+| Targeted Prettier check for repository and runbook documentation | Pass             | Phase 1, item 1.3; closing commit `dbeddfa` |
 
 These are local/repository outcomes. They do not show that Workers Builds ran, a Worker was deployed,
 hosted runtime values were configured, or hosted email was sent.
