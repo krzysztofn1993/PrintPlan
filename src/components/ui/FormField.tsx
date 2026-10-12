@@ -46,8 +46,8 @@ export function FormField({
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring min-h-11 w-full min-w-0 rounded-md border px-3 py-2 shadow-xs transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60",
-          error ? "border-destructive" : "border-input",
+          "bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring border-muted-foreground/70 min-h-11 w-full min-w-0 rounded-md border px-3 py-2 shadow-xs transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60",
+          error ? "border-destructive focus-visible:ring-destructive" : "",
           className,
         )}
       />

@@ -3,7 +3,7 @@ import { CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const inputBase =
-  "w-full rounded-md border bg-input/30 px-3 py-2 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 transition-colors";
+  "w-full rounded-md border border-muted-foreground/70 bg-input/30 px-3 py-2 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors";
 
 interface FormFieldProps {
   id: string;
@@ -48,7 +48,7 @@ export function FormField({
             onChange(e.target.value);
           }}
           placeholder={placeholder}
-          className={cn(inputBase, error ? "border-destructive focus-visible:ring-destructive/40" : "border-input")}
+          className={cn(inputBase, error ? "border-destructive focus-visible:ring-destructive" : "")}
         />
         {endContent}
       </div>
