@@ -1,10 +1,10 @@
 ---
 change_id: carbon-terminal-theme
 title: Apply the Carbon Terminal theme
-status: impl_reviewed
+status: archived
 created: 2026-10-12
 updated: 2026-10-12
-archived_at: null
+archived_at: 2026-10-12T16:29:24Z
 ---
 
 ## Notes
