@@ -3,6 +3,45 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      prints: {
+        Row: {
+          colour: string;
+          colour_key: string;
+          created_at: string;
+          id: string;
+          material: string;
+          name: string | null;
+          required_grams: number;
+          updated_at: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          colour: string;
+          colour_key?: string;
+          created_at?: string;
+          id?: string;
+          material: string;
+          name?: string | null;
+          required_grams: number;
+          updated_at?: string;
+          user_id: string;
+          version?: number;
+        };
+        Update: {
+          colour?: string;
+          colour_key?: string;
+          created_at?: string;
+          id?: string;
+          material?: string;
+          name?: string | null;
+          required_grams?: number;
+          updated_at?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
       spools: {
         Row: {
           colour: string;
