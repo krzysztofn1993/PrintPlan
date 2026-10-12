@@ -267,12 +267,12 @@ No data migration is required. Deliver the presentation change through the repos
 
 #### Automated
 
-- [x] 3.1 The final revision passes the native gate sequence: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
-- [x] 3.2 Built-preview smoke passes `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` against configured local Supabase and Mailpit.
+- [x] 3.1 The final revision passes the native gate sequence: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`. — 3381111
+- [x] 3.2 Built-preview smoke passes `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` against configured local Supabase and Mailpit. — 3381111
 
 #### Manual
 
-- [x] 3.3 Chrome and Firefox desktop checks plus 390px and 320px phone-width checks confirm readable layouts, wrapping, visible actions, and no horizontal overflow, including long spool labels, IDs, and email addresses.
-- [x] 3.4 Keyboard checks cover navigation, password toggles, form fields, create/edit/cancel/delete focus transitions, and retry actions; focus indicators remain visible and enabled text/essential indicators meet the specified contrast thresholds.
-- [x] 3.5 Auth validation/pending/server-error states, confirmation branches, stock empty/list/form/delete/pending/error/success/uncertain states, and outage link/sign-out/reload variants are reviewed and documented with representative screenshots.
-- [x] 3.6 The author accepts the final appearance and the verification record contains browser versions, viewports, contrast measurements, results, and linked screenshots with no required coverage marked as passed without evidence.
+- [x] 3.3 Chrome and Firefox desktop checks plus 390px and 320px phone-width checks confirm readable layouts, wrapping, visible actions, and no horizontal overflow, including long spool labels, IDs, and email addresses. — 3381111
+- [x] 3.4 Keyboard checks cover navigation, password toggles, form fields, create/edit/cancel/delete focus transitions, and retry actions; focus indicators remain visible and enabled text/essential indicators meet the specified contrast thresholds. — 3381111
+- [x] 3.5 Auth validation/pending/server-error states, confirmation branches, stock empty/list/form/delete/pending/error/success/uncertain states, and outage link/sign-out/reload variants are reviewed and documented with representative screenshots. — 3381111
+- [x] 3.6 The author accepts the final appearance and the verification record contains browser versions, viewports, contrast measurements, results, and linked screenshots with no required coverage marked as passed without evidence. — 3381111
