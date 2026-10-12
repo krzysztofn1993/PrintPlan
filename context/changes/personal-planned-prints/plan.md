@@ -344,12 +344,12 @@ Before S-03 ships reservations, it must make every database-accessible print/sto
 
 #### Automated
 
-- [x] 4.1 A disposable local migration rebuild and all database contracts pass: `npx supabase db reset --local`, `npx supabase test db`.
-- [x] 4.2 The updated complete native verification gate passes on Node 24.21.0 after `npm ci`: `npm run verify:deploy`.
-- [x] 4.3 Built-preview smoke passes print/stock/auth persistence, privacy, direct REST isolation, and exactly-one-winner concurrent editing within the existing run limit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 A disposable local migration rebuild and all database contracts pass: `npx supabase db reset --local`, `npx supabase test db`. — 05ccddd
+- [x] 4.2 The updated complete native verification gate passes on Node 24.21.0 after `npm ci`: `npm run verify:deploy`. — 05ccddd
+- [x] 4.3 Built-preview smoke passes print/stock/auth persistence, privacy, direct REST isolation, and exactly-one-winner concurrent editing within the existing run limit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — 05ccddd
 
 #### Manual
 
-- [x] 4.4 Current Chrome and Firefox support named/unnamed CRUD, deletion cancellation, refresh/logout/relogin persistence, and independent identical entries; another account cannot see them.
+- [x] 4.4 Current Chrome and Firefox support named/unnamed CRUD, deletion cancellation, refresh/logout/relogin persistence, and independent identical entries; another account cannot see them. — 05ccddd
 - [x] 4.5 Phone-view emulation and desktop keyboard checks confirm readable Carbon states, wrapping, focus, touch targets, retained invalid/conflicting inputs, and safe pending/uncertain behavior. — author accepts Brave responsive emulation at 390px and 320px as the phone-view check; desktop keyboard cases passed in the same manual review.
-- [x] 4.6 The verification record contains actual automated and manual evidence and clearly identifies unperformed hosted/remote checks without claiming them as passed.
+- [x] 4.6 The verification record contains actual automated and manual evidence and clearly identifies unperformed hosted/remote checks without claiming them as passed. — 05ccddd
