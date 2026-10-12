@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-12",
+  "sourceRevision": "dcad71e",
+  "browser": "Google Chrome 155.0.8059.39",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "route": "/dashboard/spools",
+  "scenario": "Temporary browser response fixture mounts the actual built SpoolInventory component and global CSS with a synthetic spool. Deletion confirmation opened without submitting deletion. This measures component appearance; it does not retest authentication or backend routing.",
+  "assets": {
+    "inventoryAsset": "SpoolInventory.Dm3HuzM6.js",
+    "rendererAsset": "client.CLlhDEf_.js",
+    "cssAsset": "Layout.2nLKrbYE.css"
+  },
+  "measurements": [
+    {
+      "label": "Destructive button",
+      "foreground": "rgb(23, 12, 11)",
+      "background": "rgb(255, 121, 127)",
+      "borderColor": "rgb(41, 51, 55)",
+      "filter": "none",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "renderedForeground": "rgb(23, 12, 11)",
+      "renderedBackground": "rgb(255, 121, 127)",
+      "contrastRatio": 7.58,
+      "hovered": false,
+      "enabled": true,
+      "activeAnimations": 0,
+      "transitionDuration": "0.15s",
+      "backgroundLayers": [
+        "rgb(255, 121, 127)"
+      ],
+      "method": "Browser sRGB canvas resolves CSS color spaces and composites the button background over ancestor backgrounds, back to front; WCAG relative luminance uses the resulting 8-bit sRGB pair.",
+      "borderContrastRatio": 5.11,
+      "evidence": "destructive-hover-review.json"
+    },
+    {
+      "label": "Destructive button hover",
+      "foreground": "rgb(23, 12, 11)",
+      "background": "oklab(0.734289 0.154363 0.0538271 / 0.9)",
+      "borderColor": "rgb(41, 51, 55)",
+      "filter": "none",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "renderedForeground": "rgb(23, 12, 11)",
+      "renderedBackground": "rgb(233, 112, 116)",
+      "contrastRatio": 6.43,
+      "hovered": true,
+      "enabled": true,
+      "activeAnimations": 0,
+      "transitionDuration": "0.15s",
+      "backgroundLayers": [
+        "oklab(0.734289 0.154363 0.0538271 / 0.9)",
+        "rgba(0, 0, 0, 0)",
+        "rgb(33, 27, 17)"
+      ],
+      "method": "Browser sRGB canvas resolves CSS color spaces and composites the button background over ancestor backgrounds, back to front; WCAG relative luminance uses the resulting 8-bit sRGB pair.",
+      "borderContrastRatio": 4.33,
+      "evidence": "destructive-hover-review.json"
+    }
+  ],
+  "screenshots": [
+    "destructive-normal-review-desktop.png",
+    "destructive-hover-review-desktop.png"
+  ],
+  "supersedes": "Earlier destructive normal/hover samples in browser-measurements.json and chrome-measurements.json; the old hover sample was taken without waiting for transitions and used incorrect background composition."
+}

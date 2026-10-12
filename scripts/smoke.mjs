@@ -455,7 +455,10 @@ async function runSmoke() {
   const localSupabase = await readLocalSupabaseConfig();
 
   await step("local preview responds", async () => {
-    const response = await appRequest("/");
+    const redirect = await appRequest("/");
+    assertRedirect(redirect, { path: "/auth/signin" });
+
+    const response = await appRequest(redirect.location);
     assertHttpStatus(response, 200);
     assertBodyContains(response, "<html", "The preview did not render an HTML page");
   });

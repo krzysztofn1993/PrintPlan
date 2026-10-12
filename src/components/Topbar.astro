@@ -5,30 +5,30 @@ const currentPath = Astro.url.pathname;
 
 <nav
   aria-label="Account navigation"
-  class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80"
+  class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-card-foreground"
 >
   {user ? (
     <>
-      <span class="min-w-0 break-words text-blue-100/70">{user.email}</span>
+      <span class="text-muted-foreground min-w-0 break-words">{user.email}</span>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <a
           href="/dashboard"
           aria-current={currentPath === "/dashboard" ? "page" : undefined}
-          class="inline-flex min-h-11 items-center text-purple-300 transition-colors hover:text-purple-100 hover:underline focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
         >
           Dashboard
         </a>
         <a
           href="/dashboard/spools"
           aria-current={currentPath.startsWith("/dashboard/spools") ? "page" : undefined}
-          class="inline-flex min-h-11 items-center text-purple-300 transition-colors hover:text-purple-100 hover:underline focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
         >
           Filament stock
         </a>
         <form method="POST" action="/api/auth/signout" class="flex">
           <button
             type="submit"
-            class="inline-flex min-h-11 items-center text-purple-300 transition-colors hover:text-purple-100 hover:underline focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+            class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
           >
             Sign out
           </button>
@@ -37,19 +37,19 @@ const currentPath = Astro.url.pathname;
     </>
   ) : (
     <>
-      <span class="text-blue-100/70">
+      <span class="text-muted-foreground">
         {authUnavailable ? "Authentication status is temporarily unavailable" : "Not signed in"}
       </span>
       <div class="flex flex-wrap gap-x-4 gap-y-2">
         <a
           href="/auth/signin"
-          class="inline-flex min-h-11 items-center text-purple-300 transition-colors hover:text-purple-100 hover:underline focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
         >
           Sign in
         </a>
         <a
           href="/auth/signup"
-          class="inline-flex min-h-11 items-center text-purple-300 transition-colors hover:text-purple-100 hover:underline focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]"
+          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
         >
           Sign up
         </a>

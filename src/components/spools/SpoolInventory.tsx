@@ -179,10 +179,10 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     <section aria-labelledby="inventory-heading" className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="inventory-heading" className="text-xl font-semibold text-white">
+          <h2 id="inventory-heading" className="text-foreground text-xl font-semibold">
             Your spools
           </h2>
-          <p className="mt-1 text-sm text-blue-100/70">
+          <p className="text-muted-foreground mt-1 text-sm">
             Each spool is tracked separately, even when its labels match another.
           </p>
         </div>
@@ -191,16 +191,13 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         </Button>
       </div>
 
-      <p role="status" aria-live="polite" className="min-h-5 text-sm text-emerald-200">
+      <p role="status" aria-live="polite" className="text-success min-h-5 text-sm">
         {statusMessage}
       </p>
 
       {createOpen && (
-        <section
-          aria-labelledby="create-spool-heading"
-          className="rounded-xl border border-white/15 bg-white/5 p-4 sm:p-6"
-        >
-          <h3 id="create-spool-heading" className="mb-4 text-lg font-semibold text-white">
+        <section aria-labelledby="create-spool-heading" className="border-border bg-card rounded-md border p-4 sm:p-6">
+          <h3 id="create-spool-heading" className="text-card-foreground mb-4 text-lg font-semibold">
             Add a spool
           </h3>
           <SpoolForm
@@ -216,9 +213,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       )}
 
       {spools.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-6 text-center sm:p-8">
-          <h3 className="text-lg font-medium text-white">No spools yet</h3>
-          <p className="mt-2 text-sm leading-relaxed text-blue-100/70">
+        <div className="border-border bg-card rounded-md border border-dashed p-6 text-center sm:p-8">
+          <h3 className="text-card-foreground text-lg font-medium">No spools yet</h3>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Add your first spool to keep an estimate of your filament stock.
           </p>
         </div>
@@ -230,22 +227,22 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             const shortId = spool.id.slice(0, 8);
 
             return (
-              <li key={spool.id} className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4 sm:p-5">
+              <li key={spool.id} className="border-border bg-card min-w-0 rounded-md border p-4 sm:p-5">
                 <article aria-labelledby={`spool-title-${spool.id}`} className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h3
                         id={`spool-title-${spool.id}`}
-                        className="text-lg font-semibold [overflow-wrap:anywhere] break-words text-white"
+                        className="text-card-foreground text-lg font-semibold [overflow-wrap:anywhere] break-words"
                       >
                         {spool.material}{" "}
-                        <span aria-hidden="true" className="text-white/50">
+                        <span aria-hidden="true" className="text-muted-foreground">
                           ·
                         </span>{" "}
                         {spool.colour}
                       </h3>
-                      <p className="mt-1 text-xs text-blue-100/60">
-                        Spool <code>{shortId}</code>
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Spool <code className="font-mono">{shortId}</code>
                       </p>
                     </div>
                     {!isEditing && !isDeleting && (
@@ -281,23 +278,25 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                   </div>
 
                   <dl className="mt-5 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="min-w-0 rounded-lg bg-white/5 p-3">
-                      <dt className="text-xs text-blue-100/60">Recorded</dt>
-                      <dd className="mt-1 text-lg font-semibold break-words text-white">{spool.recordedGrams} g</dd>
+                    <div className="bg-muted min-w-0 rounded-md p-3">
+                      <dt className="carbon-label">Recorded</dt>
+                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">{spool.recordedGrams} g</dd>
                     </div>
-                    <div className="min-w-0 rounded-lg bg-white/5 p-3">
-                      <dt className="text-xs text-blue-100/60">Reserved</dt>
-                      <dd className="mt-1 text-lg font-semibold break-words text-white">{spool.reservedGrams} g</dd>
+                    <div className="bg-muted min-w-0 rounded-md p-3">
+                      <dt className="carbon-label">Reserved</dt>
+                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">{spool.reservedGrams} g</dd>
                     </div>
-                    <div className="min-w-0 rounded-lg bg-white/5 p-3">
-                      <dt className="text-xs text-blue-100/60">Available</dt>
-                      <dd className="mt-1 text-lg font-semibold break-words text-white">{spool.availableGrams} g</dd>
+                    <div className="bg-muted min-w-0 rounded-md p-3">
+                      <dt className="carbon-label">Available</dt>
+                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">
+                        {spool.availableGrams} g
+                      </dd>
                     </div>
                   </dl>
 
                   {isEditing && (
-                    <div className="mt-5 rounded-lg border border-white/10 bg-black/10 p-4">
-                      <h4 className="mb-4 text-base font-medium text-white">Correct this spool</h4>
+                    <div className="border-border bg-background mt-5 rounded-md border p-4">
+                      <h4 className="text-foreground mb-4 text-base font-medium">Correct this spool</h4>
                       <SpoolForm
                         key={spool.id}
                         mode="edit"
@@ -316,13 +315,13 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
 
                   {isDeleting && (
                     <div
-                      className="mt-5 rounded-lg border border-amber-300/30 bg-amber-300/5 p-4"
+                      className="border-warning/40 bg-warning-surface mt-5 rounded-md border p-4"
                       aria-labelledby={`delete-confirmation-${spool.id}`}
                     >
-                      <h4 id={`delete-confirmation-${spool.id}`} className="font-semibold text-white">
+                      <h4 id={`delete-confirmation-${spool.id}`} className="text-warning font-semibold">
                         Delete this spool?
                       </h4>
-                      <p className="mt-2 text-sm leading-relaxed [overflow-wrap:anywhere] break-words text-blue-100/80">
+                      <p className="text-warning mt-2 text-sm leading-relaxed [overflow-wrap:anywhere] break-words">
                         Confirm deletion of {describeSpool(spool)}. Full spool ID:{" "}
                         <code className="break-all">{spool.id}</code>
                       </p>
