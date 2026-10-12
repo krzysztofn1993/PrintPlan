@@ -382,7 +382,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
             variant="outline"
             className="mt-3 min-h-11"
             onClick={() => {
-              void refreshList({ conflictId: editingPrintId ?? undefined });
+              void refreshList();
             }}
             disabled={mutationPending || refreshing}
           >
