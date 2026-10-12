@@ -243,25 +243,25 @@ No data migration is required. Deliver the presentation change through the repos
 
 #### Automated
 
-- [x] 1.1 Theme/control changes pass `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
-- [x] 1.2 Existing authentication contracts pass `npm run test:auth`.
+- [x] 1.1 Theme/control changes pass `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`. — 2b02194
+- [x] 1.2 Existing authentication contracts pass `npm run test:auth`. — 2b02194
 
 #### Manual
 
-- [x] 1.3 Shared buttons, inputs, password toggles, hints, and banners are readable with visible focus; the destructive button has dark text on opaque pink in enabled and hover states.
-- [x] 1.4 Dark mode and dark native controls appear on initial load without a light flash; normal form labels remain sans-serif.
+- [x] 1.3 Shared buttons, inputs, password toggles, hints, and banners are readable with visible focus; the destructive button has dark text on opaque pink in enabled and hover states. — 2b02194
+- [x] 1.4 Dark mode and dark native controls appear on initial load without a light flash; normal form labels remain sans-serif. — 2b02194
 
 ### Phase 2: All Existing Views and Standalone Errors
 
 #### Automated
 
-- [ ] 2.1 All migrated views pass `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
-- [ ] 2.2 A source audit confirms zero `bg-cosmic` references in `src/` and no obsolete cosmic palette overrides in the affected rendered surfaces.
+- [x] 2.1 All migrated views pass `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
+- [x] 2.2 A source audit confirms zero `bg-cosmic` references in `src/` and no obsolete cosmic palette overrides in the affected rendered surfaces.
 
 #### Manual
 
-- [ ] 2.3 Landing, sign-in, sign-up, every email-confirmation branch, dashboard, stock, banners, and all standalone outage retry variants show coherent dark Carbon styling with the agreed decoration placement.
-- [ ] 2.4 Stock empty/list/create/edit/delete/error/success states retain their labels, grams, estimate explanations, focus behavior, input retention, and pending/uncertain guards.
+- [x] 2.3 Landing, sign-in, sign-up, every email-confirmation branch, dashboard, stock, banners, and all standalone outage retry variants show coherent dark Carbon styling with the agreed decoration placement.
+- [x] 2.4 Stock empty/list/create/edit/delete/error/success states retain their labels, grams, estimate explanations, focus behavior, input retention, and pending/uncertain guards.
 
 ### Phase 3: Verification and Visual Acceptance
 

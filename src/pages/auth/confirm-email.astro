@@ -44,20 +44,23 @@ const content =
 ---
 
 <Layout title={content.heading}>
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <div class="mb-4 text-5xl">{content.emoji}</div>
-      <h1 class="mb-3 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+  <main class="carbon-workspace flex min-h-screen items-center justify-center p-4">
+    <section class="carbon-panel carbon-panel-highlight w-full max-w-sm p-6 text-center sm:p-8">
+      <div class="mb-4 text-5xl" aria-hidden="true">
+        {content.emoji}
+      </div>
+      <h1 class="mb-3 flex items-center justify-center gap-3 text-2xl font-bold text-foreground">
+        <span aria-hidden="true" class="carbon-led"></span>
         {content.heading}
       </h1>
-      <p class="mb-6 text-blue-100/80">{content.description}</p>
+      <p class="mb-6 text-muted-foreground">{content.description}</p>
       <div class="flex flex-col items-center gap-3">
         {content.links.map((link) => (
-          <a href={link.href} class="text-sm text-purple-300 hover:underline">
+          <a href={link.href} class="text-accent-foreground text-sm underline-offset-4 hover:underline">
             {link.text}
           </a>
         ))}
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </Layout>
