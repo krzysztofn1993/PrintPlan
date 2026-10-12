@@ -329,27 +329,27 @@ Before S-03 ships reservations, it must make every database-accessible print/sto
 
 #### Automated
 
-- [x] 3.1 Print, stock, and auth contracts plus static/build checks pass: `npm run test:prints`, `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
+- [x] 3.1 Print, stock, and auth contracts plus static/build checks pass: `npm run test:prints`, `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`. — c5d6bde
 
 #### Manual
 
 > Evidence: the author reports that rows 3.2–3.5 passed in Brave 1.95.104 (Official), x86_64; Chromium version reported as `153.0.8010.`. Responsive mode was used at 390px and 320px widths.
 
-- [x] 3.2 Keyboard add/edit/cancel/delete flows preserve labels, errors, inputs, announcements, visible focus, and focus restoration; pending or uncertain operations cannot be repeated through form transitions. — author manual review passed 2026-10-12
-- [x] 3.3 Names are optional, unnamed/identical prints remain distinguishable, 80 g requirements are shown without a margin, invalid zero/fractional grams are rejected, and editing does not reorder the list. — author manual review passed 2026-10-12
-- [x] 3.4 In two tabs, the first edit succeeds and the stale second edit shows a conflict with retained fields; refresh reads the saved version without silently applying stale values. — author manual review passed 2026-10-12
-- [x] 3.5 At 390px and 320px widths, long names/material/three-colour labels and identifiers wrap, actions have at least 44px touch targets, and the page has no horizontal overflow. — author manual review passed 2026-10-12
+- [x] 3.2 Keyboard add/edit/cancel/delete flows preserve labels, errors, inputs, announcements, visible focus, and focus restoration; pending or uncertain operations cannot be repeated through form transitions. — author manual review passed 2026-10-12 — c5d6bde
+- [x] 3.3 Names are optional, unnamed/identical prints remain distinguishable, 80 g requirements are shown without a margin, invalid zero/fractional grams are rejected, and editing does not reorder the list. — author manual review passed 2026-10-12 — c5d6bde
+- [x] 3.4 In two tabs, the first edit succeeds and the stale second edit shows a conflict with retained fields; refresh reads the saved version without silently applying stale values. — author manual review passed 2026-10-12 — c5d6bde
+- [x] 3.5 At 390px and 320px widths, long names/material/three-colour labels and identifiers wrap, actions have at least 44px touch targets, and the page has no horizontal overflow. — author manual review passed 2026-10-12 — c5d6bde
 
 ### Phase 4: Verification and CI
 
 #### Automated
 
-- [ ] 4.1 A disposable local migration rebuild and all database contracts pass: `npx supabase db reset --local`, `npx supabase test db`.
-- [ ] 4.2 The updated complete native verification gate passes on Node 24.21.0 after `npm ci`: `npm run verify:deploy`.
-- [ ] 4.3 Built-preview smoke passes print/stock/auth persistence, privacy, direct REST isolation, and exactly-one-winner concurrent editing within the existing run limit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 A disposable local migration rebuild and all database contracts pass: `npx supabase db reset --local`, `npx supabase test db`.
+- [x] 4.2 The updated complete native verification gate passes on Node 24.21.0 after `npm ci`: `npm run verify:deploy`.
+- [x] 4.3 Built-preview smoke passes print/stock/auth persistence, privacy, direct REST isolation, and exactly-one-winner concurrent editing within the existing run limit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
 
 #### Manual
 
-- [ ] 4.4 Current Chrome and Firefox support named/unnamed CRUD, deletion cancellation, refresh/logout/relogin persistence, and independent identical entries; another account cannot see them.
+- [x] 4.4 Current Chrome and Firefox support named/unnamed CRUD, deletion cancellation, refresh/logout/relogin persistence, and independent identical entries; another account cannot see them.
 - [x] 4.5 Phone-view emulation and desktop keyboard checks confirm readable Carbon states, wrapping, focus, touch targets, retained invalid/conflicting inputs, and safe pending/uncertain behavior. — author accepts Brave responsive emulation at 390px and 320px as the phone-view check; desktop keyboard cases passed in the same manual review.
-- [ ] 4.6 The verification record contains actual automated and manual evidence and clearly identifies unperformed hosted/remote checks without claiming them as passed.
+- [x] 4.6 The verification record contains actual automated and manual evidence and clearly identifies unperformed hosted/remote checks without claiming them as passed.

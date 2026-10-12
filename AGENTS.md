@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-PrintPlan plans filament stock and print reservations; the current code is an Astro SSR authentication starter with React, Tailwind, Supabase, and Cloudflare Workers. Start with `npm run dev`; verify changes with `npm run lint` and `npm run build`.
+PrintPlan manages personal filament stock and planned prints, with reservations still planned; the app uses Astro SSR, React, Tailwind, Supabase, and Cloudflare Workers. Start with `npm run dev`; verify changes with `npm run lint` and `npm run build`.
 
 ## Project language
 
@@ -12,7 +12,7 @@ For library, framework, SDK, API, CLI, or cloud-service questions, fetch current
 
 Use Node 24.21.0 from @.nvmrc and `npm ci`. Scripts live in @package.json.
 
-CI on `master` runs the native auth and stock contract tests, `npx astro sync`, lint, `npx astro check`, and build; its integration job runs Supabase database tests and the expanded built-preview smoke against local Supabase and Mailpit. See @.github/workflows/ci.yml. Run `npm run smoke` against `npm run preview` with local Supabase configured; `BASE_URL` defaults to `http://localhost:4321`. @scripts/smoke.mjs covers auth redirects, cookie sessions, stock persistence, and owner isolation. No browser test runner is configured.
+CI on `master` runs the native auth, stock, and planned-print contract tests, `npx astro sync`, lint, `npx astro check`, and build; its integration job runs Supabase database tests and the expanded built-preview smoke against local Supabase and Mailpit. See @.github/workflows/ci.yml. Run `npm run verify:deploy` for the complete native gate and `npm run smoke` against `npm run preview` with local Supabase configured; `BASE_URL` defaults to `http://localhost:4321`. @scripts/smoke.mjs covers auth redirects, cookie sessions, stock and planned-print persistence, owner isolation, and competing print edits. No browser test runner is configured.
 
 ## Structure and conventions
 
@@ -20,7 +20,7 @@ Routes live in `src/pages/`, auth endpoints in `src/pages/api/auth/`, layouts in
 
 Use `@/` imports (@tsconfig.json) and `cn()` from @src/lib/utils.ts for merged classes. Follow @.prettierrc.json and @eslint.config.js; pre-commit uses lint-staged (@package.json).
 
-Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool tables and reservation logic are still planned. Change artifacts belong in `context/changes/<change-id>/`.
+Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool and planned-print tables are implemented, while reservation logic is still planned. Change artifacts belong in `context/changes/<change-id>/`.
 
 ## Configuration
 
