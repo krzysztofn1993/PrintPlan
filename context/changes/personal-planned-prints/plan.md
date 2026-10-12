@@ -312,18 +312,18 @@ Before S-03 ships reservations, it must make every database-accessible print/sto
 
 #### Automated
 
-- [x] 1.1 A disposable local database rebuild applies the additive migration with stock retained in the migration chain: `npx supabase db reset --local`.
-- [x] 1.2 Restricted-role print and existing stock database contracts pass: `npx supabase test db`.
-- [x] 1.3 Public schema types generated with `npx supabase gen types typescript --local --schema public` match `src/types/database.ts` after repository formatting.
-- [x] 1.4 Existing auth/stock contracts and static checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npx astro check`, `npm run lint`.
+- [x] 1.1 A disposable local database rebuild applies the additive migration with stock retained in the migration chain: `npx supabase db reset --local` — b36d527
+- [x] 1.2 Restricted-role print and existing stock database contracts pass: `npx supabase test db` — b36d527
+- [x] 1.3 Public schema types generated with `npx supabase gen types typescript --local --schema public` match `src/types/database.ts` after repository formatting. — b36d527
+- [x] 1.4 Existing auth/stock contracts and static checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npx astro check`, `npm run lint`. — b36d527
 
 ### Phase 2: Operations and API
 
 #### Automated
 
-- [ ] 2.1 Print validation, owned mutations, conflict classification, pagination, and private response contracts pass: `npm run test:prints`.
-- [ ] 2.2 Existing auth/stock contracts and static/build checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
-- [ ] 2.3 Restricted-role database contracts still pass with expected-version updates: `npx supabase test db`.
+- [x] 2.1 Print validation, owned mutations, conflict classification, pagination, and private response contracts pass: `npm run test:prints`.
+- [x] 2.2 Existing auth/stock contracts and static/build checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
+- [x] 2.3 Restricted-role database contracts still pass with expected-version updates: `npx supabase test db`.
 
 ### Phase 3: Planned-Print View and Navigation
 
