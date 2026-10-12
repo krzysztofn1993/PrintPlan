@@ -255,24 +255,24 @@ No data migration is required. Deliver the presentation change through the repos
 
 #### Automated
 
-- [x] 2.1 All migrated views pass `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
-- [x] 2.2 A source audit confirms zero `bg-cosmic` references in `src/` and no obsolete cosmic palette overrides in the affected rendered surfaces.
+- [x] 2.1 All migrated views pass `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`. — 366bec4
+- [x] 2.2 A source audit confirms zero `bg-cosmic` references in `src/` and no obsolete cosmic palette overrides in the affected rendered surfaces. — 366bec4
 
 #### Manual
 
-- [x] 2.3 Landing, sign-in, sign-up, every email-confirmation branch, dashboard, stock, banners, and all standalone outage retry variants show coherent dark Carbon styling with the agreed decoration placement.
-- [x] 2.4 Stock empty/list/create/edit/delete/error/success states retain their labels, grams, estimate explanations, focus behavior, input retention, and pending/uncertain guards.
+- [x] 2.3 Landing, sign-in, sign-up, every email-confirmation branch, dashboard, stock, banners, and all standalone outage retry variants show coherent dark Carbon styling with the agreed decoration placement. — 366bec4
+- [x] 2.4 Stock empty/list/create/edit/delete/error/success states retain their labels, grams, estimate explanations, focus behavior, input retention, and pending/uncertain guards. — 366bec4
 
 ### Phase 3: Verification and Visual Acceptance
 
 #### Automated
 
-- [ ] 3.1 The final revision passes the native gate sequence: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
-- [ ] 3.2 Built-preview smoke passes `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` against configured local Supabase and Mailpit.
+- [x] 3.1 The final revision passes the native gate sequence: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, and `npm run build`.
+- [x] 3.2 Built-preview smoke passes `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` against configured local Supabase and Mailpit.
 
 #### Manual
 
-- [ ] 3.3 Chrome and Firefox desktop checks plus 390px and 320px phone-width checks confirm readable layouts, wrapping, visible actions, and no horizontal overflow, including long spool labels, IDs, and email addresses.
-- [ ] 3.4 Keyboard checks cover navigation, password toggles, form fields, create/edit/cancel/delete focus transitions, and retry actions; focus indicators remain visible and enabled text/essential indicators meet the specified contrast thresholds.
-- [ ] 3.5 Auth validation/pending/server-error states, confirmation branches, stock empty/list/form/delete/pending/error/success/uncertain states, and outage link/sign-out/reload variants are reviewed and documented with representative screenshots.
-- [ ] 3.6 The author accepts the final appearance and the verification record contains browser versions, viewports, contrast measurements, results, and linked screenshots with no required coverage marked as passed without evidence.
+- [x] 3.3 Chrome and Firefox desktop checks plus 390px and 320px phone-width checks confirm readable layouts, wrapping, visible actions, and no horizontal overflow, including long spool labels, IDs, and email addresses.
+- [x] 3.4 Keyboard checks cover navigation, password toggles, form fields, create/edit/cancel/delete focus transitions, and retry actions; focus indicators remain visible and enabled text/essential indicators meet the specified contrast thresholds.
+- [x] 3.5 Auth validation/pending/server-error states, confirmation branches, stock empty/list/form/delete/pending/error/success/uncertain states, and outage link/sign-out/reload variants are reviewed and documented with representative screenshots.
+- [x] 3.6 The author accepts the final appearance and the verification record contains browser versions, viewports, contrast measurements, results, and linked screenshots with no required coverage marked as passed without evidence.

@@ -1,0 +1,109 @@
+{
+  "browser": "155.0.8059.39",
+  "screenshots": [
+    "dashboard-desktop",
+    "chrome-stock-desktop",
+    "chrome-stock-390",
+    "chrome-stock-320",
+    "chrome-auth-signin-390",
+    "chrome-auth-signin-320",
+    "chrome-auth-server-error"
+  ],
+  "keyboard": {
+    "createFocus": "new-spool-material",
+    "cancelFocus": "add-spool-button",
+    "editFocus": "edit-spool-1446bd9c-0de6-4a03-9663-528bf5c304a9-material",
+    "editCancelFocus": "Edit spool 1446bd9c",
+    "deleteFocus": "confirm-delete-1446bd9c-0de6-4a03-9663-528bf5c304a9",
+    "deleteCancelFocus": "Delete spool 1446bd9c"
+  },
+  "measurements": [
+    {
+      "label": "Primary button",
+      "foreground": "rgb(23, 12, 11)",
+      "background": "rgb(255, 112, 88)",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "contrastRatio": 7.05
+    },
+    {
+      "label": "Page heading text",
+      "foreground": "rgb(240, 243, 241)",
+      "background": "rgb(20, 25, 27)",
+      "fontSize": "36px",
+      "fontWeight": "700",
+      "contrastRatio": 15.87
+    },
+    {
+      "label": "Keyboard focus",
+      "element": "A",
+      "id": "",
+      "outlineColor": "oklab(0.715043 0.152989 0.0937344 / 0.5)",
+      "outlineWidth": "1px",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(9, 12, 13) 0px 0px 0px 2px, rgb(255, 112, 88) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+    },
+    {
+      "label": "Destructive button",
+      "foreground": "rgb(23, 12, 11)",
+      "background": "rgb(255, 121, 127)",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "contrastRatio": 7.58
+    },
+    {
+      "label": "Destructive button hover",
+      "foreground": "rgb(23, 12, 11)",
+      "background": "oklab(0.734289 0.154363 0.0538271)",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "contrastRatio": 1.09
+    },
+    {
+      "label": "Auth error feedback",
+      "foreground": "rgb(255, 157, 161)",
+      "background": "rgb(39, 23, 25)",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "contrastRatio": 8.66
+    },
+    {
+      "label": "Auth link",
+      "foreground": "rgb(255, 174, 154)",
+      "background": "rgb(20, 25, 27)",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "contrastRatio": 9.94
+    },
+    {
+      "label": "Form label",
+      "foreground": "rgb(240, 243, 241)",
+      "background": "rgb(20, 25, 27)",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "contrastRatio": 15.87
+    },
+    {
+      "label": "Email form label",
+      "foreground": "rgb(240, 243, 241)",
+      "background": "rgb(20, 25, 27)",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "contrastRatio": 15.87
+    },
+    {
+      "label": "Password field border pair",
+      "border": "rgb(41, 51, 55)",
+      "fieldBackground": "oklab(0.313419 -0.0110292 -0.0106713 / 0.3)",
+      "wrapperBackground": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "label": "Conditional password hint",
+      "foreground": "rgb(135, 148, 151)",
+      "background": "rgb(20, 25, 27)",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "contrastRatio": 5.67
+    }
+  ],
+  "issues": []
+}
