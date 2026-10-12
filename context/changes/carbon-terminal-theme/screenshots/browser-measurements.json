@@ -85,20 +85,40 @@
       "renderedForeground": "rgb(23, 12, 11)",
       "renderedBackground": "rgb(255, 121, 127)",
       "contrastRatio": 7.58,
-      "borderContrastRatio": 5.11
+      "hovered": false,
+      "enabled": true,
+      "activeAnimations": 0,
+      "transitionDuration": "0.15s",
+      "backgroundLayers": [
+        "rgb(255, 121, 127)"
+      ],
+      "method": "Browser sRGB canvas resolves CSS color spaces and composites the button background over ancestor backgrounds, back to front; WCAG relative luminance uses the resulting 8-bit sRGB pair.",
+      "borderContrastRatio": 5.11,
+      "evidence": "destructive-hover-review.json"
     },
     {
       "label": "Destructive button hover",
       "foreground": "rgb(23, 12, 11)",
-      "background": "rgb(255, 121, 127)",
+      "background": "oklab(0.734289 0.154363 0.0538271 / 0.9)",
       "borderColor": "rgb(41, 51, 55)",
       "filter": "none",
       "fontSize": "14px",
       "fontWeight": "500",
       "renderedForeground": "rgb(23, 12, 11)",
-      "renderedBackground": "rgb(255, 121, 127)",
-      "contrastRatio": 7.58,
-      "borderContrastRatio": 5.11
+      "renderedBackground": "rgb(233, 112, 116)",
+      "contrastRatio": 6.43,
+      "hovered": true,
+      "enabled": true,
+      "activeAnimations": 0,
+      "transitionDuration": "0.15s",
+      "backgroundLayers": [
+        "oklab(0.734289 0.154363 0.0538271 / 0.9)",
+        "rgba(0, 0, 0, 0)",
+        "rgb(33, 27, 17)"
+      ],
+      "method": "Browser sRGB canvas resolves CSS color spaces and composites the button background over ancestor backgrounds, back to front; WCAG relative luminance uses the resulting 8-bit sRGB pair.",
+      "borderContrastRatio": 4.33,
+      "evidence": "destructive-hover-review.json"
     },
     {
       "label": "Primary submit button",
@@ -163,5 +183,13 @@
       "contrastRatio": 6.51
     }
   ],
-  "issues": []
+  "issues": [],
+  "corrections": [
+    {
+      "date": "2026-10-12",
+      "finding": "F2",
+      "evidence": "destructive-hover-review.json",
+      "scope": "Only destructive normal/hover samples were replaced; other measurements retain their original provenance."
+    }
+  ]
 }

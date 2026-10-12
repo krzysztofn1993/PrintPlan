@@ -237,6 +237,19 @@ No data migration is required. Deliver the presentation change through the repos
 - Outage response/test: `src/lib/auth-response.ts:29`, `scripts/auth-contracts.test.mjs:187`
 - Gates and integration configuration: `package.json:5`, `.github/workflows/ci.yml:19`
 
+## Approved Scope Amendment — 2026-10-12
+
+During implementation-review triage, the author selected Fix B for F1: retain the root redirect and remove the separate landing page from this change's deliverables.
+
+- At baseline `41e27b6`, `/` rendered `Layout` and `Welcome`. Commit `366bec4` removed `src/pages/index.astro` and `src/components/Welcome.astro` and introduced `src/pages/index.ts`.
+- The approved entry behavior is an HTTP 302 redirect from `/` to `/auth/signin` for anonymous visitors and to `/dashboard` for signed-in visitors.
+- This amendment supersedes the landing-preservation requirement in Phase 2 and permits this specific change to page information architecture. The planned landing restyle, hero, feature cards, CTA preservation, and landing screenshots are removed from scope.
+- For Phase 2 visual acceptance and Phase 3 screenshot coverage, sign-in is the anonymous entry view and dashboard is the signed-in entry view. Existing sign-in and dashboard captures provide view evidence; they are not landing captures.
+- `scripts/smoke.mjs` may assert the anonymous root redirect and subsequent sign-in HTML response. This test expectation reflects the changed route contract.
+- Other auth and stock contracts and verification requirements remain applicable. This amendment alone did not resolve the smoke rerun or hover measurement finding F2; their subsequent successful verification is recorded in `verification.md`.
+
+The original phase descriptions and Progress row titles are retained as the historical plan. Interpret their landing references using this amendment; no Progress checkbox or commit suffix is changed by review triage.
+
 ## Progress
 
 ### Phase 1: Theme Tokens and Shared Elements

@@ -105,5 +105,14 @@
       "contrastRatio": 5.67
     }
   ],
-  "issues": []
+  "issues": [],
+  "supersededMeasurements": {
+    "labels": [
+      "Destructive button",
+      "Destructive button hover"
+    ],
+    "evidence": "destructive-hover-review.json",
+    "date": "2026-10-12",
+    "reason": "Historical hover sampling did not wait for transitions; the 1.09 ratio is invalid for the recorded oklab color. Retained for provenance, not final acceptance."
+  }
 }
