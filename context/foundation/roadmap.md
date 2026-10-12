@@ -3,7 +3,7 @@ project: PrintPlan
 version: 2
 status: draft
 created: 2026-10-09
-updated: 2026-10-11
+updated: 2026-10-12
 prd_version: 2
 main_goal: speed
 top_blocker: decisions
@@ -46,7 +46,7 @@ The sequencing goal is `speed`, confirmed by the author. The principal constrain
 | F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done     |
 | F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done     |
 | S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | done |
-| S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | proposed |
+| S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | in-progress |
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | blocked  |
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | blocked  |
 | S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | blocked  |
@@ -131,7 +131,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Print requirements must persist and remain private before they can safely drive reservations; reservation-aware editing follows in S-05.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-03: Reserve and release material safely
 
