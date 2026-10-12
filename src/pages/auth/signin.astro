@@ -18,18 +18,19 @@ if (Astro.url.searchParams.get("error") === "validation") {
 ---
 
 <Layout title="Sign in">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
-      <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
+  <main class="carbon-workspace flex min-h-screen items-center justify-center p-4">
+    <section class="carbon-panel carbon-panel-highlight w-full max-w-sm p-6 sm:p-8">
+      <h1 class="mb-6 flex items-center justify-center gap-3 text-center text-2xl font-bold text-foreground">
+        <span aria-hidden="true" class="carbon-led"></span>
         Sign in
       </h1>
       <SignInForm serverError={error} initialErrors={initialErrors} client:load />
-      <p class="mt-4 text-center text-sm text-blue-100/60">
+      <p class="mt-4 text-center text-sm text-muted-foreground">
         Don't have an account?{" "}
-        <a href="/auth/signup" class="text-purple-300 hover:underline">
+        <a href="/auth/signup" class="text-accent-foreground underline-offset-4 hover:underline">
           Sign up
         </a>
       </p>
-    </div>
-  </div>
+    </section>
+  </main>
 </Layout>

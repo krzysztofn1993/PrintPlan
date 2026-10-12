@@ -46,15 +46,16 @@ export function createAuthUnavailableResponse(target: AuthRetryTarget): Response
     <meta name="color-scheme" content="dark">
     <title>${title}</title>
     <style>
-      :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; background: #0a0e1a; color: #f8fafc; }
+      :root { color-scheme: dark; font-family: "Arial Narrow", "Segoe UI", Arial, sans-serif; background: #090C0D; color: #F0F3F1; }
       * { box-sizing: border-box; }
-      body { display: grid; min-height: 100vh; margin: 0; padding: 24px; place-items: center; background: linear-gradient(135deg, #0a0e1a, #0f1529, #0a0e1a); }
-      main { width: min(100%, 34rem); padding: clamp(24px, 5vw, 40px); border: 1px solid rgb(255 255 255 / 12%); border-radius: 20px; background: rgb(255 255 255 / 5%); box-shadow: 0 24px 80px rgb(0 0 0 / 30%); }
-      h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.2; }
-      p { margin: 16px 0 24px; color: #cbd5e1; line-height: 1.6; }
-      a, button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 10px 16px; border: 0; border-radius: 10px; background: #a78bfa; color: #1e1b4b; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
-      a:hover, button:hover { background: #c4b5fd; }
-      a:focus-visible, button:focus-visible { outline: 3px solid #e9d5ff; outline-offset: 3px; }
+      body { display: grid; min-height: 100vh; margin: 0; padding: 24px; place-items: center; background-color: #090C0D; background-image: linear-gradient(90deg, #182022 0 1px, transparent 1px 100%); background-size: 42px 42px; }
+      main { width: min(100%, 34rem); padding: clamp(24px, 5vw, 40px); border: 1px solid #293337; border-top: 2px solid #FF7058; border-radius: 0.15rem; background: #14191B; }
+      h1 { display: flex; align-items: center; gap: 12px; margin: 0; font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.2; }
+      h1::before { flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; background: #FF7058; box-shadow: 0 0 12px rgb(255 112 88 / 35%); content: ""; }
+      p { margin: 16px 0 24px; color: #D6DFDF; line-height: 1.6; }
+      a, button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 10px 16px; border: 1px solid #FF7058; border-radius: 0.14rem; background: #FF7058; color: #170C0B; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+      a:hover, button:hover { filter: brightness(1.08); }
+      a:focus-visible, button:focus-visible { outline: 3px solid #FFAE9A; outline-offset: 3px; }
     </style>
   </head>
   <body>
