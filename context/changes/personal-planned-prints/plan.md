@@ -321,22 +321,24 @@ Before S-03 ships reservations, it must make every database-accessible print/sto
 
 #### Automated
 
-- [x] 2.1 Print validation, owned mutations, conflict classification, pagination, and private response contracts pass: `npm run test:prints`.
-- [x] 2.2 Existing auth/stock contracts and static/build checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
-- [x] 2.3 Restricted-role database contracts still pass with expected-version updates: `npx supabase test db`.
+- [x] 2.1 Print validation, owned mutations, conflict classification, pagination, and private response contracts pass: `npm run test:prints`. — 6f8c1a9
+- [x] 2.2 Existing auth/stock contracts and static/build checks pass: `npm run test:auth`, `npm run test:spools`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`. — 6f8c1a9
+- [x] 2.3 Restricted-role database contracts still pass with expected-version updates: `npx supabase test db`. — 6f8c1a9
 
 ### Phase 3: Planned-Print View and Navigation
 
 #### Automated
 
-- [ ] 3.1 Print, stock, and auth contracts plus static/build checks pass: `npm run test:prints`, `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
+- [x] 3.1 Print, stock, and auth contracts plus static/build checks pass: `npm run test:prints`, `npm run test:spools`, `npm run test:auth`, `npx astro sync`, `npm run lint`, `npx astro check`, `npm run build`.
 
 #### Manual
 
-- [ ] 3.2 Keyboard add/edit/cancel/delete flows preserve labels, errors, inputs, announcements, visible focus, and focus restoration; pending or uncertain operations cannot be repeated through form transitions.
-- [ ] 3.3 Names are optional, unnamed/identical prints remain distinguishable, 80 g requirements are shown without a margin, invalid zero/fractional grams are rejected, and editing does not reorder the list.
-- [ ] 3.4 In two tabs, the first edit succeeds and the stale second edit shows a conflict with retained fields; refresh reads the saved version without silently applying stale values.
-- [ ] 3.5 At 390px and 320px widths, long names/material/three-colour labels and identifiers wrap, actions have at least 44px touch targets, and the page has no horizontal overflow.
+> Evidence: the author reports that rows 3.2–3.5 passed in Brave 1.95.104 (Official), x86_64; Chromium version reported as `153.0.8010.`. Responsive mode was used at 390px and 320px widths.
+
+- [x] 3.2 Keyboard add/edit/cancel/delete flows preserve labels, errors, inputs, announcements, visible focus, and focus restoration; pending or uncertain operations cannot be repeated through form transitions. — author manual review passed 2026-10-12
+- [x] 3.3 Names are optional, unnamed/identical prints remain distinguishable, 80 g requirements are shown without a margin, invalid zero/fractional grams are rejected, and editing does not reorder the list. — author manual review passed 2026-10-12
+- [x] 3.4 In two tabs, the first edit succeeds and the stale second edit shows a conflict with retained fields; refresh reads the saved version without silently applying stale values. — author manual review passed 2026-10-12
+- [x] 3.5 At 390px and 320px widths, long names/material/three-colour labels and identifiers wrap, actions have at least 44px touch targets, and the page has no horizontal overflow. — author manual review passed 2026-10-12
 
 ### Phase 4: Verification and CI
 
@@ -349,5 +351,5 @@ Before S-03 ships reservations, it must make every database-accessible print/sto
 #### Manual
 
 - [ ] 4.4 Current Chrome and Firefox support named/unnamed CRUD, deletion cancellation, refresh/logout/relogin persistence, and independent identical entries; another account cannot see them.
-- [ ] 4.5 Phone use and desktop keyboard checks confirm readable Carbon states, wrapping, focus, touch targets, retained invalid/conflicting inputs, and safe pending/uncertain behavior.
+- [x] 4.5 Phone-view emulation and desktop keyboard checks confirm readable Carbon states, wrapping, focus, touch targets, retained invalid/conflicting inputs, and safe pending/uncertain behavior. — author accepts Brave responsive emulation at 390px and 320px as the phone-view check; desktop keyboard cases passed in the same manual review.
 - [ ] 4.6 The verification record contains actual automated and manual evidence and clearly identifies unperformed hosted/remote checks without claiming them as passed.
