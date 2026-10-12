@@ -1,0 +1,74 @@
+---
+import { PrintList } from "@/components/prints/PrintList";
+import Topbar from "@/components/Topbar.astro";
+import Layout from "@/layouts/Layout.astro";
+import { applyPrintPrivateHeaders, mapPrintDatabaseError, reportPrintFailure } from "@/lib/print-response";
+import { listPrints, type PrintDto } from "@/lib/prints";
+
+const { authUnavailable, supabase, user } = Astro.locals;
+applyPrintPrivateHeaders(Astro.response.headers);
+
+let initialPrints: PrintDto[] = [];
+let pageError: string | undefined;
+
+if (authUnavailable || !supabase) {
+  Astro.response.status = 503;
+  pageError = "Prints are temporarily unavailable. Please try again.";
+} else if (!user) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", "/auth/signin");
+} else {
+  const result = await listPrints(supabase, user.id);
+  if (result.ok) {
+    initialPrints = result.value;
+  } else {
+    const failure = mapPrintDatabaseError(result.error, result.status, "read");
+    reportPrintFailure(failure, "page");
+    const status = failure.status === 503 ? 503 : 500;
+    Astro.response.status = status;
+    pageError =
+      status === 503
+        ? "Prints are temporarily unavailable. Please try again."
+        : "We couldn't load your planned prints. Please try again.";
+  }
+}
+---
+
+<Layout title="Planned prints">
+  <main class="carbon-workspace min-h-screen px-4 py-4 text-foreground sm:px-8 sm:py-8">
+    <div class="mx-auto max-w-5xl">
+      <Topbar />
+      <header class="carbon-panel carbon-panel-highlight mb-6 p-5 sm:p-8">
+        <p class="carbon-label">
+          <span aria-hidden="true" class="carbon-led mr-2"></span>Print requirements
+        </p>
+        <h1 class="mt-2 break-words text-3xl font-bold sm:text-4xl">Planned prints</h1>
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Keep a list of the material, colour, and filament each print requires. These requirements exclude any future
+          safety margin and do not reserve or consume stock.
+        </p>
+      </header>
+
+      {pageError ? (
+        <section
+          role="alert"
+          aria-labelledby="prints-error-heading"
+          class="carbon-panel border-destructive/50 bg-error-surface p-5 sm:p-6"
+        >
+          <h2 id="prints-error-heading" class="text-lg font-semibold">
+            Planned prints could not be loaded
+          </h2>
+          <p class="mt-2 text-sm leading-relaxed text-error-foreground">{pageError}</p>
+          <a
+            href="/dashboard/prints"
+            class="mt-3 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Try again
+          </a>
+        </section>
+      ) : (
+        <PrintList client:load initialPrints={initialPrints} />
+      )}
+    </div>
+  </main>
+</Layout>
