@@ -1,0 +1,38 @@
+---
+import Topbar from "@/components/Topbar.astro";
+import Layout from "@/layouts/Layout.astro";
+
+interface Props {
+  title: string;
+  heading: string;
+}
+
+const { title, heading } = Astro.props;
+const hasEyebrow = Astro.slots.has("eyebrow");
+const hasDescription = Astro.slots.has("description");
+---
+
+<Layout title={title}>
+  <div class="carbon-workspace carbon-terminal-shell">
+    <Topbar presentation="terminal" />
+    <main class="carbon-terminal-main">
+      <header class="carbon-panel carbon-panel-highlight carbon-page-heading">
+        {hasEyebrow && (
+          <div class="carbon-label carbon-page-eyebrow">
+            <slot name="eyebrow" />
+          </div>
+        )}
+        <h1 class:list={["carbon-page-title", hasEyebrow && "carbon-page-title-after-eyebrow"]}>
+          <span aria-hidden="true" class="carbon-led"></span>
+          {heading}
+        </h1>
+        {hasDescription && (
+          <div class="carbon-page-description">
+            <slot name="description" />
+          </div>
+        )}
+      </header>
+      <slot />
+    </main>
+  </div>
+</Layout>
