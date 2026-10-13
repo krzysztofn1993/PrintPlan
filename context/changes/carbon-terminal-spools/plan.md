@@ -238,18 +238,18 @@ No database migration, API rollout or deployment step is required. Roll back Pha
 
 #### Automated
 
-- [x] 2.1 `npm run lint` and `npm run build` pass with the restyled view.
-- [x] 2.2 The hardcoded-value scan returns zero candidate matches for the four scoped stock-view files.
-- [x] 2.6 `npm run verify:deploy` passes for the shared shell and both collections.
-- [x] 2.9 The expanded hardcoded-value scan returns zero candidate matches across all three dashboard routes, Topbar, DashboardShell and the stock/print collection and form components, including any new shared presentation components.
+- [x] 2.1 `npm run lint` and `npm run build` pass with the restyled view. — dc651ca
+- [x] 2.2 The hardcoded-value scan returns zero candidate matches for the four scoped stock-view files. — dc651ca
+- [x] 2.6 `npm run verify:deploy` passes for the shared shell and both collections. — dc651ca
+- [x] 2.9 The expanded hardcoded-value scan returns zero candidate matches across all three dashboard routes, Topbar, DashboardShell and the stock/print collection and form components, including any new shared presentation components. — dc651ca
 
 #### Manual
 
-- [x] 2.3 Add/edit/cancel/delete, page-load error, empty and populated states preserve current behavior and quantities.
-- [x] 2.4 Desktop and 390px/320px phone review confirms reachable controls, wrapping and no horizontal overflow.
-- [x] 2.5 Account navigation/sign-out work on the stock view and other `Topbar` consumers retain their presentation.
-- [x] 2.7 Planned Prints preserves named and unnamed entries, independent duplicates, ordering, CRUD, refresh/discard confirmation, retained conflict inputs and uncertain-outcome recovery.
-- [x] 2.8 Dashboard uses the shared terminal shell and retains its welcome, signed-in identity and both management links.
+- [x] 2.3 Add/edit/cancel/delete, page-load error, empty and populated states preserve current behavior and quantities. — dc651ca
+- [x] 2.4 Desktop and 390px/320px phone review confirms reachable controls, wrapping and no horizontal overflow. — dc651ca
+- [x] 2.5 Account navigation/sign-out work on the stock view and other `Topbar` consumers retain their presentation. — dc651ca
+- [x] 2.7 Planned Prints preserves named and unnamed entries, independent duplicates, ordering, CRUD, refresh/discard confirmation, retained conflict inputs and uncertain-outcome recovery. — dc651ca
+- [x] 2.8 Dashboard uses the shared terminal shell and retains its welcome, signed-in identity and both management links. — dc651ca
 
 ### Phase 3: State Matrix, Visual Gate and UI Rule
 
