@@ -518,7 +518,13 @@ export async function runSpoolSmoke({
         page.body.includes("Black / Red / Gold") && page.body.includes("PLA"),
         "The SSR page did not show the complete corrected spool labels.",
       );
-      ensure(page.body.includes("0 g"), "The SSR page did not show the corrected zero-gram amount.");
+      const renderedValues = [...page.body.matchAll(/<dd\b[^>]*>[\s\S]*?<\/dd>/g)]
+        .map(([value]) => value.replace(/\s+/g, " ").trim())
+        .join(" | ");
+      ensure(
+        page.body.includes("0 g"),
+        `The SSR page did not show the corrected zero-gram amount. Rendered values: ${renderedValues || "(none)"}`,
+      );
     });
 
     await step("duplicate deletion persists across API and SSR rereads", async () => {
