@@ -255,14 +255,14 @@ No database migration, API rollout or deployment step is required. Roll back Pha
 
 #### Automated
 
-- [x] 3.1 `npm run lint` and `npm run build` pass after fixture removal and UI-rule update.
-- [x] 3.2 The hardcoded-value scan still returns zero candidate matches for the four scoped files.
-- [x] 3.6 `npm run verify:deploy` passes after fixture removal, and the expanded hardcoded-value scan returns zero candidate matches.
+- [x] 3.1 `npm run lint` and `npm run build` pass after fixture removal and UI-rule update. — c864aac
+- [x] 3.2 The hardcoded-value scan still returns zero candidate matches for the four scoped files. — c864aac
+- [x] 3.6 `npm run verify:deploy` passes after fixture removal, and the expanded hardcoded-value scan returns zero candidate matches. — c864aac
 
 #### Manual
 
-- [x] 3.3 The kitchen-sink review shows default, hover, focus-visible, disabled, error and empty; loading is marked N/A with the SSR reason.
-- [x] 3.4 Confirm every control has an accessible name and visible keyboard focus, and the delete warning and error/success feedback remain distinguishable.
-- [x] 3.5 Desktop and phone screenshots and review notes are retained; author gives final visual acceptance.
-- [x] 3.7 The state review shows stock Saving/Deleting and print Refreshing/Saving/Deleting, field errors, retained conflict inputs and uncertain-outcome recovery.
-- [x] 3.8 Chrome and Firefox desktop review and phone-width review at 390px and 320px cover stock, Planned Prints and Dashboard with long labels, IDs and account emails; there is no horizontal page overflow.
+- [x] 3.3 The kitchen-sink review shows default, hover, focus-visible, disabled, error and empty; loading is marked N/A with the SSR reason. — c864aac
+- [x] 3.4 Confirm every control has an accessible name and visible keyboard focus, and the delete warning and error/success feedback remain distinguishable. — c864aac
+- [x] 3.5 Desktop and phone screenshots and review notes are retained; author gives final visual acceptance. — c864aac
+- [x] 3.7 The state review shows stock Saving/Deleting and print Refreshing/Saving/Deleting, field errors, retained conflict inputs and uncertain-outcome recovery. — c864aac
+- [x] 3.8 Chrome and Firefox desktop review and phone-width review at 390px and 320px cover stock, Planned Prints and Dashboard with long labels, IDs and account emails; there is no horizontal page overflow. — c864aac
