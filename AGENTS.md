@@ -20,6 +20,8 @@ Routes live in `src/pages/`, auth endpoints in `src/pages/api/auth/`, layouts in
 
 Use `@/` imports (@tsconfig.json) and `cn()` from @src/lib/utils.ts for merged classes. Follow @.prettierrc.json and @eslint.config.js; pre-commit uses lint-staged (@package.json).
 
+Dashboard views use the design contract in [src/styles/global.css](src/styles/global.css), [src/layouts/DashboardShell.astro](src/layouts/DashboardShell.astro) and [src/components/ui/](src/components/ui/). Check those components before creating another presentation component. Keep literal colours and arbitrary sizing out of dashboard views. Reusing the shell and presentation must preserve each collection's data meanings and keep its state, handlers and mutations in the owning collection. See the retained [Carbon Terminal review evidence](context/changes/carbon-terminal-spools/verification.md) and [screenshots](context/changes/carbon-terminal-spools/reviews/phase-3/).
+
 Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool and planned-print tables are implemented, while reservation logic is still planned. Change artifacts belong in `context/changes/<change-id>/`.
 
 ## Configuration
