@@ -232,8 +232,8 @@ export function PrintForm({
   }
 
   return (
-    <form className="min-w-0 space-y-4" onSubmit={handleSubmit} noValidate>
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+    <form className="carbon-collection-form" onSubmit={handleSubmit} noValidate>
+      <div className="carbon-form-grid">
         <FormField
           id={`${prefix}-name`}
           name="name"
@@ -326,16 +326,10 @@ export function PrintForm({
       )}
 
       {requestError && (
-        <div
-          role="alert"
-          className="border-destructive/50 bg-error-surface text-error-foreground rounded-md border p-3 text-sm"
-        >
+        <div role="alert" className="carbon-feedback carbon-feedback-error">
           <p>{requestError.message}</p>
           {requestError.kind === "unauthenticated" && (
-            <a
-              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-              href="/auth/signin"
-            >
+            <a className="carbon-feedback-link" href="/auth/signin">
               Sign in
             </a>
           )}
@@ -346,7 +340,7 @@ export function PrintForm({
             <Button
               type="button"
               variant="outline"
-              className="mt-3 min-h-11 whitespace-normal"
+              className="whitespace-normal"
               onClick={() => {
                 void refreshLatest();
               }}
@@ -358,10 +352,9 @@ export function PrintForm({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 pt-1">
+      <div className="carbon-form-actions">
         <Button
           type="submit"
-          className="min-h-11"
           disabled={
             pending ||
             mutationPending ||
@@ -372,13 +365,7 @@ export function PrintForm({
         >
           {pending ? "Saving…" : mode === "create" ? "Add print" : "Save changes"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          onClick={onCancel}
-          disabled={pending || mutationPending}
-        >
+        <Button type="button" variant="outline" onClick={onCancel} disabled={pending || mutationPending}>
           Cancel
         </Button>
       </div>
