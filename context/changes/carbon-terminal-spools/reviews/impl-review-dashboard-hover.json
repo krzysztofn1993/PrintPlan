@@ -1,0 +1,35 @@
+{
+  "normal": {
+    "background": "rgb(255, 112, 88)",
+    "color": "rgb(23, 12, 11)",
+    "filter": "none",
+    "hover": false
+  },
+  "hover": {
+    "background": "rgb(56, 37, 34)",
+    "color": "rgb(23, 12, 11)",
+    "filter": "brightness(0.92)",
+    "hover": true
+  },
+  "browser": "156.0.8078.4",
+  "source": "Built CSS; temporary in-memory markup copies dashboard.astro primary link",
+  "afterFix": {
+    "date": "2026-10-13",
+    "normal": {
+      "background": "rgb(255, 112, 88)",
+      "color": "rgb(23, 12, 11)",
+      "filter": "none",
+      "hover": false
+    },
+    "hover": {
+      "background": "rgb(255, 112, 88)",
+      "color": "rgb(23, 12, 11)",
+      "filter": "brightness(0.92)",
+      "hover": true
+    },
+    "renderedHoverContrast": 6.07,
+    "contrastMethod": "sRGB relative luminance after applying brightness(0.92) to foreground and background",
+    "browser": "156.0.8078.4",
+    "source": "Built CSS; temporary in-memory markup copies dashboard.astro primary link"
+  }
+}

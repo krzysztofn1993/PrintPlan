@@ -392,6 +392,7 @@
     color: var(--primary-foreground);
   }
   .carbon-dashboard-link-primary:hover {
+    background: var(--primary);
     filter: brightness(0.92);
     color: var(--primary-foreground);
   }
