@@ -1,7 +1,7 @@
 ---
 change_id: carbon-terminal-spools
 title: Carbon Terminal filament stock view
-status: implementing
+status: implemented
 created: 2026-10-12
 updated: 2026-10-13
 archived_at: null
