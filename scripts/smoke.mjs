@@ -4,7 +4,9 @@
 /* global AbortSignal, Blob, Buffer, FormData, Headers, URL, setTimeout */
 
 import { randomUUID } from "node:crypto";
-import { readLocalSupabaseConfig, runSpoolSmoke } from "./spool-smoke.mjs";
+import { runPrintSmoke } from "./print-smoke.mjs";
+import { runSpoolSmoke } from "./spool-smoke.mjs";
+import { readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
 
 const APP_URL = new URL(process.env.BASE_URL ?? "http://localhost:4321");
 const MAILPIT_URL = new URL(process.env.MAILPIT_URL ?? "http://127.0.0.1:54324");
@@ -33,15 +35,7 @@ function requestSignal(limit = REQUEST_LIMIT_MS) {
   return AbortSignal.timeout(Math.max(1, Math.min(limit, remainingMs())));
 }
 
-function safeError(error) {
-  if (error instanceof Error && error.message) {
-    return error.message
-      .replace(/https?:\/\/\S+/gi, "[url]")
-      .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
-      .replace(/token_hash=[^&\s]+/gi, "token_hash=[redacted]");
-  }
-  return "Unexpected smoke failure";
-}
+const safeError = safeSmokeError;
 
 async function step(name, run) {
   try {
@@ -735,6 +729,17 @@ async function runSmoke() {
   });
 
   await runSpoolSmoke({
+    config: localSupabase,
+    appRequest,
+    CookieJar,
+    accountA,
+    accountB,
+    activeJarA,
+    activeJarB,
+    requestSignal,
+  });
+
+  await runPrintSmoke({
     config: localSupabase,
     appRequest,
     CookieJar,
