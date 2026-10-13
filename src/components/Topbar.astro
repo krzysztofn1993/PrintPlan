@@ -25,6 +25,13 @@ const currentPath = Astro.url.pathname;
         >
           Filament stock
         </a>
+        <a
+          href="/dashboard/prints"
+          aria-current={currentPath.startsWith("/dashboard/prints") ? "page" : undefined}
+          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+        >
+          Planned prints
+        </a>
         <form method="POST" action="/api/auth/signout" class="flex">
           <button
             type="submit"
