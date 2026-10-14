@@ -10,11 +10,13 @@ import { readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
 
 const APP_URL = new URL(process.env.BASE_URL ?? "http://localhost:4321");
 const MAILPIT_URL = new URL(process.env.MAILPIT_URL ?? "http://127.0.0.1:54324");
+const STARTED_AT = Date.now();
 const TOTAL_LIMIT_MS = 300_000;
+const CLEANUP_WINDOW_MS = 30_000;
+const SCENARIO_DEADLINE_AT = STARTED_AT + TOTAL_LIMIT_MS - CLEANUP_WINDOW_MS;
 const REFRESH_WAIT_LIMIT_MS = 180_000;
 const MAIL_WAIT_LIMIT_MS = 30_000;
 const REQUEST_LIMIT_MS = 10_000;
-const STARTED_AT = Date.now();
 const APP_ORIGIN = APP_URL.origin;
 const MAILPIT_ORIGIN = MAILPIT_URL.origin;
 const PASSWORD = "Smoke-Test-Passw0rd!";
@@ -26,13 +28,19 @@ function ensure(condition, message) {
 }
 
 function remainingMs() {
-  const remaining = TOTAL_LIMIT_MS - (Date.now() - STARTED_AT);
-  ensure(remaining > 0, "The 300-second total run limit was exceeded");
+  const remaining = SCENARIO_DEADLINE_AT - Date.now();
+  ensure(remaining > 0, "The reserved smoke scenario window was exceeded");
   return remaining;
 }
 
 function requestSignal(limit = REQUEST_LIMIT_MS) {
   return AbortSignal.timeout(Math.max(1, Math.min(limit, remainingMs())));
+}
+
+function cleanupRequestSignal(limit = REQUEST_LIMIT_MS) {
+  const remaining = STARTED_AT + TOTAL_LIMIT_MS - Date.now();
+  ensure(remaining > 0, "The reserved smoke cleanup window was exceeded");
+  return AbortSignal.timeout(Math.max(1, Math.min(limit, remaining)));
 }
 
 const safeError = safeSmokeError;
@@ -225,7 +233,7 @@ async function appRequest(path, options = {}) {
       headers,
       body,
       redirect: "manual",
-      signal: requestSignal(),
+      signal: options.signal ?? requestSignal(),
     });
   } catch (error) {
     throw new Error("App request failed (" + (error instanceof Error ? error.name : "network error") + ")", {
@@ -382,7 +390,7 @@ function validateConfirmationUrl(url) {
 }
 
 async function waitForConfirmation(recipient) {
-  const deadline = Math.min(Date.now() + MAIL_WAIT_LIMIT_MS, STARTED_AT + TOTAL_LIMIT_MS);
+  const deadline = Math.min(Date.now() + MAIL_WAIT_LIMIT_MS, SCENARIO_DEADLINE_AT);
   let lastCount = 0;
 
   while (Date.now() < deadline) {
@@ -447,6 +455,12 @@ async function runSmoke() {
     "Use Node 24.21.0 from .nvmrc to preserve separate Set-Cookie headers",
   );
   const localSupabase = await readLocalSupabaseConfig();
+  const cleanupProbe = process.env.PRINTPLAN_SMOKE_CLEANUP_PROBE;
+  ensure(
+    cleanupProbe === undefined ||
+      ["spool-timeout", "spool-post-signout", "print-timeout", "print-post-signout"].includes(cleanupProbe),
+    "PRINTPLAN_SMOKE_CLEANUP_PROBE must identify spool or print and timeout or post-signout",
+  );
 
   await step("local preview responds", async () => {
     const redirect = await appRequest("/");
@@ -737,6 +751,8 @@ async function runSmoke() {
     activeJarA,
     activeJarB,
     requestSignal,
+    cleanupRequestSignal,
+    cleanupProbe: cleanupProbe?.startsWith("spool-") ? cleanupProbe.slice("spool-".length) : undefined,
   });
 
   await runPrintSmoke({
@@ -748,6 +764,8 @@ async function runSmoke() {
     activeJarA,
     activeJarB,
     requestSignal,
+    cleanupRequestSignal,
+    cleanupProbe: cleanupProbe?.startsWith("print-") ? cleanupProbe.slice("print-".length) : undefined,
   });
 
   const sessionA = activeJarA.session();
