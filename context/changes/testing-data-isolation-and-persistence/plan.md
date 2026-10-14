@@ -181,13 +181,13 @@ No production migration is added or rewritten. Existing migration files are test
 
 #### Automated
 
-- [x] 1.1 Restricted-role database coverage passes: `npx supabase test db`.
-- [x] 1.2 Committed spool fixtures survive the applicable populated upgrade and the scratch database is cleaned up: `npm run test:migrations`.
-- [x] 1.3 Native repository gates pass: `npm run verify:deploy`.
-- [x] 1.4 Built-preview HTTP smoke proves anonymous/two-owner isolation, complete independent/fresh-session rereads and selected-ID deletion: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` after `npm run preview -- --host 127.0.0.1 --port 4321`.
-- [x] 1.5 Deliberate-break check goes red: temporarily alter the actual print migration to change seeded spool grams, run `npm run test:migrations`, then unconditionally restore the unstaged migration fault and confirm the correct runner passes.
-- [x] 1.6 Verification evidence and §6.1, §6.2 and Phase 1's §6.5 cookbook entry describe the verified commands, patterns and limits; Phase 2/3 scope and strategy remain intact.
+- [x] 1.1 Restricted-role database coverage passes: `npx supabase test db`. — c242a67
+- [x] 1.2 Committed spool fixtures survive the applicable populated upgrade and the scratch database is cleaned up: `npm run test:migrations`. — c242a67
+- [x] 1.3 Native repository gates pass: `npm run verify:deploy`. — c242a67
+- [x] 1.4 Built-preview HTTP smoke proves anonymous/two-owner isolation, complete independent/fresh-session rereads and selected-ID deletion: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` after `npm run preview -- --host 127.0.0.1 --port 4321`. — c242a67
+- [x] 1.5 Deliberate-break check goes red: temporarily alter the actual print migration to change seeded spool grams, run `npm run test:migrations`, then unconditionally restore the unstaged migration fault and confirm the correct runner passes. — c242a67
+- [x] 1.6 Verification evidence and §6.1, §6.2 and Phase 1's §6.5 cookbook entry describe the verified commands, patterns and limits; Phase 2/3 scope and strategy remain intact. — c242a67
 
 #### Manual
 
-- [x] 1.7 Review the implementation/evidence and cookbook: confirm restricted assertion identities, exact survivor-value checks, disposable upgrade cleanup, CI wiring and no claims about unavailable print upgrades; approve phase closeout.
+- [x] 1.7 Review the implementation/evidence and cookbook: confirm restricted assertion identities, exact survivor-value checks, disposable upgrade cleanup, CI wiring and no claims about unavailable print upgrades; approve phase closeout. — c242a67
