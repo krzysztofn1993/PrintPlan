@@ -1,10 +1,10 @@
 ---
 change_id: personal-planned-prints
 title: Personal planned prints
-status: impl_reviewed
+status: archived
 created: 2026-10-12
 updated: 2026-10-14
-archived_at: null
+archived_at: 2026-10-14T10:27:08Z
 ---
 
 ## Notes
