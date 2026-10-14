@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "test:auth": "node --experimental-strip-types --test scripts/auth-contracts.test.mjs",
     "test:prints": "node --experimental-strip-types --test scripts/print-contracts.test.mjs",
-    "verify:deploy": "npm run test:auth && npm run test:spools && npm run test:prints && astro sync && npm run lint && astro check && npm run build",
+    "test:hooks": "node --experimental-strip-types --test scripts/agent-hooks.test.mjs",
+    "test:migrations": "node scripts/migration-persistence.mjs",
+    "verify:deploy": "npm run test:hooks && npm run test:auth && npm run test:spools && npm run test:prints && astro sync && npm run lint && astro check && npm run build",
     "test:spools": "node --experimental-strip-types --test scripts/spool-contracts.test.mjs",
     "smoke": "node scripts/smoke.mjs"
   },

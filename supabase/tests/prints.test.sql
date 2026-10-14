@@ -687,6 +687,22 @@ SELECT is(
   'owner B cannot read owner A print after update and delete attempts'
 );
 
+SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
+
+SELECT is(
+  (SELECT count(*)::integer FROM public.prints
+    WHERE id = '20000000-0000-0000-0000-000000000001'
+      AND name IS NULL
+      AND material = 'PETG'
+      AND colour = 'Black / Red / Gold'
+      AND required_grams = 2147483647
+      AND version = 7),
+  1,
+  'owner A print values and version remain unchanged after owner B attempts'
+);
+
+SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
+
 SELECT is(
   (SELECT required_grams FROM public.prints
     WHERE id = '20000000-0000-0000-0000-000000000002'),
