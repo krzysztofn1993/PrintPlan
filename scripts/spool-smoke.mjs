@@ -1,6 +1,6 @@
 // Bounded stock smoke scenario shared by the existing authenticated HTTP smoke.
 
-/* global Blob, setTimeout */
+/* global Blob */
 
 import {
   appFormData,
@@ -152,11 +152,14 @@ async function verifyDirectRest({
   const directSpool = ownInsert.data[0];
   ensure(typeof directSpool.id === "string", "The direct REST write did not return a spool identifier.");
   track(accountA.id, directSpool.id);
-  rememberRest(accountA.id, directSpool);
   ensure(
-    directSpool.user_id === accountA.id && directSpool.material === "PETG" && directSpool.recorded_grams === 37,
+    directSpool.user_id === accountA.id &&
+      directSpool.material === "PETG" &&
+      directSpool.colour === "Direct REST / Test" &&
+      directSpool.recorded_grams === 37,
     "The database did not return canonical values for account A's direct REST write.",
   );
+  rememberRest(accountA.id, directSpool);
 
   const ownRead = await restRequest({
     config,
@@ -376,7 +379,17 @@ async function verifyDirectRest({
       ownUpdate.data[0].recorded_grams === 0,
     "Account A could not correct its direct REST spool to zero grams.",
   );
+  const corrected = snapshotFromRest(ownUpdate.data[0], accountA.id);
+  const original = snapshotFromRest(directSpool, accountA.id);
+  ensure(
+    corrected.id === original.id &&
+      corrected.material === original.material &&
+      corrected.colour === original.colour &&
+      corrected.createdAt === original.createdAt,
+    "The REST spool correction changed its identifier, labels, or creation time.",
+  );
   rememberRest(accountA.id, ownUpdate.data[0]);
+  await assertPersisted(accountA.id, jarA);
   const ownDelete = await deleteRestSpool(config, requestSignal, sessionA.access_token, directSpool.id, accountA.id);
   ensure(
     ownDelete.ok && Array.isArray(ownDelete.data) && ownDelete.data.length === 1,
@@ -396,6 +409,7 @@ export async function runSpoolSmoke({
   activeJarB,
   requestSignal,
   cleanupRequestSignal,
+  expireScenarioForCleanupProbe,
   cleanupProbe,
 }) {
   ensure(
@@ -499,9 +513,7 @@ export async function runSpoolSmoke({
         );
         throw new Error("Induced failure after signout before fresh signin");
       }
-      const timeoutSignal = requestSignal(1);
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      ensure(timeoutSignal.aborted, "The cleanup timeout probe did not exhaust its scenario signal.");
+      expireScenarioForCleanupProbe();
       throw new Error("Induced scenario timeout");
     }
 
@@ -770,6 +782,12 @@ export async function runSpoolSmoke({
         ],
       });
       assertDto(payload.spool, { material: "PLA", colour: "Black / Red / Gold", recordedGrams: 0 });
+      ensure(
+        payload.spool.id === primary.id &&
+          timestampInstant(payload.spool.createdAt, "The corrected spool creation time") ===
+            timestampInstant(primary.createdAt, "The original spool creation time"),
+        "The API spool correction changed its identifier or creation time.",
+      );
       rememberDto(accountA.id, payload.spool);
       await assertPersisted(accountA.id, activeJarA);
       const reread = (await listAppSpools(activeJarA)).find((spool) => spool.id === primary.id);
