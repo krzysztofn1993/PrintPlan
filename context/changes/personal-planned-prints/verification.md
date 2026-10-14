@@ -8,7 +8,7 @@ updated: 2026-10-12
 
 ## Revision and environment
 
-- Revision under verification: `c5d6bde` plus the Phase 4 working-tree changes; closing commit pending.
+- Phase 4 verification is captured by commit `d6d17f0`; change close-out followed in `d1eb114`. The later F2 review fix is recorded in `0b44d57` and has its own targeted lint/build validation in `reviews/impl-review.md`.
 - Runtime: Node 24.21.0, as pinned by `.nvmrc`.
 - Local database: disposable repository-local Supabase stack.
 - Hosted CI, hosted database, and deployment: not run in this verification pass.
