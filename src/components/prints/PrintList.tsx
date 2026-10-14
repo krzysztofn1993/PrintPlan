@@ -303,9 +303,9 @@ export function PrintList({ initialPrints }: PrintListProps) {
   }
 
   return (
-    <section aria-labelledby="prints-list-heading" className="carbon-panel min-w-0 space-y-5 p-4 sm:p-6">
-      <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
+    <section aria-labelledby="prints-list-heading" className="carbon-collection">
+      <div className="carbon-collection-header">
+        <div className="carbon-collection-heading">
           <p className="carbon-label">Your queue</p>
           <h2 id="prints-list-heading" className="mt-1 text-xl font-semibold">
             Planned prints
@@ -314,12 +314,11 @@ export function PrintList({ initialPrints }: PrintListProps) {
             Each print stays independent, even when its name or requirements match another.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="carbon-collection-actions">
           <Button
             id="refresh-prints-button"
             type="button"
             variant="outline"
-            className="min-h-11"
             onClick={() => {
               void refreshList();
             }}
@@ -330,7 +329,6 @@ export function PrintList({ initialPrints }: PrintListProps) {
           <Button
             id="add-print-button"
             type="button"
-            className="min-h-11"
             onClick={openCreate}
             disabled={createOpen || mutationPending || refreshing}
           >
@@ -339,60 +337,57 @@ export function PrintList({ initialPrints }: PrintListProps) {
         </div>
       </div>
 
-      <p role="status" aria-live="polite" className="text-success min-h-5 text-sm">
+      <p role="status" aria-live="polite" className="carbon-status-message">
         {statusMessage}
       </p>
 
       {uncertaintyGuard && (
-        <div role="alert" className="border-warning/50 bg-warning-surface text-warning rounded-md border p-4 text-sm">
+        <div role="alert" className="carbon-feedback carbon-feedback-warning">
           <p>
             A previous change may have completed without confirmation. Review the current saved list before repeating
             any action.
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3 min-h-11 whitespace-normal"
-            onClick={() => {
-              void refreshList();
-            }}
-            disabled={mutationPending || refreshing}
-          >
-            {refreshing ? "Refreshing…" : "Refresh and review prints"}
-          </Button>
+          <div className="carbon-feedback-actions">
+            <Button
+              type="button"
+              variant="outline"
+              className="whitespace-normal"
+              onClick={() => {
+                void refreshList();
+              }}
+              disabled={mutationPending || refreshing}
+            >
+              {refreshing ? "Refreshing…" : "Refresh and review prints"}
+            </Button>
+          </div>
         </div>
       )}
 
       {listError && (
-        <div
-          role="alert"
-          className="border-destructive/50 bg-error-surface text-error-foreground rounded-md border p-4 text-sm"
-        >
+        <div role="alert" className="carbon-feedback carbon-feedback-error">
           <p>{listError.message}</p>
           {listError.kind === "unauthenticated" && (
-            <a
-              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-              href="/auth/signin"
-            >
+            <a className="carbon-feedback-link" href="/auth/signin">
               Sign in
             </a>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3 min-h-11"
-            onClick={() => {
-              void refreshList();
-            }}
-            disabled={mutationPending || refreshing}
-          >
-            Try again
-          </Button>
+          <div className="carbon-feedback-actions">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void refreshList();
+              }}
+              disabled={mutationPending || refreshing}
+            >
+              Try again
+            </Button>
+          </div>
         </div>
       )}
 
       {createOpen && (
-        <section aria-labelledby="create-print-heading" className="border-border bg-card rounded-lg border p-4 sm:p-5">
+        <section aria-labelledby="create-print-heading" className="carbon-inline-panel">
           <h3 id="create-print-heading" className="mb-4 text-lg font-semibold">
             Add a planned print
           </h3>
@@ -412,91 +407,85 @@ export function PrintList({ initialPrints }: PrintListProps) {
       )}
 
       {prints.length === 0 ? (
-        <div className="border-border bg-muted/40 rounded-lg border border-dashed p-6 text-center sm:p-8">
+        <div className="carbon-empty-state">
           <h3 className="text-lg font-medium">No planned prints yet</h3>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Add a print to record its material, colour, and required filament.
           </p>
         </div>
       ) : (
-        <ul className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <ul className="carbon-row-list">
           {prints.map((print) => {
             const isEditing = editingPrintId === print.id;
             const isDeleting = deletePrintId === print.id;
             const summary = describePrint(print);
             return (
-              <li key={print.id} className="border-border bg-card min-w-0 rounded-lg border p-4 sm:p-5">
-                <article aria-labelledby={`print-title-${print.id}`} className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="carbon-label">Planned print</p>
-                      <h3
-                        id={`print-title-${print.id}`}
-                        className="mt-1 text-lg font-semibold [overflow-wrap:anywhere] break-words"
-                      >
-                        {summary}
-                      </h3>
-                      {print.name && (
-                        <p className="text-muted-foreground mt-1 text-sm [overflow-wrap:anywhere] break-words">
-                          {print.material} <span aria-hidden="true">·</span> {print.colour}
-                        </p>
-                      )}
-                      <p className="text-muted-foreground mt-2 text-xs break-all">
-                        Print <code className="font-mono">{print.id}</code>
+              <li key={print.id}>
+                <article aria-labelledby={`print-title-${print.id}`} className="carbon-collection-row">
+                  <div className="carbon-row-main">
+                    <p className="carbon-label">Planned print</p>
+                    <h3 id={`print-title-${print.id}`} className="carbon-row-title mt-1 text-lg font-semibold">
+                      {summary}
+                    </h3>
+                    {print.name && (
+                      <p className="carbon-row-secondary text-muted-foreground mt-1 text-sm">
+                        {print.material} <span aria-hidden="true">·</span> {print.colour}
                       </p>
-                    </div>
-                    {!isEditing && !isDeleting && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          id={`edit-print-${print.id}`}
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="min-h-11 min-w-11"
-                          disabled={mutationPending || refreshing}
-                          onClick={() => {
-                            openEdit(print.id);
-                          }}
-                          aria-label={`Edit planned print ${shortId(print.id)}`}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          id={`delete-print-${print.id}`}
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="min-h-11 min-w-11"
-                          disabled={mutationPending || refreshing}
-                          onClick={() => {
-                            openDelete(print.id);
-                          }}
-                          aria-label={`Delete planned print ${shortId(print.id)}`}
-                        >
-                          Delete
-                        </Button>
-                      </div>
                     )}
+                    <p className="text-muted-foreground mt-2 text-xs break-all">
+                      Print <code className="font-mono">{print.id}</code>
+                    </p>
                   </div>
 
-                  <dl className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="bg-muted/50 min-w-0 rounded-md p-3">
+                  <dl className="carbon-row-values">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Material</dt>
-                      <dd className="mt-1 text-sm [overflow-wrap:anywhere] break-words">{print.material}</dd>
+                      <dd className="carbon-row-secondary mt-1 text-sm">{print.material}</dd>
                     </div>
-                    <div className="bg-muted/50 min-w-0 rounded-md p-3">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Colour</dt>
-                      <dd className="mt-1 text-sm [overflow-wrap:anywhere] break-words">{print.colour}</dd>
+                      <dd className="carbon-row-secondary mt-1 text-sm">{print.colour}</dd>
                     </div>
-                    <div className="bg-muted/50 min-w-0 rounded-md p-3">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Required</dt>
-                      <dd className="carbon-value mt-1 text-lg break-words">{print.requiredGrams} g</dd>
+                      <dd className="carbon-value mt-1 text-lg">{print.requiredGrams} g</dd>
                       <p className="text-muted-foreground mt-1 text-xs">Before safety margin</p>
                     </div>
                   </dl>
 
+                  {!isEditing && !isDeleting && (
+                    <div className="carbon-row-actions">
+                      <Button
+                        id={`edit-print-${print.id}`}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={mutationPending || refreshing}
+                        onClick={() => {
+                          openEdit(print.id);
+                        }}
+                        aria-label={`Edit planned print ${shortId(print.id)}`}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        id={`delete-print-${print.id}`}
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={mutationPending || refreshing}
+                        onClick={() => {
+                          openDelete(print.id);
+                        }}
+                        aria-label={`Delete planned print ${shortId(print.id)}`}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+
                   {isEditing && (
-                    <div className="border-border bg-background mt-4 rounded-md border p-4">
+                    <div className="carbon-inline-panel carbon-row-inline-panel">
                       <h4 className="mb-4 text-base font-semibold">Edit planned print</h4>
                       <PrintForm
                         key={`${print.id}-${print.version}`}
@@ -519,38 +508,31 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
                   {isDeleting && (
                     <div
-                      className="border-warning/50 bg-warning-surface mt-4 rounded-md border p-4"
+                      className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel"
                       aria-labelledby={`delete-confirmation-${print.id}`}
                     >
                       <h4 id={`delete-confirmation-${print.id}`} className="font-semibold">
                         Delete this planned print?
                       </h4>
-                      <p className="text-muted-foreground mt-2 text-sm leading-relaxed [overflow-wrap:anywhere] break-words">
+                      <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm leading-relaxed">
                         Confirm deletion of {summary}. Full print ID:{" "}
                         <code className="font-mono break-all">{print.id}</code>
                       </p>
                       {deleteError && (
-                        <div
-                          role="alert"
-                          className="border-destructive/50 bg-error-surface text-error-foreground mt-3 rounded-md border p-3 text-sm"
-                        >
+                        <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
                           <p>{deleteError.message}</p>
                           {deleteError.kind === "unauthenticated" && (
-                            <a
-                              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-                              href="/auth/signin"
-                            >
+                            <a className="carbon-feedback-link" href="/auth/signin">
                               Sign in
                             </a>
                           )}
                         </div>
                       )}
-                      <div className="mt-4 flex flex-wrap gap-3">
+                      <div className="carbon-form-actions mt-4">
                         <Button
                           id={`confirm-delete-${print.id}`}
                           type="button"
                           variant="destructive"
-                          className="min-h-11"
                           onClick={() => {
                             void confirmDelete(print);
                           }}
@@ -561,7 +543,6 @@ export function PrintList({ initialPrints }: PrintListProps) {
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-11"
                           onClick={() => {
                             closeDelete(print.id);
                           }}
