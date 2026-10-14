@@ -164,9 +164,9 @@ export async function restRequest({ config, requestSignal, token, path, method, 
   const url = new URL(path + (query ? "?" + query : ""), config.url);
   const headers = new Headers({
     apikey: config.key,
-    Authorization: "Bearer " + token,
     Accept: "application/json",
   });
+  if (typeof token === "string" && token.length > 0) headers.set("Authorization", "Bearer " + token);
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (prefer) headers.set("Prefer", prefer);
 
@@ -194,4 +194,42 @@ export async function restRequest({ config, requestSignal, token, path, method, 
     }
   }
   return { status: response.status, ok: response.ok, data };
+}
+
+export async function restoreCleanupSession({ appRequest, jar, account, expectedUserId, cleanupRequestSignal }) {
+  if (jar.authCookieNames().length > 0) {
+    try {
+      const refreshed = await appRequest("/dashboard", { jar, signal: cleanupRequestSignal() });
+      if (refreshed.status === 200 && jar.authCookieNames().length > 0) {
+        const identity = sessionIdentity(jar, "cleanup");
+        ensure(identity.userId === expectedUserId, "The cleanup session belongs to a different account.");
+        return identity.session;
+      }
+    } catch {
+      // A cleared, expired, or revoked session is re-established below.
+    }
+  }
+
+  const signin = await appRequest("/api/auth/signin", {
+    method: "POST",
+    jar,
+    formEntries: [
+      ["email", account.email],
+      ["password", account.password],
+    ],
+    signal: cleanupRequestSignal(),
+  });
+  ensure(
+    signin.status === 302 && jar.authCookieNames().length > 0,
+    "The cleanup session could not sign in again within its reserved window.",
+  );
+  const identity = sessionIdentity(jar, "cleanup");
+  ensure(identity.userId === expectedUserId, "The fresh cleanup session belongs to a different account.");
+  return identity.session;
+}
+
+export function timestampInstant(value, label) {
+  const instant = Date.parse(value);
+  ensure(Number.isFinite(instant), label + " was not a valid timestamp.");
+  return instant;
 }

@@ -1,6 +1,6 @@
 // Bounded planned-print smoke scenario shared by the authenticated HTTP smoke.
 
-/* global Blob */
+/* global Blob, setTimeout */
 
 import {
   appFormData,
@@ -9,8 +9,10 @@ import {
   jwtExpiry,
   readAppJson,
   restRequest,
+  restoreCleanupSession,
   sessionIdentity,
   smokeStep,
+  timestampInstant,
 } from "./smoke-utils.mjs";
 
 const PRINT_FIELDS = [
@@ -19,7 +21,7 @@ const PRINT_FIELDS = [
   ["colour", "Black / Red / Gold"],
   ["requiredGrams", "80"],
 ];
-const REST_COLUMNS = "id,user_id,name,material,colour,required_grams,version";
+const REST_COLUMNS = "id,user_id,name,material,colour,required_grams,version,created_at,updated_at";
 const step = (name, run) => smokeStep(name, run, "Print");
 
 function assertPrint(print, expected) {
@@ -31,8 +33,74 @@ function assertPrint(print, expected) {
   ensure(Number.isInteger(print.version) && print.version >= 1, "The committed print did not include a valid version.");
 }
 
-function printQuery(id) {
-  return new URLSearchParams({ select: REST_COLUMNS, id: "eq." + id }).toString();
+function snapshotFromDto(print) {
+  return {
+    id: print.id,
+    name: print.name,
+    material: print.material,
+    colour: print.colour,
+    requiredGrams: print.requiredGrams,
+    version: print.version,
+    createdAt: timestampInstant(print.createdAt, "The API print creation time"),
+    updatedAt: timestampInstant(print.updatedAt, "The API print update time"),
+  };
+}
+
+function snapshotFromRest(row, ownerId) {
+  ensure(row.user_id === ownerId, "A restricted REST print read returned a different owner.");
+  return {
+    id: row.id,
+    name: row.name,
+    material: row.material,
+    colour: row.colour,
+    requiredGrams: Number(row.required_grams),
+    version: row.version,
+    createdAt: timestampInstant(row.created_at, "The REST print creation time"),
+    updatedAt: timestampInstant(row.updated_at, "The REST print update time"),
+  };
+}
+
+function assertSnapshot(actual, expected, label) {
+  ensure(actual.id === expected.id, label + " identifier changed.");
+  for (const field of ["name", "material", "colour", "requiredGrams", "version", "createdAt", "updatedAt"]) {
+    ensure(actual[field] === expected[field], label + " changed its " + field + ".");
+  }
+}
+
+function assertExactCollection(actual, expectedById, label, ownerId) {
+  ensure(Array.isArray(actual), label + " did not return a collection.");
+  ensure(actual.length === expectedById.size, label + " returned an unexpected number of records.");
+  const found = new Set();
+  for (const row of actual) {
+    const snapshot = ownerId ? snapshotFromRest(row, ownerId) : snapshotFromDto(row);
+    ensure(!found.has(snapshot.id), label + " returned a duplicate identifier.");
+    found.add(snapshot.id);
+    const expected = expectedById.get(snapshot.id);
+    ensure(expected, label + " returned an unexpected record.");
+    assertSnapshot(snapshot, expected, label + " record " + snapshot.id);
+  }
+}
+
+function printQuery(id, ownerId) {
+  const query = new URLSearchParams({ select: REST_COLUMNS, id: "eq." + id });
+  if (ownerId) query.set("user_id", "eq." + ownerId);
+  return query.toString();
+}
+
+function assertRestDenied(result, operation) {
+  ensure(
+    (result.status === 401 || result.status === 403) && result.data?.code === "42501",
+    "Anonymous REST print " + operation + " did not fail with the database authorization contract.",
+  );
+  ensure(
+    !/jwt|token|malformed/i.test(String(result.data?.message ?? "")),
+    "Anonymous REST print " + operation + " failed because of a malformed token.",
+  );
+}
+
+function trackReturnedRows(result, track) {
+  if (!Array.isArray(result.data)) return;
+  for (const row of result.data) if (typeof row?.id === "string") track(row.user_id, row.id);
 }
 
 export async function runPrintSmoke({
@@ -44,6 +112,8 @@ export async function runPrintSmoke({
   activeJarA,
   activeJarB,
   requestSignal,
+  cleanupRequestSignal,
+  cleanupProbe,
 }) {
   ensure(
     accountA && accountB && activeJarA && activeJarB,
@@ -57,10 +127,27 @@ export async function runPrintSmoke({
   const identityB = sessionIdentity(activeJarB, "account B");
   accountA.id = identityA.userId;
   accountB.id = identityB.userId;
-  const appIds = new Set();
-  const restIds = new Set();
+  const expectedByOwner = new Map([
+    [accountA.id, new Map()],
+    [accountB.id, new Map()],
+  ]);
+  const trackedByOwner = new Map([
+    [accountA.id, new Set()],
+    [accountB.id, new Set()],
+  ]);
   let scenarioError;
-  let cleanupFailed = false;
+  const cleanupErrors = [];
+
+  const track = (ownerId, id, keep = true) => {
+    if (typeof ownerId !== "string" || typeof id !== "string") return;
+    const ids = trackedByOwner.get(ownerId);
+    if (!ids) return;
+    if (keep) ids.add(id);
+    else ids.delete(id);
+  };
+  const rememberDto = (ownerId, print) => expectedByOwner.get(ownerId).set(print.id, snapshotFromDto(print));
+  const rememberRest = (ownerId, print) => expectedByOwner.get(ownerId).set(print.id, snapshotFromRest(print, ownerId));
+  const forget = (ownerId, id) => expectedByOwner.get(ownerId).delete(id);
 
   const appJsonRequest = async (path, options = {}, status = 200) => {
     const result = await appRequest(path, options);
@@ -80,13 +167,14 @@ export async function runPrintSmoke({
     assertPrivateHeaders(result, "json", "Planned-print");
     return { result, payload: readAppJson(result, "planned-print") };
   };
-  const createPrint = async (jar, entries = PRINT_FIELDS) => {
+  const createPrint = async (jar, ownerId = accountA.id, entries = PRINT_FIELDS) => {
     const { payload } = await appJsonRequest("/api/prints", { method: "POST", jar, formEntries: entries }, 201);
     ensure(
       payload.print && typeof payload.print.id === "string",
       "The create response did not return a planned print.",
     );
-    appIds.add(payload.print.id);
+    track(ownerId, payload.print.id);
+    rememberDto(ownerId, payload.print);
     return payload.print;
   };
   const listPrints = async (jar) => {
@@ -105,10 +193,61 @@ export async function runPrintSmoke({
   const deletePrint = async (jar, id) => {
     const { payload } = await appJsonRequest("/api/prints/" + id + "/delete", { method: "POST", jar, formEntries: [] });
     ensure(payload.id === id, "The delete response did not confirm the requested print.");
-    appIds.delete(id);
+    const ownerId = jar === activeJarB ? accountB.id : accountA.id;
+    track(ownerId, id, false);
+    forget(ownerId, id);
+  };
+  const listRestPrints = async (ownerId, jar) => {
+    const token = sessionIdentity(jar, ownerId === accountA.id ? "account A" : "account B").session.access_token;
+    const response = await restRequest({
+      config,
+      requestSignal,
+      token,
+      path: "/rest/v1/prints",
+      method: "GET",
+      query: new URLSearchParams({ select: REST_COLUMNS, user_id: "eq." + ownerId }).toString(),
+    });
+    ensure(response.ok && Array.isArray(response.data), "The restricted REST print collection read failed.");
+    return response.data;
+  };
+  const assertPersisted = async (ownerId, jar) => {
+    assertExactCollection(await listPrints(jar), expectedByOwner.get(ownerId), "The owner print API reread");
+    assertExactCollection(
+      await listRestPrints(ownerId, jar),
+      expectedByOwner.get(ownerId),
+      "The restricted print REST reread",
+      ownerId,
+    );
   };
 
   try {
+    if (cleanupProbe) {
+      await createPrint(activeJarA, accountA.id, [
+        ["name", "Cleanup Probe A"],
+        ["material", "PLA"],
+        ["colour", "Cleanup Probe A"],
+        ["requiredGrams", "7"],
+      ]);
+      await createPrint(activeJarB, accountB.id, [
+        ["name", "Cleanup Probe B"],
+        ["material", "PETG"],
+        ["colour", "Cleanup Probe B"],
+        ["requiredGrams", "9"],
+      ]);
+      if (cleanupProbe === "post-signout") {
+        const signout = await appRequest("/api/auth/signout", { method: "POST", jar: activeJarA });
+        ensure(
+          signout.status === 302 && activeJarA.authCookieNames().length === 0,
+          "The cleanup probe could not sign out account A.",
+        );
+        throw new Error("Induced failure after signout before fresh signin");
+      }
+      const timeoutSignal = requestSignal(1);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      ensure(timeoutSignal.aborted, "The cleanup timeout probe did not exhaust its scenario signal.");
+      throw new Error("Induced scenario timeout");
+    }
+
     await step("anonymous planned-print API is denied and page redirects to sign in", async () => {
       const result = await appRequest("/api/prints", { jar: new CookieJar() });
       ensure(result.status === 401, "Anonymous planned-print API access did not return HTTP 401.");
@@ -144,19 +283,20 @@ export async function runPrintSmoke({
     });
 
     const duplicate = await step("identical and normalized named prints remain independent", async () => {
-      const first = await createPrint(activeJarA, [
+      const first = await createPrint(activeJarA, accountA.id, [
         ["name", "  Phone   holder  "],
         ["material", "PLA"],
         ["colour", "Black / Red / Gold"],
         ["requiredGrams", "80"],
       ]);
-      const second = await createPrint(activeJarA, [
+      const second = await createPrint(activeJarA, accountA.id, [
         ["name", "Phone holder"],
         ["material", "PLA"],
         ["colour", "Black / Red / Gold"],
         ["requiredGrams", "80"],
       ]);
       assertPrint(first, { name: "Phone holder", material: "PLA", colour: "Black / Red / Gold", requiredGrams: 80 });
+      assertPrint(second, { name: "Phone holder", material: "PLA", colour: "Black / Red / Gold", requiredGrams: 80 });
       ensure(
         first.id !== second.id && second.id !== primary.id,
         "Duplicate planned prints did not receive independent identifiers.",
@@ -166,7 +306,37 @@ export async function runPrintSmoke({
         listed.length === 3 && new Set(listed.map((item) => item.id)).size === 3,
         "The list did not preserve all independent prints.",
       );
+      await assertPersisted(accountA.id, activeJarA);
       return first;
+    });
+
+    await step("anonymous planned-print mutations are denied without changing the owner's record", async () => {
+      for (const [operation, path, options] of [
+        ["create", "/api/prints", { method: "POST", formEntries: PRINT_FIELDS }],
+        [
+          "update",
+          "/api/prints/" + primary.id + "/update",
+          { method: "POST", formEntries: [...PRINT_FIELDS, ["expectedVersion", "1"]] },
+        ],
+        ["delete", "/api/prints/" + primary.id + "/delete", { method: "POST", formEntries: [] }],
+      ]) {
+        const result = await appRequest(path, { ...options, jar: new CookieJar() });
+        if (operation === "create" && result.status === 201) {
+          try {
+            const created = readAppJson(result, "planned-print").print;
+            if (created && typeof created.id === "string") track(accountA.id, created.id);
+          } catch {
+            // The assertion below reports the unexpected response while cleanup handles any trackable fixture.
+          }
+        }
+        ensure(result.status === 401, "Anonymous print " + operation + " did not return HTTP 401.");
+        assertPrivateHeaders(result, "json", "Planned-print");
+        ensure(
+          readAppJson(result, "planned-print").error?.code === "unauthenticated",
+          "Anonymous print " + operation + " returned an unexpected error.",
+        );
+      }
+      await assertPersisted(accountA.id, activeJarA);
     });
 
     await step("strict payload, media, method, and grams validation is enforced", async () => {
@@ -282,6 +452,8 @@ export async function runPrintSmoke({
       ]);
       assertPrint(updated.print, { name: null, material: "PLA", colour: "Black / Red / Gold", requiredGrams: 90 });
       ensure(updated.print.version === duplicate.version + 1, "A committed edit did not advance its version.");
+      rememberDto(accountA.id, updated.print);
+      await assertPersisted(accountA.id, activeJarA);
       ensure(
         (await listPrints(activeJarA)).map((item) => item.id).join(",") === oldOrder.join(","),
         "Editing changed the creation order.",
@@ -301,7 +473,7 @@ export async function runPrintSmoke({
         foreignRead.status === 200 && foreignRead.body.includes("No planned prints yet"),
         "Account B's SSR page exposed account A's prints.",
       );
-      const own = await createPrint(activeJarB, [
+      const own = await createPrint(activeJarB, accountB.id, [
         ["name", "Account B print"],
         ["material", "PETG"],
         ["colour", "Blue"],
@@ -312,6 +484,7 @@ export async function runPrintSmoke({
         (await listPrints(activeJarB)).some((print) => print.id === own.id),
         "Account B could not reread its own print.",
       );
+      await assertPersisted(accountB.id, activeJarB);
       const foreignUpdate = await updatePrint(activeJarB, primary.id, primary.version, PRINT_FIELDS.slice(0), 404);
       ensure(foreignUpdate.error?.code === "not_found", "Account B could update account A's print through the app.");
       const foreignDelete = await appJsonRequest(
@@ -323,6 +496,24 @@ export async function runPrintSmoke({
         foreignDelete.payload.error?.code === "not_found",
         "Account B could delete account A's print through the app.",
       );
+      await assertPersisted(accountA.id, activeJarA);
+      await assertPersisted(accountB.id, activeJarB);
+      for (const [operation, path, options] of [
+        [
+          "update",
+          "/api/prints/" + own.id + "/update",
+          { method: "POST", formEntries: [...PRINT_FIELDS, ["expectedVersion", "1"]] },
+        ],
+        ["delete", "/api/prints/" + own.id + "/delete", { method: "POST", formEntries: [] }],
+      ]) {
+        const denied = await appJsonRequest(path, { ...options, jar: activeJarA }, 404);
+        ensure(
+          denied.payload.error?.code === "not_found",
+          "Account A could " + operation + " account B's print through the app.",
+        );
+      }
+      await assertPersisted(accountB.id, activeJarB);
+      await assertPersisted(accountA.id, activeJarA);
       const missingId = "00000000-0000-4000-8000-000000000001";
       const missingUpdate = await updatePrint(activeJarA, missingId, 1, PRINT_FIELDS, 404);
       ensure(missingUpdate.error?.code === "not_found", "An absent print update did not return not found.");
@@ -332,7 +523,7 @@ export async function runPrintSmoke({
         422,
       );
       ensure(invalidId.payload.error?.code === "validation_failed", "An invalid print identifier was not rejected.");
-      await deletePrint(activeJarB, own.id);
+      // Keep account B's owned print as an unrelated-data control through account A's deletion checks.
     });
 
     await step("direct REST enforces print ownership, constraints, and version triggers", async () => {
@@ -359,7 +550,8 @@ export async function runPrintSmoke({
       );
       const direct = inserted.data[0];
       ensure(typeof direct.id === "string", "The direct REST insert did not return a print identifier.");
-      restIds.add(direct.id);
+      track(accountA.id, direct.id);
+      rememberRest(accountA.id, direct);
       ensure(
         direct.user_id === accountA.id &&
           direct.material === "PETG" &&
@@ -418,6 +610,68 @@ export async function runPrintSmoke({
         foreignDelete.ok && Array.isArray(foreignDelete.data) && foreignDelete.data.length === 0,
         "Account B deleted account A's print through REST.",
       );
+      await assertPersisted(accountA.id, activeJarA);
+
+      const anonymousInsert = await restRequest({
+        config,
+        requestSignal,
+        path: "/rest/v1/prints",
+        method: "POST",
+        body: {
+          user_id: accountA.id,
+          name: "Anonymous REST",
+          material: "PLA",
+          colour: "Anonymous",
+          required_grams: 12,
+        },
+        prefer: "return=representation",
+      });
+      trackReturnedRows(anonymousInsert, track);
+      assertRestDenied(anonymousInsert, "create");
+      for (const [operation, method, body] of [
+        ["read", "GET"],
+        ["update", "PATCH", { required_grams: 99 }],
+        ["delete", "DELETE"],
+      ]) {
+        const denied = await restRequest({
+          config,
+          requestSignal,
+          path: "/rest/v1/prints",
+          method,
+          query: printQuery(primary.id),
+          body,
+          prefer: "return=representation",
+        });
+        assertRestDenied(denied, operation);
+      }
+      await assertPersisted(accountA.id, activeJarA);
+
+      const accountBPrint = [...expectedByOwner.get(accountB.id).values()].find(
+        (print) => print.name === "Account B print",
+      );
+      ensure(accountBPrint, "The account B print positive control was missing.");
+      for (const [operation, method, body] of [
+        ["read", "GET"],
+        ["update", "PATCH", { required_grams: 99 }],
+        ["delete", "DELETE"],
+      ]) {
+        const denied = await restRequest({
+          config,
+          requestSignal,
+          token: tokenA,
+          path: "/rest/v1/prints",
+          method,
+          query: printQuery(accountBPrint.id),
+          body,
+          prefer: "return=representation",
+        });
+        ensure(
+          denied.ok && Array.isArray(denied.data) && denied.data.length === 0,
+          "Account A could " + operation + " account B's print through REST.",
+        );
+      }
+      await assertPersisted(accountB.id, activeJarB);
+      await assertPersisted(accountA.id, activeJarA);
       const forgedOwner = await restRequest({
         config,
         requestSignal,
@@ -427,6 +681,7 @@ export async function runPrintSmoke({
         body: { user_id: accountB.id, material: "PLA", colour: "Forged", required_grams: 10 },
         prefer: "return=representation",
       });
+      trackReturnedRows(forgedOwner, track);
       ensure(!forgedOwner.ok, "The database accepted a forged print owner.");
       const reassignment = await restRequest({
         config,
@@ -449,6 +704,7 @@ export async function runPrintSmoke({
           body: { user_id: accountA.id, material: "PLA", colour: "Invalid REST", required_grams: grams },
           prefer: "return=representation",
         });
+        trackReturnedRows(invalid, track);
         ensure(!invalid.ok, "The database accepted invalid required grams through REST.");
       }
       const edit = await restRequest({
@@ -465,6 +721,8 @@ export async function runPrintSmoke({
         edit.ok && Array.isArray(edit.data) && edit.data.length === 1 && edit.data[0].version === 2,
         "A direct edit did not increment the print version.",
       );
+      rememberRest(accountA.id, edit.data[0]);
+      await assertPersisted(accountA.id, activeJarA);
       const staleApp = await updatePrint(
         activeJarA,
         direct.id,
@@ -494,7 +752,8 @@ export async function runPrintSmoke({
         cleanup.ok && Array.isArray(cleanup.data) && cleanup.data.length === 1,
         "Account A could not delete its own REST fixture.",
       );
-      restIds.delete(direct.id);
+      track(accountA.id, direct.id, false);
+      forget(accountA.id, direct.id);
     });
 
     await step("competing updates with one expected version produce exactly one winner", async () => {
@@ -543,6 +802,7 @@ export async function runPrintSmoke({
       const winner = winners[0].payload.print;
       ensure(["Winner one", "Winner two"].includes(winner.name), "The winning edit returned an unexpected value.");
       ensure(winner.version === current.version + 1, "The concurrent edit advanced the version more than once.");
+      rememberDto(accountA.id, winner);
       const reread = (await listPrints(activeJarA)).find((print) => print.id === current.id);
       ensure(
         reread &&
@@ -551,6 +811,7 @@ export async function runPrintSmoke({
           reread.version === winner.version,
         "The persisted concurrent winner did not match its committed response.",
       );
+      await assertPersisted(accountA.id, activeJarA);
       const staleRetry = await updatePrint(
         activeJarA,
         current.id,
@@ -597,6 +858,9 @@ export async function runPrintSmoke({
         persisted.length === 3 && persisted.some((print) => print.id === primary.id),
         "Account A's prints did not persist across logout and relogin.",
       );
+      assertExactCollection(persisted, expectedByOwner.get(accountA.id), "The fresh-session print API reread");
+      await assertPersisted(accountA.id, activeJarA);
+      await assertPersisted(accountB.id, activeJarB);
       const page = await appRequest("/dashboard/prints", { jar: activeJarA });
       ensure(
         page.status === 200 && page.body.includes(primary.id.slice(0, 8)),
@@ -607,10 +871,10 @@ export async function runPrintSmoke({
     await step("deleted print is absent from API and SSR rereads", async () => {
       await deletePrint(activeJarA, duplicate.id);
       const afterDelete = await listPrints(activeJarA);
-      ensure(
-        afterDelete.length === 2 && !afterDelete.some((print) => print.id === duplicate.id),
-        "Deleting a print changed the wrong list entry.",
-      );
+      ensure(!afterDelete.some((print) => print.id === duplicate.id), "The deleted print remained in the API list.");
+      assertExactCollection(afterDelete, expectedByOwner.get(accountA.id), "The API survivors after targeted deletion");
+      await assertPersisted(accountA.id, activeJarA);
+      await assertPersisted(accountB.id, activeJarB);
       const page = await appRequest("/dashboard/prints", { jar: activeJarA });
       ensure(
         page.status === 200 && !page.body.includes(duplicate.id.slice(0, 8)),
@@ -647,33 +911,68 @@ export async function runPrintSmoke({
   } catch (error) {
     scenarioError = error;
   } finally {
-    let token;
-    try {
-      token = sessionIdentity(activeJarA, "account A cleanup").session.access_token;
-    } catch {
-      token = null;
-    }
-    if (token) {
-      for (const id of [...appIds, ...restIds]) {
-        try {
-          const cleanup = await restRequest({
-            config,
-            requestSignal,
-            token,
-            path: "/rest/v1/prints",
-            method: "DELETE",
-            query: printQuery(id),
-            prefer: "return=representation",
-          });
-          if (!cleanup.ok) cleanupFailed = true;
-        } catch {
-          cleanupFailed = true;
+    for (const [ownerId, jar, account, label] of [
+      [accountA.id, activeJarA, accountA, "account A"],
+      [accountB.id, activeJarB, accountB, "account B"],
+    ]) {
+      const ids = trackedByOwner.get(ownerId);
+      if (!ids?.size) continue;
+      try {
+        const session = await restoreCleanupSession({
+          appRequest,
+          jar,
+          account,
+          expectedUserId: ownerId,
+          cleanupRequestSignal,
+        });
+        const cleanups = await Promise.all(
+          [...ids].map((id) =>
+            restRequest({
+              config,
+              requestSignal: cleanupRequestSignal,
+              token: session.access_token,
+              path: "/rest/v1/prints",
+              method: "DELETE",
+              query: printQuery(id, ownerId),
+              prefer: "return=representation",
+            }),
+          ),
+        );
+        for (const cleanup of cleanups) {
+          ensure(
+            cleanup.ok &&
+              Array.isArray(cleanup.data) &&
+              cleanup.data.length === 1 &&
+              cleanup.data[0].user_id === ownerId,
+            "The " + label + " cleanup could not delete one of its tracked prints.",
+          );
+          ids.delete(cleanup.data[0].id);
         }
+        if (cleanupProbe) console.log("PASS  " + label + " cleanup removed all owner-tracked print probe records");
+      } catch (error) {
+        cleanupErrors.push(error);
       }
-    } else if (appIds.size + restIds.size > 0) {
-      cleanupFailed = true;
     }
   }
+  if (scenarioError && cleanupErrors.length > 0) {
+    const cleanupMessage = cleanupErrors
+      .map((error) => (error instanceof Error ? error.message : "unexpected cleanup failure"))
+      .join("; ");
+    throw new Error(
+      "Print scenario failed: " +
+        (scenarioError instanceof Error ? scenarioError.message : "unexpected failure") +
+        "; cleanup also failed: " +
+        cleanupMessage,
+      { cause: new AggregateError([scenarioError, ...cleanupErrors]) },
+    );
+  }
   if (scenarioError) throw scenarioError;
-  if (cleanupFailed) throw new Error("The planned-print smoke could not clean up every created print.");
+  if (cleanupErrors.length > 0) {
+    throw new Error(
+      "The planned-print smoke could not clean up every created print: " +
+        cleanupErrors
+          .map((error) => (error instanceof Error ? error.message : "unexpected cleanup failure"))
+          .join("; "),
+    );
+  }
 }
