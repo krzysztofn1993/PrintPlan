@@ -36,6 +36,28 @@ SELECT throws_ok(
   'anonymous role cannot read spools'
 );
 
+SELECT throws_ok(
+  $$INSERT INTO public.spools (user_id, material, colour, recorded_grams)
+    VALUES ('00000000-0000-0000-0000-000000000001', 'PLA', 'Anonymous Insert', 1)$$,
+  '42501',
+  'permission denied for table spools',
+  'anonymous role cannot insert spools'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = 1$$,
+  '42501',
+  'permission denied for table spools',
+  'anonymous role cannot update spools'
+);
+
+SELECT throws_ok(
+  $$DELETE FROM public.spools$$,
+  '42501',
+  'permission denied for table spools',
+  'anonymous role cannot delete spools'
+);
+
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
 SET LOCAL ROLE authenticated;

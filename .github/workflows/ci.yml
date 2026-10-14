@@ -49,6 +49,8 @@ jobs:
           fi
       - name: Run database contract tests
         run: supabase test db
+      - name: Verify populated migration upgrade preserves spools
+        run: npm run test:migrations
       - name: Wait for Mailpit
         run: |
           for attempt in $(seq 1 60); do
