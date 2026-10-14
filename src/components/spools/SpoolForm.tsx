@@ -212,8 +212,8 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+    <form className="carbon-collection-form" onSubmit={handleSubmit} noValidate>
+      <div className="carbon-form-grid">
         <FormField
           id={`${prefix}-material`}
           name="material"
@@ -293,31 +293,22 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
       )}
 
       {requestError && (
-        <div
-          role="alert"
-          className="border-destructive/40 bg-destructive/10 text-destructive rounded-md border p-3 text-sm"
-        >
+        <div role="alert" className="carbon-feedback carbon-feedback-error">
           <p>{requestError.message}</p>
           {requestError.kind === "unauthenticated" && (
-            <a
-              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-              href="/auth/signin"
-            >
+            <a className="carbon-feedback-link" href="/auth/signin">
               Sign in
             </a>
           )}
           {requestError.kind === "uncertain" && (
-            <a
-              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-              href="/dashboard/spools"
-            >
+            <a className="carbon-feedback-link" href="/dashboard/spools">
               Refresh stock
             </a>
           )}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 pt-1">
+      <div className="carbon-form-actions">
         <Button type="submit" disabled={pending || mutationPending || requestError?.kind === "uncertain"}>
           {pending ? "Saving…" : mode === "create" ? "Add spool" : "Save changes"}
         </Button>

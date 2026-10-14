@@ -176,9 +176,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   return (
-    <section aria-labelledby="inventory-heading" className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <section aria-labelledby="inventory-heading" className="carbon-collection">
+      <div className="carbon-collection-header">
+        <div className="carbon-collection-heading">
           <h2 id="inventory-heading" className="text-foreground text-xl font-semibold">
             Your spools
           </h2>
@@ -186,18 +186,20 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             Each spool is tracked separately, even when its labels match another.
           </p>
         </div>
-        <Button id="add-spool-button" type="button" onClick={openCreate} disabled={createOpen || mutationPending}>
-          Add a spool
-        </Button>
+        <div className="carbon-collection-actions">
+          <Button id="add-spool-button" type="button" onClick={openCreate} disabled={createOpen || mutationPending}>
+            Add a spool
+          </Button>
+        </div>
       </div>
 
-      <p role="status" aria-live="polite" className="text-success min-h-5 text-sm">
+      <p role="status" aria-live="polite" className="carbon-status-message">
         {statusMessage}
       </p>
 
       {createOpen && (
-        <section aria-labelledby="create-spool-heading" className="border-border bg-card rounded-md border p-4 sm:p-6">
-          <h3 id="create-spool-heading" className="text-card-foreground mb-4 text-lg font-semibold">
+        <section aria-labelledby="create-spool-heading" className="carbon-inline-panel">
+          <h3 id="create-spool-heading" className="mb-4 text-lg font-semibold">
             Add a spool
           </h3>
           <SpoolForm
@@ -213,90 +215,87 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       )}
 
       {spools.length === 0 ? (
-        <div className="border-border bg-card rounded-md border border-dashed p-6 text-center sm:p-8">
+        <div className="carbon-empty-state">
           <h3 className="text-card-foreground text-lg font-medium">No spools yet</h3>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Add your first spool to keep an estimate of your filament stock.
           </p>
         </div>
       ) : (
-        <ul className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <ul className="carbon-row-list">
           {spools.map((spool) => {
             const isEditing = editingSpoolId === spool.id;
             const isDeleting = deleteSpoolId === spool.id;
             const shortId = spool.id.slice(0, 8);
 
             return (
-              <li key={spool.id} className="border-border bg-card min-w-0 rounded-md border p-4 sm:p-5">
-                <article aria-labelledby={`spool-title-${spool.id}`} className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3
-                        id={`spool-title-${spool.id}`}
-                        className="text-card-foreground text-lg font-semibold [overflow-wrap:anywhere] break-words"
-                      >
-                        {spool.material}{" "}
-                        <span aria-hidden="true" className="text-muted-foreground">
-                          ·
-                        </span>{" "}
-                        {spool.colour}
-                      </h3>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        Spool <code className="font-mono">{shortId}</code>
-                      </p>
-                    </div>
-                    {!isEditing && !isDeleting && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          id={`edit-spool-${spool.id}`}
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={mutationPending}
-                          onClick={() => {
-                            openEdit(spool.id);
-                          }}
-                          aria-label={`Edit spool ${shortId}`}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          id={`delete-spool-${spool.id}`}
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={mutationPending}
-                          onClick={() => {
-                            openDelete(spool.id);
-                          }}
-                          aria-label={`Delete spool ${shortId}`}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    )}
+              <li key={spool.id}>
+                <article aria-labelledby={`spool-title-${spool.id}`} className="carbon-collection-row">
+                  <div className="carbon-row-main">
+                    <h3
+                      id={`spool-title-${spool.id}`}
+                      className="carbon-row-title text-card-foreground text-lg font-semibold"
+                    >
+                      {spool.material}{" "}
+                      <span aria-hidden="true" className="text-muted-foreground">
+                        ·
+                      </span>{" "}
+                      {spool.colour}
+                    </h3>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Spool <code className="font-mono">{shortId}</code>
+                    </p>
                   </div>
 
-                  <dl className="mt-5 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="bg-muted min-w-0 rounded-md p-3">
+                  <dl className="carbon-row-values">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Recorded</dt>
-                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">{spool.recordedGrams} g</dd>
+                      <dd className="carbon-value text-foreground text-lg">{spool.recordedGrams} g</dd>
                     </div>
-                    <div className="bg-muted min-w-0 rounded-md p-3">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Reserved</dt>
-                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">{spool.reservedGrams} g</dd>
+                      <dd className="carbon-value text-foreground text-lg">{spool.reservedGrams} g</dd>
                     </div>
-                    <div className="bg-muted min-w-0 rounded-md p-3">
+                    <div className="carbon-row-value">
                       <dt className="carbon-label">Available</dt>
-                      <dd className="carbon-value text-foreground mt-1 text-lg break-words">
-                        {spool.availableGrams} g
-                      </dd>
+                      <dd className="carbon-value text-foreground text-lg">{spool.availableGrams} g</dd>
                     </div>
                   </dl>
 
+                  {!isEditing && !isDeleting && (
+                    <div className="carbon-row-actions">
+                      <Button
+                        id={`edit-spool-${spool.id}`}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={mutationPending}
+                        onClick={() => {
+                          openEdit(spool.id);
+                        }}
+                        aria-label={`Edit spool ${shortId}`}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        id={`delete-spool-${spool.id}`}
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={mutationPending}
+                        onClick={() => {
+                          openDelete(spool.id);
+                        }}
+                        aria-label={`Delete spool ${shortId}`}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+
                   {isEditing && (
-                    <div className="border-border bg-background mt-5 rounded-md border p-4">
-                      <h4 className="text-foreground mb-4 text-base font-medium">Correct this spool</h4>
+                    <div className="carbon-inline-panel carbon-row-inline-panel">
+                      <h4 className="mb-4 text-base font-medium">Correct this spool</h4>
                       <SpoolForm
                         key={spool.id}
                         mode="edit"
@@ -315,41 +314,32 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
 
                   {isDeleting && (
                     <div
-                      className="border-warning/40 bg-warning-surface mt-5 rounded-md border p-4"
+                      className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel"
                       aria-labelledby={`delete-confirmation-${spool.id}`}
                     >
-                      <h4 id={`delete-confirmation-${spool.id}`} className="text-warning font-semibold">
+                      <h4 id={`delete-confirmation-${spool.id}`} className="font-semibold">
                         Delete this spool?
                       </h4>
-                      <p className="text-warning mt-2 text-sm leading-relaxed [overflow-wrap:anywhere] break-words">
+                      <p className="carbon-row-secondary mt-2 text-sm leading-relaxed">
                         Confirm deletion of {describeSpool(spool)}. Full spool ID:{" "}
                         <code className="break-all">{spool.id}</code>
                       </p>
                       {deleteError && (
-                        <div
-                          role="alert"
-                          className="border-destructive/40 bg-destructive/10 text-destructive mt-3 rounded-md border p-3 text-sm"
-                        >
+                        <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
                           <p>{deleteError.message}</p>
                           {deleteError.kind === "unauthenticated" && (
-                            <a
-                              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-                              href="/auth/signin"
-                            >
+                            <a className="carbon-feedback-link" href="/auth/signin">
                               Sign in
                             </a>
                           )}
                           {deleteError.kind === "uncertain" && (
-                            <a
-                              className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-                              href="/dashboard/spools"
-                            >
+                            <a className="carbon-feedback-link" href="/dashboard/spools">
                               Refresh stock
                             </a>
                           )}
                         </div>
                       )}
-                      <div className="mt-4 flex flex-wrap gap-3">
+                      <div className="carbon-form-actions mt-4">
                         <Button
                           id={`confirm-delete-${spool.id}`}
                           type="button"

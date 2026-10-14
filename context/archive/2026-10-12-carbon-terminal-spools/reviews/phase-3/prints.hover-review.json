@@ -1,0 +1,241 @@
+{
+  "date": "2026-10-13",
+  "browser": "Google Chrome 155.0.8059.39",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "scenario": "Temporary in-memory browser response mounts the actual built PrintList and React renderer with synthetic records and the current global stylesheet. Outer shell markup mirrors DashboardShell/Topbar. Hover-only checks plus opening/cancelling the existing deletion confirmation; no backend or authenticated-route retest.",
+  "assets": {
+    "listAsset": "PrintList.Ck9wUHe6.js",
+    "rendererAsset": "client.CLlhDEf_.js",
+    "cssAsset": "Layout.AaPIThPd.css"
+  },
+  "method": "Wait for CSS transitions to finish; browser sRGB canvas resolves computed colour functions and composites alpha backgrounds over ancestors before computing relative luminance.",
+  "samples": [
+    {
+      "control": "add",
+      "normal": {
+        "accessibleName": "Add a print",
+        "hovered": false,
+        "enabled": true,
+        "color": "rgb(23, 12, 11)",
+        "background": "rgb(255, 112, 88)",
+        "renderedForeground": [
+          23,
+          12,
+          11
+        ],
+        "renderedBackground": [
+          255,
+          112,
+          88
+        ],
+        "contrastRatio": 7.05,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "hover": {
+        "accessibleName": "Add a print",
+        "hovered": true,
+        "enabled": true,
+        "color": "rgb(23, 12, 11)",
+        "background": "oklab(0.715043 0.152989 0.0937344 / 0.9)",
+        "renderedForeground": [
+          23,
+          12,
+          11
+        ],
+        "renderedBackground": [
+          230,
+          102,
+          80
+        ],
+        "contrastRatio": 5.83,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "screenshot": "prints.hover-add.chrome.desktop.png"
+    },
+    {
+      "control": "refresh",
+      "normal": {
+        "accessibleName": "Refresh list",
+        "hovered": false,
+        "enabled": true,
+        "color": "rgb(240, 243, 241)",
+        "background": "oklab(0.313419 -0.0110292 -0.0106713 / 0.3)",
+        "renderedForeground": [
+          240,
+          243,
+          241
+        ],
+        "renderedBackground": [
+          18,
+          23,
+          26
+        ],
+        "contrastRatio": 16.16,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "hover": {
+        "accessibleName": "Refresh list",
+        "hovered": true,
+        "enabled": true,
+        "color": "rgb(255, 174, 154)",
+        "background": "oklab(0.313419 -0.0110292 -0.0106713 / 0.5)",
+        "renderedForeground": [
+          255,
+          174,
+          154
+        ],
+        "renderedBackground": [
+          25,
+          32,
+          34
+        ],
+        "contrastRatio": 9.26,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "screenshot": "prints.hover-refresh.chrome.desktop.png"
+    },
+    {
+      "control": "edit",
+      "normal": {
+        "accessibleName": "Edit planned print 00000000",
+        "hovered": false,
+        "enabled": true,
+        "color": "rgb(240, 243, 241)",
+        "background": "oklab(0.313419 -0.0110292 -0.0106713 / 0.3)",
+        "renderedForeground": [
+          240,
+          243,
+          241
+        ],
+        "renderedBackground": [
+          25,
+          32,
+          35
+        ],
+        "contrastRatio": 14.77,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "hover": {
+        "accessibleName": "Edit planned print 00000000",
+        "hovered": true,
+        "enabled": true,
+        "color": "rgb(255, 174, 154)",
+        "background": "oklab(0.313419 -0.0110292 -0.0106713 / 0.5)",
+        "renderedForeground": [
+          255,
+          174,
+          154
+        ],
+        "renderedBackground": [
+          31,
+          38,
+          41
+        ],
+        "contrastRatio": 8.61,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "screenshot": "prints.hover-edit.chrome.desktop.png"
+    },
+    {
+      "control": "delete",
+      "normal": {
+        "accessibleName": "Delete planned print 00000000",
+        "hovered": false,
+        "enabled": true,
+        "color": "rgb(240, 243, 241)",
+        "background": "rgba(0, 0, 0, 0)",
+        "renderedForeground": [
+          240,
+          243,
+          241
+        ],
+        "renderedBackground": [
+          20,
+          25,
+          27
+        ],
+        "contrastRatio": 15.87,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "hover": {
+        "accessibleName": "Delete planned print 00000000",
+        "hovered": true,
+        "enabled": true,
+        "color": "rgb(255, 174, 154)",
+        "background": "oklab(0.28677 0.0259768 0.0144345 / 0.5)",
+        "renderedForeground": [
+          255,
+          174,
+          154
+        ],
+        "renderedBackground": [
+          38,
+          31,
+          30
+        ],
+        "contrastRatio": 9.08,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "screenshot": "prints.hover-delete.chrome.desktop.png"
+    },
+    {
+      "control": "confirm-delete",
+      "normal": {
+        "accessibleName": "Confirm deletion",
+        "hovered": false,
+        "enabled": true,
+        "color": "rgb(23, 12, 11)",
+        "background": "rgb(255, 121, 127)",
+        "renderedForeground": [
+          23,
+          12,
+          11
+        ],
+        "renderedBackground": [
+          255,
+          121,
+          127
+        ],
+        "contrastRatio": 7.58,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "hover": {
+        "accessibleName": "Confirm deletion",
+        "hovered": true,
+        "enabled": true,
+        "color": "rgb(23, 12, 11)",
+        "background": "oklab(0.734289 0.154363 0.0538271 / 0.9)",
+        "renderedForeground": [
+          23,
+          12,
+          11
+        ],
+        "renderedBackground": [
+          233,
+          112,
+          116
+        ],
+        "contrastRatio": 6.43,
+        "activeAnimations": 0,
+        "height": 44
+      },
+      "screenshot": "prints.hover-confirm-delete.chrome.desktop.png"
+    }
+  ],
+  "pageErrors": [],
+  "apiRequests": [],
+  "horizontalOverflow": false,
+  "syntheticDataPersisted": false
+}

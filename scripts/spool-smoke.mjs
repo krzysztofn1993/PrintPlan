@@ -30,6 +30,10 @@ function assertDto(spool, expected) {
   ensure(spool.availableGrams === expected.recordedGrams, "Available stock did not match recorded stock.");
 }
 
+function removeReactTextSeparators(html) {
+  return html.replace(/<!-- -->/g, "");
+}
+
 function restRequest(options) {
   return sharedRestRequest({ ...options, path: "/rest/v1/spools" });
 }
@@ -518,7 +522,10 @@ export async function runSpoolSmoke({
         page.body.includes("Black / Red / Gold") && page.body.includes("PLA"),
         "The SSR page did not show the complete corrected spool labels.",
       );
-      ensure(page.body.includes("0 g"), "The SSR page did not show the corrected zero-gram amount.");
+      ensure(
+        removeReactTextSeparators(page.body).includes("0 g"),
+        "The SSR page did not show the corrected zero-gram amount.",
+      );
     });
 
     await step("duplicate deletion persists across API and SSR rereads", async () => {
@@ -562,7 +569,7 @@ export async function runSpoolSmoke({
       );
       const page = await appRequest("/dashboard/spools", { jar: activeJarA });
       ensure(
-        page.status === 200 && page.body.includes("0 g"),
+        page.status === 200 && removeReactTextSeparators(page.body).includes("0 g"),
         "The SSR stock page did not show persisted stock after relogin.",
       );
     });

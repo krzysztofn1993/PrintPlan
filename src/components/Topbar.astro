@@ -1,42 +1,47 @@
 ---
+interface Props {
+  presentation?: "default" | "terminal";
+}
+
+const { presentation = "default" } = Astro.props;
 const { user, authUnavailable } = Astro.locals;
 const currentPath = Astro.url.pathname;
+const terminalPresentation = presentation === "terminal";
+const navClass = terminalPresentation
+  ? "carbon-terminal-nav"
+  : "mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-card-foreground";
+const identityClass = terminalPresentation ? "carbon-terminal-identity" : "text-muted-foreground min-w-0 break-words";
+const linksClass = terminalPresentation ? "carbon-terminal-links" : "flex flex-wrap items-center gap-x-4 gap-y-2";
+const signedOutLinksClass = terminalPresentation ? "carbon-terminal-links" : "flex flex-wrap gap-x-4 gap-y-2";
+const linkClass = terminalPresentation
+  ? "carbon-terminal-link"
+  : "text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none";
 ---
 
-<nav
-  aria-label="Account navigation"
-  class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-card px-4 py-2 text-sm text-card-foreground"
->
+<nav aria-label="Account navigation" class:list={navClass}>
   {user ? (
     <>
-      <span class="text-muted-foreground min-w-0 break-words">{user.email}</span>
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <a
-          href="/dashboard"
-          aria-current={currentPath === "/dashboard" ? "page" : undefined}
-          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-        >
+      <span class:list={identityClass}>{user.email}</span>
+      <div class:list={linksClass}>
+        <a href="/dashboard" aria-current={currentPath === "/dashboard" ? "page" : undefined} class:list={linkClass}>
           Dashboard
         </a>
         <a
           href="/dashboard/spools"
           aria-current={currentPath.startsWith("/dashboard/spools") ? "page" : undefined}
-          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+          class:list={linkClass}
         >
           Filament stock
         </a>
         <a
           href="/dashboard/prints"
           aria-current={currentPath.startsWith("/dashboard/prints") ? "page" : undefined}
-          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+          class:list={linkClass}
         >
           Planned prints
         </a>
         <form method="POST" action="/api/auth/signout" class="flex">
-          <button
-            type="submit"
-            class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-          >
+          <button type="submit" class:list={linkClass}>
             Sign out
           </button>
         </form>
@@ -44,20 +49,14 @@ const currentPath = Astro.url.pathname;
     </>
   ) : (
     <>
-      <span class="text-muted-foreground">
+      <span class:list={terminalPresentation ? identityClass : "text-muted-foreground"}>
         {authUnavailable ? "Authentication status is temporarily unavailable" : "Not signed in"}
       </span>
-      <div class="flex flex-wrap gap-x-4 gap-y-2">
-        <a
-          href="/auth/signin"
-          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-        >
+      <div class:list={signedOutLinksClass}>
+        <a href="/auth/signin" class:list={linkClass}>
           Sign in
         </a>
-        <a
-          href="/auth/signup"
-          class="text-primary inline-flex min-h-11 items-center transition-colors hover:underline hover:brightness-125 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-        >
+        <a href="/auth/signup" class:list={linkClass}>
           Sign up
         </a>
       </div>
