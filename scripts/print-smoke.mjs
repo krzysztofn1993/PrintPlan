@@ -1,6 +1,6 @@
 // Bounded planned-print smoke scenario shared by the authenticated HTTP smoke.
 
-/* global Blob, setTimeout */
+/* global Blob */
 
 import {
   appFormData,
@@ -113,6 +113,7 @@ export async function runPrintSmoke({
   activeJarB,
   requestSignal,
   cleanupRequestSignal,
+  expireScenarioForCleanupProbe,
   cleanupProbe,
 }) {
   ensure(
@@ -242,9 +243,7 @@ export async function runPrintSmoke({
         );
         throw new Error("Induced failure after signout before fresh signin");
       }
-      const timeoutSignal = requestSignal(1);
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      ensure(timeoutSignal.aborted, "The cleanup timeout probe did not exhaust its scenario signal.");
+      expireScenarioForCleanupProbe();
       throw new Error("Induced scenario timeout");
     }
 
@@ -452,6 +451,12 @@ export async function runPrintSmoke({
       ]);
       assertPrint(updated.print, { name: null, material: "PLA", colour: "Black / Red / Gold", requiredGrams: 90 });
       ensure(updated.print.version === duplicate.version + 1, "A committed edit did not advance its version.");
+      ensure(
+        updated.print.id === duplicate.id &&
+          timestampInstant(updated.print.createdAt, "The edited print creation time") ===
+            timestampInstant(duplicate.createdAt, "The original print creation time"),
+        "The API print edit changed its identifier or creation time.",
+      );
       rememberDto(accountA.id, updated.print);
       await assertPersisted(accountA.id, activeJarA);
       ensure(
@@ -551,14 +556,16 @@ export async function runPrintSmoke({
       const direct = inserted.data[0];
       ensure(typeof direct.id === "string", "The direct REST insert did not return a print identifier.");
       track(accountA.id, direct.id);
-      rememberRest(accountA.id, direct);
       ensure(
         direct.user_id === accountA.id &&
+          direct.name === "Direct REST" &&
           direct.material === "PETG" &&
+          direct.colour === "Direct / REST" &&
           direct.required_grams === 30 &&
           direct.version === 1,
         "The database did not canonicalize the direct print insert.",
       );
+      rememberRest(accountA.id, direct);
       const readOwn = await restRequest({
         config,
         requestSignal,
@@ -721,6 +728,18 @@ export async function runPrintSmoke({
         edit.ok && Array.isArray(edit.data) && edit.data.length === 1 && edit.data[0].version === 2,
         "A direct edit did not increment the print version.",
       );
+      const edited = snapshotFromRest(edit.data[0], accountA.id);
+      assertPrint(edited, {
+        name: direct.name,
+        material: direct.material,
+        colour: direct.colour,
+        requiredGrams: 31,
+      });
+      ensure(
+        edited.id === direct.id &&
+          edited.createdAt === timestampInstant(direct.created_at, "The original REST print creation time"),
+        "The REST print edit changed its identifier or creation time.",
+      );
       rememberRest(accountA.id, edit.data[0]);
       await assertPersisted(accountA.id, activeJarA);
       const staleApp = await updatePrint(
@@ -771,19 +790,25 @@ export async function runPrintSmoke({
         "Writer two session was expired before the race.",
       );
       const concurrentUpdate = async (jar, name, grams) => {
+        const requested = {
+          name,
+          material: "PLA",
+          colour: "Black / Red / Gold",
+          requiredGrams: Number(grams),
+        };
         const response = await appRequest("/api/prints/" + current.id + "/update", {
           method: "POST",
           jar,
           formEntries: [
-            ["name", name],
-            ["material", "PLA"],
-            ["colour", "Black / Red / Gold"],
-            ["requiredGrams", grams],
+            ["name", requested.name],
+            ["material", requested.material],
+            ["colour", requested.colour],
+            ["requiredGrams", String(requested.requiredGrams)],
             ["expectedVersion", String(current.version)],
           ],
         });
         assertPrivateHeaders(response, "json", "Planned-print");
-        return { status: response.status, payload: readAppJson(response, "planned-print") };
+        return { status: response.status, payload: readAppJson(response, "planned-print"), requested };
       };
       const competing = await Promise.all([
         concurrentUpdate(jarOne, "Winner one", "81"),
@@ -800,8 +825,14 @@ export async function runPrintSmoke({
         "The losing concurrent write did not return the conflict contract.",
       );
       const winner = winners[0].payload.print;
-      ensure(["Winner one", "Winner two"].includes(winner.name), "The winning edit returned an unexpected value.");
+      assertPrint(winner, winners[0].requested);
       ensure(winner.version === current.version + 1, "The concurrent edit advanced the version more than once.");
+      ensure(
+        winner.id === current.id &&
+          timestampInstant(winner.createdAt, "The winning print creation time") ===
+            timestampInstant(current.createdAt, "The original race print creation time"),
+        "The winning print edit changed its identifier or creation time.",
+      );
       rememberDto(accountA.id, winner);
       const reread = (await listPrints(activeJarA)).find((print) => print.id === current.id);
       ensure(

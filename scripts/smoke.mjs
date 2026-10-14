@@ -13,7 +13,8 @@ const MAILPIT_URL = new URL(process.env.MAILPIT_URL ?? "http://127.0.0.1:54324")
 const STARTED_AT = Date.now();
 const TOTAL_LIMIT_MS = 300_000;
 const CLEANUP_WINDOW_MS = 30_000;
-const SCENARIO_DEADLINE_AT = STARTED_AT + TOTAL_LIMIT_MS - CLEANUP_WINDOW_MS;
+let scenarioDeadlineAt = STARTED_AT + TOTAL_LIMIT_MS - CLEANUP_WINDOW_MS;
+let cleanupDeadlineAt = STARTED_AT + TOTAL_LIMIT_MS;
 const REFRESH_WAIT_LIMIT_MS = 180_000;
 const MAIL_WAIT_LIMIT_MS = 30_000;
 const REQUEST_LIMIT_MS = 10_000;
@@ -28,7 +29,7 @@ function ensure(condition, message) {
 }
 
 function remainingMs() {
-  const remaining = SCENARIO_DEADLINE_AT - Date.now();
+  const remaining = scenarioDeadlineAt - Date.now();
   ensure(remaining > 0, "The reserved smoke scenario window was exceeded");
   return remaining;
 }
@@ -38,9 +39,27 @@ function requestSignal(limit = REQUEST_LIMIT_MS) {
 }
 
 function cleanupRequestSignal(limit = REQUEST_LIMIT_MS) {
-  const remaining = STARTED_AT + TOTAL_LIMIT_MS - Date.now();
+  const remaining = cleanupDeadlineAt - Date.now();
   ensure(remaining > 0, "The reserved smoke cleanup window was exceeded");
   return AbortSignal.timeout(Math.max(1, Math.min(limit, remaining)));
+}
+
+function expireScenarioForCleanupProbe() {
+  const now = Date.now();
+  scenarioDeadlineAt = now - 1;
+  cleanupDeadlineAt = Math.min(cleanupDeadlineAt, now + CLEANUP_WINDOW_MS);
+  let scenarioError;
+  try {
+    requestSignal();
+  } catch (error) {
+    scenarioError = error;
+  }
+  ensure(
+    scenarioError instanceof Error && scenarioError.message === "The reserved smoke scenario window was exceeded",
+    "The cleanup timeout probe did not block ordinary scenario requests.",
+  );
+  ensure(!cleanupRequestSignal().aborted, "The cleanup timeout probe exhausted the cleanup window.");
+  console.log("PASS  shared scenario deadline expired; ordinary requests blocked and cleanup window remains usable");
 }
 
 const safeError = safeSmokeError;
@@ -390,7 +409,7 @@ function validateConfirmationUrl(url) {
 }
 
 async function waitForConfirmation(recipient) {
-  const deadline = Math.min(Date.now() + MAIL_WAIT_LIMIT_MS, SCENARIO_DEADLINE_AT);
+  const deadline = Math.min(Date.now() + MAIL_WAIT_LIMIT_MS, scenarioDeadlineAt);
   let lastCount = 0;
 
   while (Date.now() < deadline) {
@@ -752,6 +771,7 @@ async function runSmoke() {
     activeJarB,
     requestSignal,
     cleanupRequestSignal,
+    expireScenarioForCleanupProbe,
     cleanupProbe: cleanupProbe?.startsWith("spool-") ? cleanupProbe.slice("spool-".length) : undefined,
   });
 
@@ -765,6 +785,7 @@ async function runSmoke() {
     activeJarB,
     requestSignal,
     cleanupRequestSignal,
+    expireScenarioForCleanupProbe,
     cleanupProbe: cleanupProbe?.startsWith("print-") ? cleanupProbe.slice("print-".length) : undefined,
   });
 

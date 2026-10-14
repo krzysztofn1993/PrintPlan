@@ -17,16 +17,22 @@ Appended a worktree-only update to the actual print migration that increased eve
 
 ## Cleanup failure probes
 
-Each opt-in run intentionally exits with its injected scenario failure after exercising the cleanup `finally` path. Both owners' tracked records were removed:
+The probes below were rerun during implementation-review triage on 2026-10-14. Each opt-in run intentionally exits with its injected scenario failure after exercising the cleanup `finally` path. Both owners' tracked records were removed:
 
-| Probe                | Injected condition                              | Cleanup result                                                        |
-| -------------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
-| `spool-timeout`      | Scenario deadline expires                       | A and B's tracked spool records removed                               |
-| `spool-post-signout` | A fails after sign-out and before fresh sign-in | A signs in again for cleanup; A and B's tracked spool records removed |
-| `print-timeout`      | Scenario deadline expires                       | A and B's tracked print records removed                               |
-| `print-post-signout` | A fails after sign-out and before fresh sign-in | A signs in again for cleanup; A and B's tracked print records removed |
+| Probe                | Injected condition                                                       | Cleanup result                                                                |
+| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `spool-timeout`      | Shared scenario deadline forced into the past; ordinary requests blocked | A and B's tracked spool records removed within the independent cleanup window |
+| `spool-post-signout` | A fails after sign-out and before fresh sign-in                          | A signs in again for cleanup; A and B's tracked spool records removed         |
+| `print-timeout`      | Shared scenario deadline forced into the past; ordinary requests blocked | A and B's tracked print records removed within the independent cleanup window |
+| `print-post-signout` | A fails after sign-out and before fresh sign-in                          | A signs in again for cleanup; A and B's tracked print records removed         |
 
-The first timeout-probe attempt exposed that `AbortSignal.timeout()` alone does not keep Node's event loop alive. Node exited with an unsettled top-level await before entering cleanup. The probe now holds a short referenced timer, confirms the scenario signal expired, and then raises the expected failure so `finally` runs. The two tagged spool rows left by that first broken harness run were removed from the local database using their cleanup labels and recent smoke-account ownership. All four corrected probes then exercised owner-scoped cleanup. A final local database query found **zero** tagged spool or print probe records.
+The original timeout-probe attempt exposed that `AbortSignal.timeout()` alone does not keep Node's event loop alive. Node exited with an unsettled top-level await before entering cleanup. A short referenced timer fixed that harness failure, and the two tagged spool rows it left were removed using their cleanup labels and recent smoke-account ownership. The implementation review subsequently found that these probes expired only an individual request signal, not the shared scenario deadline. The earlier description of scenario-deadline expiry was therefore inaccurate.
+
+The revised timeout probes call the shared deadline injector after creating both owners' fixtures. It moves the scenario deadline into the past, confirms normal `requestSignal()` creation fails with `The reserved smoke scenario window was exceeded`, and confirms the cleanup signal remains usable. The cleanup deadline is capped at 30 seconds from injection and never extends the existing 300-second total bound. The probe then throws `Induced scenario timeout`, exercising real owner-session restoration and REST deletion through `finally` after the scenario budget has expired.
+
+Run a probe with `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 PRINTPLAN_SMOKE_CLEANUP_PROBE=<probe> npm run smoke`. All four reruns returned the expected exit code 1, the specific injected failure, and `PASS` cleanup messages for both owners; the timeout runs also reported `PASS shared scenario deadline expired; ordinary requests blocked and cleanup window remains usable`. Post-run database queries found **zero** `Cleanup Probe A` or `Cleanup Probe B` rows in both product tables. Exit code 1 is expected for these deliberate failures and must be assessed together with the deadline and cleanup assertions.
+
+After the triage fixes, `npm run lint`, `git diff --check` and the full normal built-preview smoke passed. The normal smoke exited 0 with `All auth smoke steps passed`, including the stronger F1 acknowledgement/reread assertions and the existing auth-expiry/refresh checks. The revised deadline injector is used only by the timeout probes. See `follow-ups/review-fixes.md` for both fixed review findings; the original database, migration and native-gate evidence above remains from implementation/review verification.
 
 ## Boundaries and remaining limits
 
