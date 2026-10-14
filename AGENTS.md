@@ -15,7 +15,7 @@ For library, framework, SDK, API, CLI, or cloud-service questions, fetch current
 ### Hard rules
 
 - **Discover the domain; don't assume it.** Start with no entity names, aggregates or paths, and cite where every term comes from (a document or the code).
-- **Produce a map or a plan, not code.** These artifacts don't modify production code; the change happens later through `/10x-plan` -> `/10x-implement`.
+- **For domain discovery and DDD mapping/planning tasks, produce a map or a plan.** Modify only context artifacts during these tasks. Implement production changes through `/10x-plan` -> `/10x-implement`.
 - **Use the glossary's terms.** Once `context/domain/glossary.md` exists, use its terms in code, plans and conversations, and avoid the names it marks "don't call it".
 
 ### Task Router - Where to start
@@ -26,9 +26,9 @@ For domain distillation, read @.agents/skills/10x-domain-distillation/SKILL.md. 
 
 ## Commands and verification
 
-Use Node 24.21.0 from @.nvmrc and `npm ci`. Scripts live in @package.json.
+Use the Node version from @.nvmrc and install dependencies with `npm ci`. Scripts live in @package.json.
 
-CI on `master` runs the native auth, stock, and planned-print contract tests, `npx astro sync`, lint, `npx astro check`, and build; its integration job runs Supabase database tests and the expanded built-preview smoke against local Supabase and Mailpit. See @.github/workflows/ci.yml. Run `npm run verify:deploy` for the complete native gate and `npm run smoke` against `npm run preview` with local Supabase configured; `BASE_URL` defaults to `http://localhost:4321`. @scripts/smoke.mjs covers auth redirects, cookie sessions, stock and planned-print persistence, owner isolation, and competing print edits. No browser test runner is configured.
+Run `npm run verify:deploy` for the complete native gate and `npm run smoke` against `npm run preview` with local Supabase and Mailpit configured; `BASE_URL` defaults to `http://localhost:4321`. See @package.json for gate commands, @.github/workflows/ci.yml for CI jobs, and @scripts/smoke.mjs for smoke coverage. No browser test runner is configured.
 
 ## Structure and conventions
 
@@ -36,7 +36,7 @@ Routes live in `src/pages/`, auth endpoints in `src/pages/api/auth/`, layouts in
 
 Use `@/` imports (@tsconfig.json) and `cn()` from @src/lib/utils.ts for merged classes. Follow @.prettierrc.json and @eslint.config.js; pre-commit uses lint-staged (@package.json).
 
-Dashboard views use the design contract in [src/styles/global.css](src/styles/global.css), [src/layouts/DashboardShell.astro](src/layouts/DashboardShell.astro) and [src/components/ui/](src/components/ui/). Check those components before creating another presentation component. Keep literal colours and arbitrary sizing out of dashboard views. Reusing the shell and presentation must preserve each collection's data meanings and keep its state, handlers and mutations in the owning collection. See the retained [Carbon Terminal review evidence](context/archive/2026-10-12-carbon-terminal-spools/verification.md) and [screenshots](context/archive/2026-10-12-carbon-terminal-spools/reviews/phase-3/).
+Dashboard views use the design contract in [src/styles/global.css](src/styles/global.css), [src/layouts/DashboardShell.astro](src/layouts/DashboardShell.astro) and [src/components/ui/](src/components/ui/). Check those components before creating another presentation component. Keep literal colours and arbitrary sizing out of dashboard views. During dashboard presentation refactors, preserve the existing DTO bindings for `recordedGrams`, `reservedGrams`, `availableGrams`, and `requiredGrams`. Keep collection state, handlers and API mutations in the owning collection under `src/components/spools/` or `src/components/prints/`. See the retained [Carbon Terminal review evidence](context/archive/2026-10-12-carbon-terminal-spools/verification.md) and [screenshots](context/archive/2026-10-12-carbon-terminal-spools/reviews/phase-3/).
 
 Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool and planned-print tables are implemented, while reservation logic is still planned. Change artifacts belong in `context/changes/<change-id>/`.
 
