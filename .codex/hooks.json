@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "hook_root=$(git rev-parse --show-toplevel) || { echo 'PrintPlan hooks: cannot resolve the checkout with git.' >&2; exit 2; }; command -v node >/dev/null 2>&1 || { echo 'PrintPlan hooks: Node.js is missing.' >&2; exit 2; }; node \"$hook_root/.codex/hooks/check-edits.mjs\" || exit 2",
+            "timeout": 60,
+            "statusMessage": "Checking edited files"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "hook_root=$(git rev-parse --show-toplevel) || { echo 'PrintPlan hooks: cannot resolve the checkout with git.' >&2; exit 2; }; command -v node >/dev/null 2>&1 || { echo 'PrintPlan hooks: Node.js is missing.' >&2; exit 2; }; node \"$hook_root/.codex/hooks/check-turn.mjs\" || exit 2",
+            "timeout": 120,
+            "statusMessage": "Checking changed files, tests and types"
+          }
+        ]
+      }
+    ]
+  }
+}
