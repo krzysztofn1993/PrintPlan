@@ -472,6 +472,126 @@ SELECT lives_ok(
   'the integer representation maximum is accepted'
 );
 
+-- Quantity edit oracle: the accepted stock contract, independent of application constants.
+INSERT INTO public.spools (user_id, material, colour, recorded_grams)
+VALUES (auth.uid(), 'EDIT-BOUNDARIES', 'Blue', 125);
+
+CREATE TEMP TABLE spool_edit_snapshot ON COMMIT DROP AS
+SELECT to_jsonb(s) AS expected FROM public.spools s WHERE material = 'EDIT-BOUNDARIES';
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = -1 WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects -1'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected -1 edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = 1.5 WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects 1.5'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected 1.5 edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = 2147483648 WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects 2147483648'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected 2147483648 edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = 'NaN'::numeric WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects NaN::numeric'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected NaN::numeric edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = 'Infinity'::numeric WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects Infinity::numeric'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected Infinity::numeric edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = '-Infinity'::numeric WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23514',
+  'new row for relation "spools" violates check constraint "spools_recorded_grams_valid"',
+  'owned stock update rejects -Infinity::numeric'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected -Infinity::numeric edit leaves the complete stock row unchanged'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.spools SET recorded_grams = NULL WHERE material = 'EDIT-BOUNDARIES'$$,
+  '23502',
+  'null value in column "recorded_grams" of relation "spools" violates not-null constraint',
+  'owned stock update rejects NULL'
+);
+
+SELECT is(
+  (SELECT to_jsonb(s) FROM public.spools s WHERE material = 'EDIT-BOUNDARIES'),
+  (SELECT expected FROM spool_edit_snapshot),
+  'rejected NULL edit leaves the complete stock row unchanged'
+);
+
+SELECT lives_ok(
+  $$UPDATE public.spools SET recorded_grams = 2147483647 WHERE material = 'EDIT-BOUNDARIES'$$,
+  'owned stock edit accepts 2147483647 grams'
+);
+
+SELECT is(
+  (SELECT recorded_grams FROM public.spools WHERE material = 'EDIT-BOUNDARIES'),
+  2147483647::numeric,
+  'owned stock edit persists 2147483647 grams'
+);
+
+SELECT lives_ok(
+  $$UPDATE public.spools SET recorded_grams = 0 WHERE material = 'EDIT-BOUNDARIES'$$,
+  'owned stock edit accepts 0 grams'
+);
+
+SELECT is(
+  (SELECT recorded_grams FROM public.spools WHERE material = 'EDIT-BOUNDARIES'),
+  0::numeric,
+  'owned stock edit persists 0 grams'
+);
+
 SELECT is(
   (SELECT count(*)::integer FROM public.spools
     WHERE user_id = auth.uid() AND material = repeat('S', 80)),
@@ -521,6 +641,69 @@ SELECT is(
   120::numeric,
   'owner A spool remains unchanged after owner B attempts'
 );
+
+-- The shared text contract preserves non-whitespace and combining marks without composition.
+INSERT INTO public.spools (user_id, material, colour, recorded_grams)
+SELECT auth.uid(), 'LABEL-BOUNDARY-' || suffix, input, 1
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+SELECT is(
+  (SELECT convert_to(colour, 'UTF8') FROM public.spools WHERE material = 'LABEL-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'spools insert preserves exact colour bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+INSERT INTO public.spools (user_id, material, colour, recorded_grams)
+SELECT auth.uid(), 'LABEL-EDIT-BOUNDARY-' || suffix, 'Before Unicode edit', 1
+FROM generate_series(1, 6) AS fixture(suffix);
+
+WITH changed AS (
+UPDATE public.spools AS record
+SET colour = fixture.input
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected)
+WHERE record.material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix
+RETURNING record.id
+)
+SELECT is(
+  (SELECT count(*)::integer FROM changed),
+  6,
+  'Unicode edits affect all six independently seeded rows'
+);
+SELECT is(
+  (SELECT convert_to(colour, 'UTF8') FROM public.spools WHERE material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'spools update preserves exact colour bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
 
 RESET ROLE;
 SELECT * FROM finish();

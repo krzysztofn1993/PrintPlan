@@ -5,10 +5,12 @@ import test from "node:test";
 import {
   AuthApiError,
   AuthInvalidCredentialsError,
+  AuthInvalidJwtError,
   AuthRetryableFetchError,
   AuthSessionMissingError,
 } from "@supabase/supabase-js";
-import { createChunks, createServerClient, stringToBase64URL } from "@supabase/ssr";
+import { createChunks, createServerClient, parseCookieHeader, stringToBase64URL } from "@supabase/ssr";
+import { createAuthMiddleware } from "../src/lib/auth-middleware.ts";
 import { createAuthCookieStore } from "../src/lib/auth-cookies.ts";
 import { classifyAuthError, signOutPreservingCookies } from "../src/lib/auth-errors.ts";
 import {
@@ -152,6 +154,13 @@ test("auth failures distinguish invalid sessions from retryable outages", () => 
   assert.equal(classifyAuthError(new AuthRetryableFetchError("Network issue", 0), "session"), "unavailable");
   assert.equal(classifyAuthError(new AuthApiError("Provider issue", 503, "server_error"), "session"), "unavailable");
   assert.equal(classifyAuthError(new Error("network unavailable"), "session"), "unexpected");
+  assert.equal(classifyAuthError(new AuthInvalidJwtError("Invalid JWT"), "session"), "invalid-session");
+  for (const operation of ["session", "credentials", "signout"]) {
+    assert.equal(
+      classifyAuthError(new AuthApiError("Rate limited", 429, "over_request_rate_limit"), operation),
+      "unavailable",
+    );
+  }
 });
 
 test("protected path matching respects dashboard path segments", () => {
@@ -235,7 +244,14 @@ const syntheticUser = {
   email: "contract@example.test",
 };
 
-function makeAuthFixture({ signout = "success", refreshBeforeSignout = false } = {}) {
+function makeAuthFixture({
+  signout = "success",
+  refreshBeforeSignout = false,
+  expired = false,
+  lookup = "success",
+  refresh = "success",
+  incomingCookies,
+} = {}) {
   const now = Math.floor(Date.now() / 1000);
   const projectUrl = "https://project.supabase.co";
   const storageKey = "sb-project-auth-token";
@@ -243,12 +259,12 @@ function makeAuthFixture({ signout = "success", refreshBeforeSignout = false } =
     access_token: `old-access-${"o".repeat(4000)}`,
     token_type: "bearer",
     expires_in: refreshBeforeSignout ? 20 : 3600,
-    expires_at: now + (refreshBeforeSignout ? 20 : 3600),
+    expires_at: now + (expired ? -3600 : refreshBeforeSignout ? 20 : 3600),
     refresh_token: "old-refresh-token",
     user: syntheticUser,
   };
   const initialCookieValue = `base64-${stringToBase64URL(JSON.stringify(initialSession))}`;
-  const initialCookies = createChunks(storageKey, initialCookieValue);
+  const initialCookies = incomingCookies ?? createChunks(storageKey, initialCookieValue);
   const cookies = createAuthCookieStore(initialCookies);
   const responseHeaders = new Headers();
   const calls = [];
@@ -256,6 +272,15 @@ function makeAuthFixture({ signout = "success", refreshBeforeSignout = false } =
   const fetch = async (input) => {
     const url = new URL(input.toString());
     calls.push(`${url.pathname}${url.search}`);
+    const mode = url.pathname.endsWith("/token") ? refresh : url.pathname.endsWith("/user") ? lookup : "success";
+    if (mode === "network") throw new TypeError("fetch failed");
+    if (mode !== "success") {
+      const status = Number(mode);
+      return Response.json(
+        { message: "Private provider failure", code: status === 400 ? "refresh_token_not_found" : "server_error" },
+        { status },
+      );
+    }
     if (url.pathname.endsWith("/token")) {
       const refreshedSession = {
         access_token: `fresh-access-${"n".repeat(4000)}`,
@@ -278,18 +303,20 @@ function makeAuthFixture({ signout = "success", refreshBeforeSignout = false } =
     return Response.json({ message: "unexpected request" }, { status: 404 });
   };
 
-  const client = createServerClient(projectUrl, "test-anon-key", {
-    cookies: {
-      getAll: () => cookies.getAll(),
-      setAll: (mutations, headers) => {
-        cookies.setAll(mutations);
-        Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value));
+  const createClient = (store, headers) =>
+    createServerClient(projectUrl, "test-anon-key", {
+      cookies: {
+        getAll: () => store.getAll(),
+        setAll: (mutations, sdkHeaders) => {
+          store.setAll(mutations);
+          Object.entries(sdkHeaders).forEach(([name, value]) => headers.set(name, value));
+        },
       },
-    },
-    global: { fetch },
-  });
+      global: { fetch },
+    });
 
-  return { client, cookies, responseHeaders, calls, initialCookies };
+  const client = createClient(cookies, responseHeaders);
+  return { client, createClient, cookies, responseHeaders, calls, initialCookies };
 }
 
 for (const failureMode of ["503", "network"]) {
@@ -375,4 +402,201 @@ test("successful global signout still emits cookie deletions", async () => {
     true,
   );
   assert.ok(emitted.some((cookie) => cookie.options.maxAge === 0));
+});
+
+function middlewareRequest(fixture, { path = "/dashboard/settings", method = "GET" } = {}) {
+  const emitted = [];
+  const request = new Request(`https://app.test${path}`, {
+    method,
+    headers: { Cookie: fixture.initialCookies.map(({ name, value }) => `${name}=${value}`).join("; ") },
+  });
+  const context = {
+    request,
+    url: new URL(request.url),
+    locals: {},
+    cookies: { set: (name, value, options) => emitted.push({ name, value, options }) },
+    redirect: (location) => new Response(null, { status: 302, headers: { Location: location } }),
+  };
+  let nextCalls = 0;
+  const handler = createAuthMiddleware(fixture.createClient, (headers) =>
+    parseCookieHeader(headers.get("Cookie") ?? ""),
+  );
+  return {
+    context,
+    emitted,
+    nextCalls: () => nextCalls,
+    run: () =>
+      handler(context, async () => {
+        nextCalls += 1;
+        return new Response("route response", { status: 200 });
+      }),
+  };
+}
+
+for (const boundary of ["lookup", "refresh"]) {
+  for (const failure of ["503", "network"]) {
+    test(
+      `middleware ${boundary} ${failure} preserves cookies and recovers on a fresh request`,
+      { timeout: 45_000 },
+      async (t) => {
+        // The SDK logs fetch failures; assert responses without printing its diagnostics.
+        t.mock.method(console, "error", () => undefined);
+        t.mock.method(console, "warn", () => undefined);
+        const fixture = makeAuthFixture({ [boundary]: failure, expired: boundary === "refresh" });
+        const request = middlewareRequest(fixture);
+        const response = await request.run();
+        assert.equal(response.status, 503);
+        assert.equal(response.headers.get("Location"), null);
+        assert.equal(response.headers.get("Retry-After"), "30");
+        assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+        assert.equal(response.headers.get("Expires"), "0");
+        assert.equal(response.headers.get("Pragma"), "no-cache");
+        const body = await response.text();
+        assert.match(body, /href="\/dashboard\/settings"/);
+        assert.doesNotMatch(body, /Private provider failure|fetch failed|old-refresh|old-access/);
+        assert.equal(request.nextCalls(), 0);
+        assert.equal(request.context.locals.authUnavailable, true);
+        assert.equal(request.context.locals.user, null);
+        assert.deepEqual(request.context.locals.authCookies.getAll(), fixture.initialCookies);
+        assert.deepEqual(request.emitted, []);
+        assert.ok(
+          fixture.calls.some((path) =>
+            path.startsWith(boundary === "refresh" ? "/auth/v1/token?grant_type=refresh_token" : "/auth/v1/user"),
+          ),
+        );
+
+        const recovery = makeAuthFixture({ incomingCookies: request.context.locals.authCookies.getAll() });
+        const nextRequest = middlewareRequest(recovery);
+        const recovered = await nextRequest.run();
+        assert.equal(recovered.status, 200);
+        assert.equal(await recovered.text(), "route response");
+        assert.equal(nextRequest.nextCalls(), 1);
+        assert.equal(nextRequest.context.locals.user.id, syntheticUser.id);
+        assert.equal(nextRequest.context.locals.authUnavailable, false);
+        if (boundary === "refresh") {
+          assert.ok(recovery.calls.includes("/auth/v1/token?grant_type=refresh_token"));
+          assert.ok(nextRequest.emitted.some(({ value, options }) => value && options.maxAge > 0));
+          assert.match(recovered.headers.get("Cache-Control"), /private.*no-store/);
+          assert.equal(recovered.headers.get("Expires"), "0");
+          assert.equal(recovered.headers.get("Pragma"), "no-cache");
+          assert.notDeepEqual(nextRequest.context.locals.authCookies.getAll(), fixture.initialCookies);
+        }
+      },
+    );
+  }
+}
+
+test("middleware redirects missing and rejected sessions but treats lookup 429 as unavailable", async () => {
+  for (const options of [{ incomingCookies: [] }, { lookup: "401" }, { expired: true, refresh: "400" }]) {
+    const request = middlewareRequest(makeAuthFixture(options));
+    const response = await request.run();
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get("Location"), "/auth/signin");
+    assert.equal(request.context.locals.user, null);
+    assert.equal(request.context.locals.authUnavailable, false);
+    assert.equal(request.nextCalls(), 0);
+    if (options.expired) {
+      assert.deepEqual(request.context.locals.authCookies.getAll(), []);
+      assert.ok(request.emitted.some(({ options }) => options.maxAge === 0));
+      assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+      assert.equal(response.headers.get("Expires"), "0");
+      assert.equal(response.headers.get("Pragma"), "no-cache");
+    }
+  }
+  const request = middlewareRequest(makeAuthFixture({ lookup: "429" }));
+  assert.equal((await request.run()).status, 503);
+  assert.equal(request.context.locals.authUnavailable, true);
+});
+
+test("middleware finalizes successful refresh on a downstream redirect and isolates later requests", async () => {
+  const fixture = makeAuthFixture({ expired: true });
+  const request = middlewareRequest(fixture);
+  // A downstream route can redirect after middleware has refreshed its session.
+  const handler = createAuthMiddleware(fixture.createClient, (headers) =>
+    parseCookieHeader(headers.get("Cookie") ?? ""),
+  );
+  const response = await handler(request.context, async () => request.context.redirect("/dashboard/spools"));
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("Location"), "/dashboard/spools");
+  assert.equal(request.context.locals.user.id, syntheticUser.id);
+  assert.ok(
+    request.emitted.some(
+      ({ name, value, options }) => name.startsWith("sb-project-auth-token.") && value && options.maxAge > 0,
+    ),
+  );
+  assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+  assert.equal(response.headers.get("Expires"), "0");
+  assert.equal(response.headers.get("Pragma"), "no-cache");
+
+  const anonymous = middlewareRequest(makeAuthFixture({ incomingCookies: [] }));
+  assert.equal((await anonymous.run()).status, 302);
+  assert.equal(anonymous.context.locals.user, null);
+  assert.deepEqual(anonymous.emitted, []);
+  assert.notEqual(anonymous.context.locals.authCookies, request.context.locals.authCookies);
+});
+
+test("middleware skips identity lookup for credential POSTs and carries outages to public and API routes", async () => {
+  for (const path of ["/api/auth/signup", "/api/auth/signin"]) {
+    const fixture = makeAuthFixture({ lookup: "503" });
+    const request = middlewareRequest(fixture, { path, method: "POST" });
+    assert.equal((await request.run()).status, 200);
+    assert.equal(request.nextCalls(), 1);
+    assert.deepEqual(fixture.calls, []);
+    assert.equal(request.context.locals.authUnavailable, false);
+  }
+  for (const path of ["/", "/api/spools", "/api/prints", "/dashboard-other"]) {
+    const request = middlewareRequest(makeAuthFixture({ lookup: "503" }), { path });
+    assert.equal((await request.run()).status, 200);
+    assert.equal(request.nextCalls(), 1);
+    assert.equal(request.context.locals.authUnavailable, true);
+    assert.equal(request.context.locals.user, null);
+  }
+  const request = middlewareRequest({ initialCookies: [], createClient: () => null });
+  assert.equal((await request.run()).status, 503);
+  assert.equal(request.nextCalls(), 0);
+});
+
+test("middleware retains unexpected returned and thrown session error causes", async () => {
+  for (const thrown of [false, true]) {
+    const cause = new Error("unexpected provider contract");
+    const request = middlewareRequest({
+      initialCookies: [],
+      createClient: () => ({
+        auth: {
+          getUser: async () => {
+            if (thrown) throw cause;
+            return { data: { user: syntheticUser }, error: cause };
+          },
+        },
+      }),
+    });
+    await assert.rejects(request.run(), (error) => {
+      assert.equal(error.message, "Unexpected Supabase session lookup error");
+      assert.equal(error.cause, cause);
+      return true;
+    });
+    assert.equal(request.context.locals.user, null);
+    assert.equal(request.nextCalls(), 0);
+  }
+});
+
+test("middleware finalizes refreshed cookies even when the subsequent identity lookup fails", async (t) => {
+  t.mock.method(console, "warn", () => undefined);
+  const fixture = makeAuthFixture({ expired: true, lookup: "503" });
+  const request = middlewareRequest(fixture);
+  const response = await request.run();
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(request.nextCalls(), 0);
+  assert.ok(fixture.calls.includes("/auth/v1/token?grant_type=refresh_token"));
+  assert.ok(fixture.calls.includes("/auth/v1/user"));
+  assert.ok(request.emitted.some(({ value, options }) => value && options.maxAge > 0));
+  assert.notDeepEqual(request.context.locals.authCookies.getAll(), fixture.initialCookies);
+  assert.equal(
+    request.emitted.some(({ options }) => options.maxAge === 0),
+    false,
+  );
+  assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+  assert.equal(response.headers.get("Expires"), "0");
+  assert.equal(response.headers.get("Pragma"), "no-cache");
 });

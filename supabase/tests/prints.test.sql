@@ -722,6 +722,103 @@ SELECT is(
   'deleted print is no longer visible to its owner'
 );
 
+-- The shared text contract preserves non-whitespace and combining marks without composition.
+INSERT INTO public.prints (user_id, name, material, colour, required_grams)
+SELECT auth.uid(), input, 'LABEL-BOUNDARY-' || suffix, input, 1
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+SELECT is(
+  (SELECT convert_to(colour, 'UTF8') FROM public.prints WHERE material = 'LABEL-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'prints insert preserves exact colour bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+SELECT is(
+  (SELECT convert_to(name, 'UTF8') FROM public.prints WHERE material = 'LABEL-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'prints insert preserves exact name bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+INSERT INTO public.prints (user_id, material, colour, required_grams, name)
+SELECT auth.uid(), 'LABEL-EDIT-BOUNDARY-' || suffix, 'Before Unicode edit', 1, 'Before Unicode edit'
+FROM generate_series(1, 6) AS fixture(suffix);
+
+WITH changed AS (
+UPDATE public.prints AS record
+SET colour = fixture.input, name = fixture.input
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected)
+WHERE record.material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix
+RETURNING record.id
+)
+SELECT is(
+  (SELECT count(*)::integer FROM changed),
+  6,
+  'Unicode edits affect all six independently seeded rows'
+);
+SELECT is(
+  (SELECT convert_to(colour, 'UTF8') FROM public.prints WHERE material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'prints update preserves exact colour bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+SELECT is(
+  (SELECT convert_to(name, 'UTF8') FROM public.prints WHERE material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix),
+  convert_to(fixture.expected, 'UTF8'),
+  'prints update preserves exact name bytes for fixture ' || fixture.suffix
+)
+FROM (VALUES
+    ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
+    ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
+    ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
+    ('4', U&'e\0301', U&'e\0301'),
+    ('5', U&'\00E9', U&'\00E9'),
+    ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
+) AS fixture(suffix, input, expected);
+
+SELECT is(
+  (SELECT count(*)::integer FROM public.prints WHERE material LIKE 'LABEL-EDIT-BOUNDARY-%' AND version = 2),
+  6,
+  'each Unicode edit advances the committed print version once'
+);
+
 RESET ROLE;
 SELECT * FROM finish();
 ROLLBACK;

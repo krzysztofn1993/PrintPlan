@@ -256,16 +256,37 @@ test("stock quantities accept decimal digits only and create/edit have distinct 
   const createZero = validateSpoolInput({ ...base, recordedGrams: "0" }, "create");
   assert.equal(createZero.fieldErrors.recordedGrams.code, "out_of_range");
   assert.equal(validateSpoolInput({ ...base, recordedGrams: "0" }, "edit").data.recordedGrams, 0);
-  assert.equal(
-    validateSpoolInput({ ...base, recordedGrams: String(MAX_RECORDED_GRAMS) }, "create").data.recordedGrams,
-    MAX_RECORDED_GRAMS,
-  );
-
-  for (const value of ["-1", "+1", "1.5", "1,000", "1e2", "Infinity", " 1 ", String(MAX_RECORDED_GRAMS + 1)]) {
-    const result = validateSpoolInput({ ...base, recordedGrams: value }, "edit");
-    assert.ok(result.fieldErrors.recordedGrams, `expected ${JSON.stringify(value)} to be rejected`);
+  assert.equal(MAX_RECORDED_GRAMS, 2_147_483_647);
+  for (const mode of ["create", "edit"]) {
+    for (const [value, expected] of [
+      ["1", 1],
+      ["001", 1],
+      ["2147483647", 2_147_483_647],
+    ]) {
+      assert.equal(validateSpoolInput({ ...base, recordedGrams: value }, mode).data.recordedGrams, expected);
+    }
+    for (const value of ["-1", "+1", "1.5", "1,000", "1e2", "NaN", "Infinity", "-Infinity", " 1 ", "2147483648"]) {
+      const result = validateSpoolInput({ ...base, recordedGrams: value }, mode);
+      assert.equal(result.data, undefined);
+      assert.ok(result.fieldErrors.recordedGrams, `expected ${mode} ${JSON.stringify(value)} to be rejected`);
+    }
   }
-  assert.equal(validateSpoolInput({ ...base, recordedGrams: "001" }, "create").data.recordedGrams, 1);
+});
+
+test("stock labels preserve non-whitespace characters and decomposed colour spelling", () => {
+  for (const mode of ["create", "edit"]) {
+    for (const [input, expected] of [
+      ["\u200BBlack\u200B", "\u200BBlack\u200B"],
+      ["\u2060Black\u2060", "\u2060Black\u2060"],
+      ["\u180EBlack\u180E", "\u180EBlack\u180E"],
+      ["e\u0301", "e\u0301"],
+      ["\u00E9", "\u00E9"],
+      [" \t\u200BBlack\u0085\u00A0Red\u200B \t", "\u200BBlack Red\u200B"],
+    ]) {
+      const result = validateSpoolInput({ material: "PLA", colour: input, recordedGrams: "1" }, mode);
+      assert.equal(result.data.colour, expected);
+    }
+  }
 });
 
 test("label normalization uses the cross-layer whitespace set and preserves label meaning", () => {
