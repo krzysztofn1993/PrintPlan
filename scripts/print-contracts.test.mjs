@@ -265,6 +265,23 @@ test("print labels share the database whitespace set while preserving Unicode an
   );
 });
 
+test("print labels preserve non-whitespace characters and decomposed names and colours", () => {
+  for (const mode of ["create", "edit"]) {
+    for (const [input, expected] of [
+      ["\u200BBlack\u200B", "\u200BBlack\u200B"],
+      ["\u2060Black\u2060", "\u2060Black\u2060"],
+      ["\u180EBlack\u180E", "\u180EBlack\u180E"],
+      ["e\u0301", "e\u0301"],
+      ["\u00E9", "\u00E9"],
+      [" \t\u200BBlack\u0085\u00A0Red\u200B \t", "\u200BBlack Red\u200B"],
+    ]) {
+      const result = validatePrintInput({ name: input, material: "PLA", colour: input, requiredGrams: "1" }, mode);
+      assert.equal(result.data.name, expected);
+      assert.equal(result.data.colour, expected);
+    }
+  }
+});
+
 test("required grams are positive whole decimal digits on create and edit", () => {
   const base = { name: undefined, material: "PLA", colour: "Blue" };
   assert.equal(MAX_REQUIRED_GRAMS, 2_147_483_647);
