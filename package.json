@@ -17,6 +17,7 @@
     "test:prints": "node --experimental-strip-types --test scripts/print-contracts.test.mjs",
     "test:hooks": "node --experimental-strip-types --test scripts/agent-hooks.test.mjs",
     "test:migrations": "node scripts/migration-persistence.mjs",
+    "test:e2e": "playwright test",
     "verify:deploy": "npm run test:hooks && npm run test:auth && npm run test:spools && npm run test:prints && astro sync && npm run lint && astro check && npm run build",
     "test:spools": "node --experimental-strip-types --test scripts/spool-contracts.test.mjs",
     "smoke": "node scripts/smoke.mjs"
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-astro": "^3.1.0",

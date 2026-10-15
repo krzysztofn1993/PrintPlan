@@ -81,6 +81,12 @@ jobs:
           fi
           printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\n' "$API_URL" "$local_key" > .env
           cp .env .dev.vars
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser recovery suite
+        run: npm run test:e2e
+        env:
+          E2E_PORT: 4321
       - run: npm run build
       - name: Start production preview and wait until ready
         run: |
