@@ -314,14 +314,14 @@ database and existing credential files; teardown removes only generated test dat
 
 #### Automated
 
-- [x] 1.1 The focused Chromium suite passes from a cold owned preview with checked fixture cleanup: `npm run test:e2e`.
-- [x] 1.2 Native contracts, lint, types and production build pass: `npm run verify:deploy`.
-- [x] 1.3 Existing built-preview HTTP smoke passes with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
-- [x] 1.4 Deliberate regressions in stock uncertainty preservation, pending coordination, print failed-refresh protection and generic retry consent make the corresponding browser tests fail; restore the staged production bytes unconditionally and record the outcomes.
-- [x] 1.5 CI contains a required Chromium recovery step in the local-stack job, retains existing integration/cleanup gates and gives Playwright ownership of its preview lifecycle; remote execution is not claimed without a run.
-- [x] 1.6 Cookbook §6.4, Phase 3 notes, test-stack E2E guidance and verification evidence describe the shipped behavior, commands, fixture cleanup and limits accurately.
-- [x] 1.7 The final diff has no whitespace errors: `git diff --check`.
+- [x] 1.1 The focused Chromium suite passes from a cold owned preview with checked fixture cleanup: `npm run test:e2e`. — fb825e3
+- [x] 1.2 Native contracts, lint, types and production build pass: `npm run verify:deploy`. — fb825e3
+- [x] 1.3 Existing built-preview HTTP smoke passes with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — fb825e3
+- [x] 1.4 Deliberate regressions in stock uncertainty preservation, pending coordination, print failed-refresh protection and generic retry consent make the corresponding browser tests fail; restore the staged production bytes unconditionally and record the outcomes. — fb825e3
+- [x] 1.5 CI contains a required Chromium recovery step in the local-stack job, retains existing integration/cleanup gates and gives Playwright ownership of its preview lifecycle; remote execution is not claimed without a run. — fb825e3
+- [x] 1.6 Cookbook §6.4, Phase 3 notes, test-stack E2E guidance and verification evidence describe the shipped behavior, commands, fixture cleanup and limits accurately. — fb825e3
+- [x] 1.7 The final diff has no whitespace errors: `git diff --check`. — fb825e3
 
 #### Manual
 
-- [x] 1.8 Review the browser recovery evidence and confirm retained drafts, discard consent, pending/uncertain write protection and the accepted stock/print differences; confirm rollout Phase 3 closeout.
+- [x] 1.8 Review the browser recovery evidence and confirm retained drafts, discard consent, pending/uncertain write protection and the accepted stock/print differences; confirm rollout Phase 3 closeout. — fb825e3
