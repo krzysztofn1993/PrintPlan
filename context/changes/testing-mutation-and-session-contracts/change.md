@@ -1,7 +1,7 @@
 ---
 change_id: testing-mutation-and-session-contracts
 title: Mutation and session regression contracts
-status: implementing
+status: implemented
 created: 2026-10-15
 updated: 2026-10-15
 archived_at: null
