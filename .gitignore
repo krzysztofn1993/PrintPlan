@@ -13,6 +13,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# browser test state and diagnostics
+playwright/.auth/
+test-results/
+playwright-report/
+
 # environment variables
 .env
 .env.production
