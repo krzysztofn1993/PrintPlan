@@ -106,13 +106,13 @@ No migration, reset or shared backend shutdown. Reuse running local Supabase and
 
 #### Automated
 
-- [x] 1.1 Native contracts and repository checks pass: `npm run verify:deploy`.
-- [x] 1.2 Restricted-role database contracts pass: `npx supabase test db`.
-- [x] 1.3 Existing populated upgrade remains green: `npm run test:migrations`.
-- [x] 1.4 Built-preview HTTP smoke passes with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
-- [x] 1.5 Deliberate production regressions make new middleware and numeric/Unicode checks fail; restore the staged production bytes unconditionally and record the result.
-- [x] 1.6 Cookbook §6.3 and Phase 2 notes document shipped patterns; verification records actual results and limits.
+- [x] 1.1 Native contracts and repository checks pass: `npm run verify:deploy`. — c429b9d
+- [x] 1.2 Restricted-role database contracts pass: `npx supabase test db`. — c429b9d
+- [x] 1.3 Existing populated upgrade remains green: `npm run test:migrations`. — c429b9d
+- [x] 1.4 Built-preview HTTP smoke passes with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — c429b9d
+- [x] 1.5 Deliberate production regressions make new middleware and numeric/Unicode checks fail; restore the staged production bytes unconditionally and record the result. — c429b9d
+- [x] 1.6 Cookbook §6.3 and Phase 2 notes document shipped patterns; verification records actual results and limits. — c429b9d
 
 #### Manual
 
-- [x] 1.7 Review the new tests, cookbook and verification evidence and confirm rollout Phase 2 closeout; no browser acceptance is claimed by this phase.
+- [x] 1.7 Review the new tests, cookbook and verification evidence and confirm rollout Phase 2 closeout; no browser acceptance is claimed by this phase. — c429b9d
