@@ -59,7 +59,7 @@ Status vocabulary: `not started` → `change opened` → `researched` → `plann
 | --- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------- | ------------ | ------------------------------------------------------------------ |
 | 1   | Data isolation and persistence | Prove owner-only access and persistence through independent reads, sessions and applicable upgrades. | #1, #2        | restricted-role database integration + HTTP integration | complete     | context/archive/2026-10-14-testing-data-isolation-and-persistence/ |
 | 2   | Mutation and session contracts | Prevent stale overwrites, invalid stored values and false authentication outcomes.                   | #3, #4, #5    | Node contracts + database/HTTP integration              | complete     | context/changes/testing-mutation-and-session-contracts/            |
-| 3   | Browser mutation recovery      | Preserve entered data and safe recovery in hydrated forms after failures.                            | #6            | focused browser integration/e2e + scoped CI gate        | implementing | context/changes/testing-browser-mutation-recovery/                 |
+| 3   | Browser mutation recovery      | Preserve entered data and safe recovery in hydrated forms after failures.                            | #6            | focused browser integration/e2e + scoped CI gate        | complete     | context/changes/testing-browser-mutation-recovery/                 |
 
 Order: protect the author's priorities first, reuse cheaper contract/integration layers next, then cover browser-only behavior. Each change's final sub-phase fills §6 with verified patterns.
 
@@ -157,7 +157,7 @@ Run `npm run test:e2e` for the focused Chromium suite in `tests/e2e/`. Playwrigh
 
 #### Phase 3 — Browser mutation recovery
 
-- **Status:** implementing; browser runner, local account lifecycle and recovery scenarios are authored. Automated verification, deliberate-break outcomes and author manual closeout are pending.
+- **Status:** complete; browser runner, local account lifecycle, recovery scenarios, automated verification and author manual closeout are complete. See [Phase 3 verification](../changes/testing-browser-mutation-recovery/verification.md).
 - **Canonical tests:** `tests/e2e/spool-recovery.spec.ts` and `tests/e2e/print-recovery.spec.ts`; authentication and fixture lifecycle live in `tests/e2e/auth.setup.ts`, `tests/e2e/auth.teardown.ts`, `tests/e2e/fixtures.ts` and `tests/e2e/helpers/local-account.ts`.
 - **Fixture lifecycle:** setup provisions one confirmed local-only account, performs UI sign-in and stores ignored state. Every independent test gets a fresh session through the application endpoint. Fixture records use authenticated application APIs and unique labels; the ledger tracks returned IDs for checked per-test cleanup. Teardown removes the generated account. The populated local database is never reset.
 - **Fault boundary:** Playwright page routes hold, forward or alter browser-facing HTTP responses. Real server validation, stale version checks, successful writes and reads remain active. Committed-but-unconfirmed scenarios forward the mutation, mask only its acknowledgement, and inspect persisted values through an independent API read.
