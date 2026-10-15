@@ -2,7 +2,7 @@
 
 > PrintPlan test coverage and rollout evidence. Update the strategy when product risks change.
 >
-> Last updated: 2026-10-14
+> Last updated: 2026-10-15
 
 ## 1. Strategy
 
@@ -55,11 +55,11 @@ Evidence identifies scenarios; research locates failure paths. Impact: High = ac
 
 Status vocabulary: `not started` → `change opened` → `researched` → `planned` → `implementing` → `complete`. Only Status and Change-folder cells advance outside a refresh. Phase 1's approved identifier is reserved for the queued `/10x-new` handoff; that command creates the folder.
 
-| #   | Phase name                     | Goal (one line)                                                                                      | Risks covered | Test types                                              | Status      | Change folder                                                      |
-| --- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------- | ----------- | ------------------------------------------------------------------ |
-| 1   | Data isolation and persistence | Prove owner-only access and persistence through independent reads, sessions and applicable upgrades. | #1, #2        | restricted-role database integration + HTTP integration | complete    | context/archive/2026-10-14-testing-data-isolation-and-persistence/ |
-| 2   | Mutation and session contracts | Prevent stale overwrites, invalid stored values and false authentication outcomes.                   | #3, #4, #5    | Node contracts + database/HTTP integration              | complete    | context/changes/testing-mutation-and-session-contracts/            |
-| 3   | Browser mutation recovery      | Preserve entered data and safe recovery in hydrated forms after failures.                            | #6            | focused browser integration/e2e + scoped CI gate        | not started | —                                                                  |
+| #   | Phase name                     | Goal (one line)                                                                                      | Risks covered | Test types                                              | Status       | Change folder                                                      |
+| --- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------- | ------------ | ------------------------------------------------------------------ |
+| 1   | Data isolation and persistence | Prove owner-only access and persistence through independent reads, sessions and applicable upgrades. | #1, #2        | restricted-role database integration + HTTP integration | complete     | context/archive/2026-10-14-testing-data-isolation-and-persistence/ |
+| 2   | Mutation and session contracts | Prevent stale overwrites, invalid stored values and false authentication outcomes.                   | #3, #4, #5    | Node contracts + database/HTTP integration              | complete     | context/changes/testing-mutation-and-session-contracts/            |
+| 3   | Browser mutation recovery      | Preserve entered data and safe recovery in hydrated forms after failures.                            | #6            | focused browser integration/e2e + scoped CI gate        | implementing | context/changes/testing-browser-mutation-recovery/                 |
 
 Order: protect the author's priorities first, reuse cheaper contract/integration layers next, then cover browser-only behavior. Each change's final sub-phase fills §6 with verified patterns.
 
@@ -128,7 +128,14 @@ Commands: `npm run test:auth`, `npm run test:spools`, `npm run test:prints`, `np
 
 ### 6.4 Browser recovery tests
 
-TBD — see §3 Phase 3 for retained inputs, explicit discard consent and uncertain-write recovery.
+Run `npm run test:e2e` for the focused Chromium suite in `tests/e2e/`. Playwright builds and owns a production preview on port 4321 by default; set `E2E_PORT` to use another port. The suite requires local Supabase credentials in `.env` or `.dev.vars` and stays outside `verify:deploy`. See [test-stack.md](test-stack.md) for runner, preview, authentication and diagnostic details.
+
+- `auth.setup.ts` validates the app and provisioning targets are the same local Supabase instance, creates a confirmed generated account, signs in through the real UI and saves private storage state. Each test context gets a fresh app session through the sign-in endpoint. Teardown deletes the generated account.
+- `fixtures.ts` creates and reads records through authenticated app APIs, uses unique labels, records returned IDs in an ignored fixture ledger, and checks cleanup through fresh collection reads. Cleanup deletes remaining IDs and confirms deliberately deleted IDs are absent; any cleanup failure fails the suite. Provisioning does not reset the database.
+- `spool-recovery.spec.ts` covers real server validation and canonical label persistence, held 503 retry/pending controls, a committed save with an unreadable acknowledgement, and a committed delete with an unreadable acknowledgement. Stock preserves uncertainty in the active form and provides navigation to a fresh SSR read; tests do not require print-style discard consent or a collection-wide guard after cancel/reopen.
+- `print-recovery.spec.ts` covers invalid quantity feedback, a real stale-version conflict and explicit consent, a held committed create masked as a readable 503 with pending coordination and failed/successful list reads, network rejection, unreadable success and readable 500 acknowledgements, uncertain deletion, and generic retry consent after a genuine version advance. Prints retain a collection-level guard through cancel/reopen and failed reads.
+- Faults are injected at browser HTTP boundaries with request forwarding where persistence is part of the scenario. Tests use real sessions, routes, DTO parsing and database writes; independent authenticated API reads are the persistence oracle. No React state mocks, status-only claims, arbitrary sleeps, or visual snapshots are used.
+- The print refresh/write overlap reviewed as F1 remains excluded. Pending coordination starts from a held write; the suite does not test submission during a list read. Fault injection demonstrates client recovery behavior, not a hosted provider outage.
 
 ### 6.5 Per-rollout-phase notes
 
@@ -147,6 +154,16 @@ TBD — see §3 Phase 3 for retained inputs, explicit discard consent and uncert
 - **Canonical tests:** existing Node auth/spool/print suites and both pgTAP suites. The production middleware body is exposed through `src/lib/auth-middleware.ts`; `src/middleware.ts` wires the original adapter into it.
 - **Reuse:** preserve the existing live competing-print edits, actual token expiry, rotation and revoked-session checks. Add only missing numeric edit, byte-preservation and middleware outage signals; see §6.3.
 - **Evidence and limits:** [verification](../changes/testing-mutation-and-session-contracts/verification.md) records actual local outcomes and deliberate breaks. No remote CI, hosted outage or Phase 3 browser recovery is implied.
+
+#### Phase 3 — Browser mutation recovery
+
+- **Status:** implementing; browser runner, local account lifecycle and recovery scenarios are authored. Automated verification, deliberate-break outcomes and author manual closeout are pending.
+- **Canonical tests:** `tests/e2e/spool-recovery.spec.ts` and `tests/e2e/print-recovery.spec.ts`; authentication and fixture lifecycle live in `tests/e2e/auth.setup.ts`, `tests/e2e/auth.teardown.ts`, `tests/e2e/fixtures.ts` and `tests/e2e/helpers/local-account.ts`.
+- **Fixture lifecycle:** setup provisions one confirmed local-only account, performs UI sign-in and stores ignored state. Every independent test gets a fresh session through the application endpoint. Fixture records use authenticated application APIs and unique labels; the ledger tracks returned IDs for checked per-test cleanup. Teardown removes the generated account. The populated local database is never reset.
+- **Fault boundary:** Playwright page routes hold, forward or alter browser-facing HTTP responses. Real server validation, stale version checks, successful writes and reads remain active. Committed-but-unconfirmed scenarios forward the mutation, mask only its acknowledgement, and inspect persisted values through an independent API read.
+- **Stock and print differences:** Stock uncertainty remains tied to the active form and recovers through navigation to an SSR reread. Print uncertainty guards the collection across cancel/reopen and failed refreshes; print refresh actions require consent before discarding drafts. The skipped print F1 read/write overlap is still excluded.
+- **Commands and CI:** `npm run test:e2e` owns its build and preview; `E2E_PORT` defaults to 4321. CI installs Chromium and runs this suite in the local Supabase/Mailpit job before the existing smoke preview. `verify:deploy` remains independent of Supabase.
+- **Evidence and limits:** [Phase 3 verification](../changes/testing-browser-mutation-recovery/verification.md) must distinguish real local persistence, simulated acknowledgement failures, deliberate production breaks and unobserved remote CI. Remote CI is not claimed until a workflow run is inspected.
 
 ## 7. What We Deliberately Don't Test
 
