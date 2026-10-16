@@ -322,12 +322,12 @@ Ship database and application compatibility changes together after all phases pa
 
 #### Automated
 
-- [x] 4.1 `npm run verify:deploy` passes the complete native gate including reservation contracts.
-- [x] 4.2 `npx supabase test db`, `npm run test:reservations:concurrency` and `npm run test:migrations` pass against the final migration inventory.
-- [x] 4.3 `npm run smoke` passes against production preview with local Supabase/Mailpit, including persisted US-01, replay, isolation and existing CRUD regressions.
-- [x] 4.4 `npm run test:e2e` passes the complete existing and reservation recovery suites; CI invokes every new required automated gate.
+- [x] 4.1 `npm run verify:deploy` passes the complete native gate including reservation contracts. — 11ed8f6
+- [x] 4.2 `npx supabase test db`, `npm run test:reservations:concurrency` and `npm run test:migrations` pass against the final migration inventory. — 11ed8f6
+- [x] 4.3 `npm run smoke` passes against production preview with local Supabase/Mailpit, including persisted US-01, replay, isolation and existing CRUD regressions. — 11ed8f6
+- [x] 4.4 `npm run test:e2e` passes the complete existing and reservation recovery suites; CI invokes every new required automated gate. — 11ed8f6
 
 #### Manual
 
-- [x] 4.5 Current desktop Brave and Firefox complete best-fit/manual reserve, insufficient-stock feedback, cancellation, temporary edit guards and confirmed deletion feedback; results are recorded in `verification.md`. — author-confirmed
-- [x] 4.6 A phone browser completes the same reservation workflow, and fresh navigation plus logout/login show committed quantities and reservation state. — author-confirmed
+- [x] 4.5 Current desktop Brave and Firefox complete best-fit/manual reserve, insufficient-stock feedback, cancellation, temporary edit guards and confirmed deletion feedback; results are recorded in `verification.md`. — author-confirmed — 11ed8f6
+- [x] 4.6 A phone browser completes the same reservation workflow, and fresh navigation plus logout/login show committed quantities and reservation state. — author-confirmed — 11ed8f6
