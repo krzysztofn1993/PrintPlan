@@ -77,10 +77,78 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      planned_prints: {
+        Row: {
+          colour: string;
+          colour_key: string;
+          created_at: string;
+          id: string;
+          material: string;
+          name: string | null;
+          required_grams: number;
+          reservation_id: string | null;
+          reservation_spool_id: string | null;
+          reserved_grams: number | null;
+          updated_at: string;
+          user_id: string;
+          version: number;
+        };
+        Relationships: [];
+      };
+      spool_inventory: {
+        Row: {
+          available_grams: number;
+          colour: string;
+          colour_key: string;
+          created_at: string;
+          id: string;
+          material: string;
+          recorded_grams: number;
+          reserved_grams: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
-      [_ in never]: never;
+      create_print: {
+        Args: { p_colour: string; p_material: string; p_name: string | null; p_required_grams: number };
+        Returns: Json;
+      };
+      create_spool: {
+        Args: { p_colour: string; p_material: string; p_recorded_grams: number };
+        Returns: Json;
+      };
+      delete_print: { Args: { p_print_id: string }; Returns: Json };
+      delete_spool: { Args: { p_spool_id: string }; Returns: Json };
+      preview_print_reservation: { Args: { p_print_id: string }; Returns: Json };
+      release_print_material: { Args: { p_reservation_id: string }; Returns: Json };
+      reserve_print_material: {
+        Args: {
+          p_expected_version: number;
+          p_print_id: string;
+          p_request_id: string;
+          p_selection_mode: string;
+          p_spool_id: string;
+        };
+        Returns: Json;
+      };
+      update_print: {
+        Args: {
+          p_colour: string;
+          p_expected_version: number;
+          p_material: string;
+          p_name: string | null;
+          p_print_id: string;
+          p_required_grams: number;
+        };
+        Returns: Json;
+      };
+      update_spool: {
+        Args: { p_colour: string; p_material: string; p_recorded_grams: number; p_spool_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;

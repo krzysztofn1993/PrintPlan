@@ -1,6 +1,6 @@
 ---
 project: PrintPlan
-version: 2
+version: 3
 status: draft
 created: 2026-10-09
 context_type: greenfield
@@ -118,6 +118,8 @@ PrintPlan selects an eligible filament spool for a specific print using best-fit
 
 The inputs are manually entered spool stock, a print's material, colour, and filament requirement, and an account-level safety margin defaulting to 10%. Stock is an estimate and may be deliberately understated. Before confirming a reservation, the user can accept the best-fit choice or manually choose another eligible spool; both apply the same margin. Changing the margin alone leaves existing reservations unchanged. New reservations and recalculation after print edits use the current setting. Recorded stock, reserved grams, and available grams are shown separately with explanations; suggestions depend on the entered estimates.
 
+The account margin accepts whole percentage points from 0% through 100%. Calculate reserved grams as the print requirement multiplied by (1 + margin percentage / 100), then round up to the next whole gram. For example, an 81 g print with a 5% margin reserves 86 g. Best-fit selects the eligible spool with the least available stock remaining after reservation; if candidates tie, prefer the spool created first, then use ascending spool identifier as a deterministic fallback. When settlement must cancel reservations newest first, order by reservation creation time descending; equal timestamps are ordered by reservation identifier descending.
+
 Reserving material does not consume it. Cancellation releases the reservation without changing recorded stock; if a cancelled print consumed material, the user corrects stock separately. A manual stock correction that would reduce stock below active reservations requires the user to cancel enough reservations first. Deleting a spool automatically cancels its active reservations. When a reserved print is edited, a manually selected spool is retained if it remains eligible; otherwise best-fit is attempted. If no spool is eligible, the edit is saved and the old reservation is released, leaving the print unreserved with an insufficient-material message.
 
 A completed print is settled by deducting actual consumption from recorded stock and releasing its reservation, and the same print cannot be settled twice. If settlement leaves insufficient material for other reservations, other reservations are cancelled newest first until the remaining reservations fit the remaining stock. If actual consumption exceeds recorded stock itself, settlement is allowed, estimated stock becomes 0 g, and all other reservations on the spool are cancelled. The user is informed that the entered stock estimate was exceeded; 0 g is not a claim that the physical spool is necessarily empty.
@@ -142,7 +144,5 @@ These exclusions come from the author's initial description and accepted scope d
 
 ## Open Questions
 
-1. **Which margin values and numeric rounding rules should be accepted?** Owner: author. Resolve during implementation planning; no percentage bounds or numeric precision have been selected during discovery.
-2. **How should equal best-fit results and reservations with equal creation times be ordered?** Owner: author. Resolve during implementation planning; best-fit and newest-first cancellation are confirmed, but tie-breaking rules have not been chosen.
-3. **What secondary success criteria, if any, should be specified?** Owner: author. The author has not specified an additional goal; the confirmed scope covers the primary flow and actual-consumption settlement.
-4. **Which non-functional qualities are explicitly outside the MVP scope?** Owner: author. No non-functional exclusions are specified in the input.
+1. **What secondary success criteria, if any, should be specified?** Owner: author. The author has not specified an additional goal; the confirmed scope covers the primary flow and actual-consumption settlement.
+2. **Which non-functional qualities are explicitly outside the MVP scope?** Owner: author. No non-functional exclusions are specified in the input.
