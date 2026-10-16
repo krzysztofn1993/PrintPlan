@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import {
-  isValidSpoolId,
-  MAX_RECORDED_GRAMS,
-  validateSpoolInput,
-  type SpoolField,
-  type SpoolFieldErrors,
-} from "@/lib/spool-validation";
+import { readSpoolDto } from "@/lib/spool-dto";
+import { MAX_RECORDED_GRAMS, validateSpoolInput, type SpoolField, type SpoolFieldErrors } from "@/lib/spool-validation";
 import type { SpoolDto } from "@/lib/spools";
 
 interface SpoolFormProps {
@@ -17,6 +12,9 @@ interface SpoolFormProps {
   onPendingChange: (pending: boolean) => void;
   onSaved: (spool: SpoolDto) => void;
   onCancel: () => void;
+  onUncertain: () => void;
+  onRefreshLatest: () => Promise<boolean>;
+  mutationGuarded: boolean;
 }
 
 type RequestErrorKind = "retryable" | "unauthenticated" | "uncertain" | "generic";
@@ -28,28 +26,6 @@ const colourSuggestions = ["Black", "White", "Red", "Blue", "Black / Red / Gold"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function readSpool(value: unknown): SpoolDto | undefined {
-  if (!isRecord(value)) return undefined;
-  const { id, material, colour, createdAt, updatedAt, recordedGrams, reservedGrams, availableGrams } = value;
-  if (
-    typeof id !== "string" ||
-    !isValidSpoolId(id) ||
-    typeof material !== "string" ||
-    typeof colour !== "string" ||
-    typeof createdAt !== "string" ||
-    typeof updatedAt !== "string" ||
-    typeof recordedGrams !== "number" ||
-    !Number.isSafeInteger(recordedGrams) ||
-    typeof reservedGrams !== "number" ||
-    !Number.isSafeInteger(reservedGrams) ||
-    typeof availableGrams !== "number" ||
-    !Number.isSafeInteger(availableGrams)
-  ) {
-    return undefined;
-  }
-  return { id, material, colour, createdAt, updatedAt, recordedGrams, reservedGrams, availableGrams };
 }
 
 function messageForFieldError(field: ApiFieldName, code: unknown): string | undefined {
@@ -92,7 +68,17 @@ function describeField(field: ApiFieldName): string {
   return field === "material" ? "Material" : "Colour";
 }
 
-export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSaved, onCancel }: SpoolFormProps) {
+export function SpoolForm({
+  mode,
+  spool,
+  mutationPending,
+  onPendingChange,
+  onSaved,
+  onCancel,
+  onUncertain,
+  onRefreshLatest,
+  mutationGuarded,
+}: SpoolFormProps) {
   const prefix = mode === "create" ? "new-spool" : `edit-spool-${spool?.id ?? "item"}`;
   const [material, setMaterial] = useState(spool?.material ?? "");
   const [colour, setColour] = useState(spool?.colour ?? "");
@@ -128,7 +114,7 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending || mutationPending || requestError?.kind === "uncertain") return;
+    if (pending || mutationPending || mutationGuarded || requestError?.kind === "uncertain") return;
 
     const validation = validateSpoolInput({ material, colour, recordedGrams }, mode);
     if (!validation.data) {
@@ -150,6 +136,7 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
         body: payload,
       });
     } catch {
+      onUncertain();
       setRequestError({
         kind: "uncertain",
         message: "We couldn't confirm whether the save reached the server. Refresh stock before trying again.",
@@ -168,7 +155,7 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
     const expectedStatus = mode === "create" ? 201 : 200;
     if (response.ok) {
       if (response.status === expectedStatus) {
-        const saved = isRecord(body) ? readSpool(body.spool) : undefined;
+        const saved = isRecord(body) ? readSpoolDto(body.spool) : undefined;
         if (saved) {
           updatePending(false);
           onSaved(saved);
@@ -179,6 +166,7 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
         kind: "uncertain",
         message: "The save may have completed, but its result could not be read. Refresh stock before trying again.",
       });
+      onUncertain();
       updatePending(false);
       return;
     }
@@ -198,10 +186,23 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
         kind: "generic",
         message: "This spool is no longer available. Refresh stock to see the latest inventory.",
       });
-    } else if (response.status === 503) {
+    } else if (response.status === 409) {
+      const apiError = isRecord(body) && isRecord(body.error) ? body.error : undefined;
+      const code = apiError?.code;
       setRequestError({
-        kind: "retryable",
-        message: "Stock is temporarily unavailable. Review the form and try again.",
+        kind: "generic",
+        message:
+          code === "reserved_spool_change_requires_cancellation"
+            ? "Cancel this spool's reservations before changing its matching material or colour."
+            : code === "stock_below_reservations"
+              ? `Recorded stock must stay at or above ${spool?.reservedGrams ?? 0} g while reservations are active.`
+              : "This spool changed. Refresh stock and review its current reservation amounts.",
+      });
+    } else if (response.status >= 500) {
+      onUncertain();
+      setRequestError({
+        kind: "uncertain",
+        message: "The save outcome may be uncertain. Refresh stock and review it before trying again.",
       });
     } else if (response.status === 403) {
       setRequestError({ kind: "generic", message: "This request was rejected. Check the form and try again." });
@@ -209,6 +210,14 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
       setRequestError({ kind: "generic", message: "We couldn't save your changes. Please try again." });
     }
     updatePending(false);
+  }
+
+  async function refreshLatest() {
+    if (!window.confirm("Refreshing stock will discard unsaved form entries. Continue?")) return;
+    setPending(true);
+    const refreshed = await onRefreshLatest();
+    if (!refreshed) setPending(false);
+    else setRequestError(null);
   }
 
   return (
@@ -229,8 +238,12 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending}
-          hint="Suggestions are optional. Enter any valid material label, up to 80 characters."
+          disabled={pending || mutationPending || Boolean(spool?.reservedGrams)}
+          hint={
+            spool?.reservedGrams
+              ? "Cancel this spool's reservations before changing its matching material."
+              : "Suggestions are optional. Enter any valid material label, up to 80 characters."
+          }
           error={fieldErrors.material?.message}
         />
         <datalist id={`${prefix}-material-options`}>
@@ -252,8 +265,12 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending}
-          hint="Keep multicolour names together, for example Black / Red / Gold."
+          disabled={pending || mutationPending || Boolean(spool?.reservedGrams)}
+          hint={
+            spool?.reservedGrams
+              ? "Cancel this spool's reservations before changing its matching colour."
+              : "Keep multicolour names together, for example Black / Red / Gold."
+          }
           error={fieldErrors.colour?.message}
         />
         <datalist id={`${prefix}-colour-options`}>
@@ -273,14 +290,16 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
             clearFieldError("recordedGrams");
           }}
           required
-          min={mode === "create" ? 1 : 0}
+          min={mode === "create" ? 1 : (spool?.reservedGrams ?? 0)}
           max={MAX_RECORDED_GRAMS}
           step={1}
           disabled={pending || mutationPending}
           hint={
             mode === "create"
               ? "Enter 1 g or more in whole grams."
-              : "Enter a whole-gram estimate; 0 g keeps this spool."
+              : spool?.reservedGrams
+                ? `Enter at least ${spool.reservedGrams} g to cover active reservations.`
+                : "Enter a whole-gram estimate; 0 g keeps this spool."
           }
           error={fieldErrors.recordedGrams?.message}
         />
@@ -301,18 +320,31 @@ export function SpoolForm({ mode, spool, mutationPending, onPendingChange, onSav
             </a>
           )}
           {requestError.kind === "uncertain" && (
-            <a className="carbon-feedback-link" href="/dashboard/spools">
-              Refresh stock
-            </a>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void refreshLatest()}
+              disabled={pending || mutationPending}
+            >
+              Refresh and review stock
+            </Button>
           )}
         </div>
       )}
 
       <div className="carbon-form-actions">
-        <Button type="submit" disabled={pending || mutationPending || requestError?.kind === "uncertain"}>
+        <Button
+          type="submit"
+          disabled={pending || mutationPending || mutationGuarded || requestError?.kind === "uncertain"}
+        >
           {pending ? "Saving…" : mode === "create" ? "Add spool" : "Save changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={pending || mutationPending}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={pending || mutationPending || mutationGuarded}
+        >
           Cancel
         </Button>
       </div>

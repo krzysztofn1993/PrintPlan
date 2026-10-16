@@ -3,6 +3,9 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 
+-- Supported writes use the deployed RPCs without changing authenticated privileges.
+-- Direct product writes below only test denied access or the generated-column constraint.
+
 SELECT no_plan();
 
 INSERT INTO auth.users (id, email)
@@ -10,24 +13,13 @@ VALUES
   ('00000000-0000-0000-0000-000000000001', 'prints-owner-a@example.test'),
   ('00000000-0000-0000-0000-000000000002', 'prints-owner-b@example.test');
 
-INSERT INTO public.prints (id, user_id, name, material, colour, required_grams)
-VALUES
-  (
-    '20000000-0000-0000-0000-000000000001',
-    '00000000-0000-0000-0000-000000000001',
-    'Original print',
-    'pla',
-    'Black',
-    120
-  ),
-  (
-    '20000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000002',
-    'Owner B print',
-    'petg',
-    'Blue',
-    80
-  );
+-- Seed ordinary product records through the authenticated production boundary.
+SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
+SET LOCAL ROLE authenticated;
+SELECT set_config('test.print_a', public.create_print('Original print', 'pla', 'Black', 120)->>'id', true);
+SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
+SELECT set_config('test.print_b', public.create_print('Owner B print', 'petg', 'Blue', 80)->>'id', true);
+RESET ROLE;
 
 SET LOCAL ROLE anon;
 
@@ -71,14 +63,13 @@ SELECT is(
 );
 
 SELECT is(
-  (SELECT version FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT version FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   1,
   'new prints start at version 1'
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'pla', 'Black', 80)$$,
+  $$SELECT public.create_print(NULL, 'pla', 'Black', 80)$$,
   'owner A can create a print without a name'
 );
 
@@ -95,8 +86,7 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', '  ' || chr(9) || chr(133), 'blank-name', 'White', 1)$$,
+  $$SELECT public.create_print('  ' || chr(9) || chr(133), 'blank-name', 'White', 1)$$,
   'a blank name is accepted and normalized to null'
 );
 
@@ -107,8 +97,7 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'MiXeD Name', 'case-name', 'White', 1)$$,
+  $$SELECT public.create_print('MiXeD Name', 'case-name', 'White', 1)$$,
   'a named print can be created'
 );
 
@@ -119,10 +108,10 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES
-      ('00000000-0000-0000-0000-000000000001', 'Duplicate', 'PLA', 'Black', 15),
-      ('00000000-0000-0000-0000-000000000001', 'Duplicate', 'PLA', 'Black', 15)$$,
+  $$SELECT public.create_print(
+    'Duplicate', 'PLA', 'Black', 15);
+    SELECT public.create_print('Duplicate', 'PLA', 'Black', 15
+  )$$,
   'identical prints remain separate records'
 );
 
@@ -134,14 +123,9 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES (
-      '00000000-0000-0000-0000-000000000001',
-      chr(133) || '  Phone' || chr(9) || '  holder  ' || chr(160),
-      chr(133) || ' stra' || U&'\00DFe' || chr(160),
-      chr(65279) || 'Black' || chr(9) || chr(133) || ' / Red / Gold',
-      80
-    )$$,
+  $$SELECT public.create_print(
+    chr(133) || '  Phone' || chr(9) || '  holder  ' || chr(160), chr(133) || ' stra' || U&'\00DFe' || chr(160), chr(65279) || 'Black' || chr(9) || chr(133) || ' / Red / Gold', 80
+  )$$,
   'listed Unicode whitespace and material case are normalized'
 );
 
@@ -170,8 +154,7 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'DOTTED-I', U&'\0130', 1)$$,
+  $$SELECT public.create_print(NULL, 'DOTTED-I', U&'\0130', 1)$$,
   'a dotted capital I colour is accepted'
 );
 
@@ -182,8 +165,7 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'GREEK-SIGMA', U&'\039F\03A3', 1)$$,
+  $$SELECT public.create_print(NULL, 'GREEK-SIGMA', U&'\039F\03A3', 1)$$,
   'a Greek uppercase sigma colour is accepted'
 );
 
@@ -194,14 +176,7 @@ SELECT is(
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES (
-      '00000000-0000-0000-0000-000000000001',
-      repeat(U&'\+01F600', 80),
-      'NAME-80',
-      repeat(U&'\+01F600', 80),
-      1
-    )$$,
+  $$SELECT public.create_print(repeat(U&'\+01F600', 80), 'NAME-80', repeat(U&'\+01F600', 80), 1)$$,
   '80 supplementary Unicode code points fit name and colour limits'
 );
 
@@ -218,30 +193,21 @@ SELECT is(
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-    VALUES (
-      '00000000-0000-0000-0000-000000000001',
-      repeat(U&'\+01F600', 81),
-      'NAME-81',
-      'White',
-      1
-    )$$,
+  $$SELECT public.create_print(repeat(U&'\+01F600', 81), 'NAME-81', 'White', 1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_name_length_check"',
   '81 Unicode code points exceed the name limit'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'COLOUR-81', repeat(U&'\+01F600', 81), 1)$$,
+  $$SELECT public.create_print(NULL, 'COLOUR-81', repeat(U&'\+01F600', 81), 1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_colour_length_check"',
   '81 supplementary Unicode code points exceed the colour limit'
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', repeat(U&'\00DF', 40), 'White', 1)$$,
+  $$SELECT public.create_print(NULL, repeat(U&'\00DF', 40), 'White', 1)$$,
   '40 sharp-s material code points fit after uppercase expansion'
 );
 
@@ -252,290 +218,265 @@ SELECT is(
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', repeat(U&'\00DF', 41), 'White', 1)$$,
+  $$SELECT public.create_print(NULL, repeat(U&'\00DF', 41), 'White', 1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_material_length_check"',
   '41 sharp-s material code points fail the limit after uppercase expansion'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', NULL, 'Black', 1)$$,
+  $$SELECT public.create_print(NULL, NULL, 'Black', 1)$$,
   '23502',
   'null value in column "material" of relation "prints" violates not-null constraint',
   'null material is rejected'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'PLA', NULL, 1)$$,
+  $$SELECT public.create_print(NULL, 'PLA', NULL, 1)$$,
   '23502',
   'null value in column "colour" of relation "prints" violates not-null constraint',
   'null colour is rejected'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'PLA', 'Black', NULL)$$,
+  $$SELECT public.create_print(NULL, 'PLA', 'Black', NULL)$$,
   '23502',
   'null value in column "required_grams" of relation "prints" violates not-null constraint',
   'null required grams are rejected'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', '', 'Black', 1)$$,
+  $$SELECT public.create_print(NULL, '', 'Black', 1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_material_length_check"',
   'blank material is rejected after normalization'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'PLA', chr(9) || chr(133), 1)$$,
+  $$SELECT public.create_print(NULL, 'PLA', chr(9) || chr(133), 1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_colour_length_check"',
   'blank colour is rejected after normalization'
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'MINIMUM', 'White', 1)$$,
+  $$SELECT public.create_print(NULL, 'MINIMUM', 'White', 1)$$,
   'the positive one-gram minimum is accepted'
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'MAXIMUM', 'White', 2147483647)$$,
+  $$SELECT public.create_print(NULL, 'MAXIMUM', 'White', 2147483647)$$,
   'the signed 32-bit integer maximum is accepted'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'ZERO', 'White', 0)$$,
+  $$SELECT public.create_print(NULL, 'ZERO', 'White', 0)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'zero required grams are rejected on insert'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'NEGATIVE', 'White', -1)$$,
+  $$SELECT public.create_print(NULL, 'NEGATIVE', 'White', -1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'negative required grams are rejected on insert'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'FRACTIONAL', 'White', 1.5)$$,
+  $$SELECT public.create_print(NULL, 'FRACTIONAL', 'White', 1.5)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'fractional required grams are rejected without rounding'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'TOO-LARGE', 'White', 2147483648)$$,
+  $$SELECT public.create_print(NULL, 'TOO-LARGE', 'White', 2147483648)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'required grams above the integer representation limit are rejected'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'NAN', 'White', 'NaN'::numeric)$$,
+  $$SELECT public.create_print(NULL, 'NAN', 'White', 'NaN'::numeric)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'NaN required grams are rejected'
 );
 
 SELECT throws_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'INFINITY', 'White', 'Infinity'::numeric)$$,
+  $$SELECT public.create_print(NULL, 'INFINITY', 'White', 'Infinity'::numeric)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'infinite required grams are rejected'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = 80
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 1$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 1, 'Original print', 'PLA', 'Black', 80)$$,
   'owner A can update a print at the version it read'
 );
 
 SELECT is(
-  (SELECT version FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT version FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   2,
   'a successful update increments version once'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = required_grams
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 2$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 2, 'Original print', 'PLA', 'Black', 80)$$,
   'an unchanged update is still a successful update'
 );
 
 SELECT is(
-  (SELECT version FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT version FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   3,
   'a no-op update also increments version once'
 );
 
-WITH changed AS (
-  UPDATE public.prints SET required_grams = 100
-  WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 2
-  RETURNING id
-)
-SELECT is(
-  (SELECT count(*)::integer FROM changed),
-  0,
-  'a stale conditional update affects zero rows'
+SELECT throws_ok(
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 2, 'Original print', 'PLA', 'Black', 100)$$,
+  'P0001',
+  'edit_conflict',
+  'a stale RPC update rejects the old version'
 );
 
 SELECT is(
-  (SELECT required_grams FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT required_grams FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   80::numeric,
-  'a stale conditional update leaves the current requirements unchanged'
+  'a stale RPC update leaves the current requirements unchanged'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = 1
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 3$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 3, 'Original print', 'PLA', 'Black', 1)$$,
   'the one-gram minimum is accepted on update'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = 2147483647
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 4$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 4, 'Original print', 'PLA', 'Black', 2147483647)$$,
   'the integer representation maximum is accepted on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = 0
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', 0)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'zero required grams are rejected on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = -1
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', -1)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'negative required grams are rejected on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = 1.5
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', 1.5)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'fractional required grams are rejected on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = 2147483648
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', 2147483648)$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'required grams above the integer representation limit are rejected on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = 'NaN'::numeric
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(
+    current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', 'NaN'::numeric
+  )$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'NaN required grams are rejected on update'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = 'Infinity'::numeric
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(
+    current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', 'Infinity'::numeric
+  )$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'infinite required grams are rejected on update'
 );
 
 SELECT is(
-  (SELECT version FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT version FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   5,
   'rejected updates do not increment version'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET required_grams = NULL
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 5, 'Original print', 'PLA', 'Black', NULL)$$,
   '23502',
   'null value in column "required_grams" of relation "prints" violates not-null constraint',
   'null required grams are rejected on update'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints
-    SET name = '  Edited   Name  ',
-        material = chr(133) || ' petg ' || chr(160),
-        colour = 'Black' || chr(9) || ' / Red / Gold'
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 5$$,
+  $$SELECT public.update_print(
+    current_setting('test.print_a')::uuid, 5, '  Edited   Name  ', chr(133) || ' petg ' || chr(160), 'Black' || chr(9) || ' / Red / Gold', 2147483647
+  )$$,
   'owner A can update editable print fields through database normalization'
 );
 
 SELECT is(
-  (SELECT name FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT name FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   'Edited Name',
   'updated name whitespace is collapsed while case is preserved'
 );
 
 SELECT is(
-  (SELECT material FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT material FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   'PETG',
   'updated material is canonical uppercase'
 );
 
 SELECT is(
-  (SELECT colour FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT colour FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   'Black / Red / Gold',
   'updated multicolour display label keeps component order'
 );
 
 SELECT is(
-  (SELECT colour_key FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT colour_key FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   'black / red / gold',
   'updated colour key is generated from the normalized label'
 );
 
 SELECT lives_ok(
-  $$UPDATE public.prints SET name = chr(133) || chr(9) || chr(160)
-    WHERE id = '20000000-0000-0000-0000-000000000001' AND version = 6$$,
+  $$SELECT public.update_print(
+    current_setting('test.print_a')::uuid, 6, chr(133) || chr(9) || chr(160), 'PETG', 'Black / Red / Gold', 2147483647
+  )$$,
   'owner A can clear an optional name with blank input'
 );
 
 SELECT is(
-  (SELECT name FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT name FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   NULL::text,
   'a cleared name is stored as null'
 );
 
 SELECT throws_ok(
-  $$UPDATE public.prints SET name = repeat(U&'\+01F600', 81)
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  $$SELECT public.update_print(
+    current_setting('test.print_a')::uuid, 7, repeat(U&'\+01F600', 81), 'PETG', 'Black / Red / Gold', 2147483647
+  )$$,
   '23514',
   'new row for relation "prints" violates check constraint "prints_name_length_check"',
   '81 Unicode code points exceed the name limit on update'
 );
 
 SELECT is(
-  (SELECT version FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'),
+  (SELECT version FROM public.prints WHERE id = current_setting('test.print_a')::uuid),
   7,
   'failed null and overlong-name updates do not change the version'
 );
 
 SELECT throws_ok(
   $$UPDATE public.prints SET id = '20000000-0000-0000-0000-000000000003'
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+    WHERE id = current_setting('test.print_a')::uuid$$,
   '42501',
   'permission denied for table prints',
   'owner A cannot change a print ID'
@@ -543,7 +484,7 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   $$UPDATE public.prints SET user_id = '00000000-0000-0000-0000-000000000002'
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+    WHERE id = current_setting('test.print_a')::uuid$$,
   '42501',
   'permission denied for table prints',
   'owner A cannot reassign print ownership'
@@ -551,7 +492,7 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   $$UPDATE public.prints SET created_at = now()
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+    WHERE id = current_setting('test.print_a')::uuid$$,
   '42501',
   'permission denied for table prints',
   'owner A cannot change print creation time'
@@ -559,7 +500,7 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   $$UPDATE public.prints SET updated_at = now()
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+    WHERE id = current_setting('test.print_a')::uuid$$,
   '42501',
   'permission denied for table prints',
   'owner A cannot choose print update time'
@@ -567,7 +508,7 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   $$UPDATE public.prints SET version = 99
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+    WHERE id = current_setting('test.print_a')::uuid$$,
   '42501',
   'permission denied for table prints',
   'owner A cannot reassign print version'
@@ -603,37 +544,39 @@ SELECT throws_ok(
   'owner A cannot choose print timestamps on insert'
 );
 
+-- Exercise the generated-column constraint independently of application privileges.
+RESET ROLE;
 SELECT throws_ok(
   $$INSERT INTO public.prints (user_id, material, colour, colour_key, required_grams)
     VALUES ('00000000-0000-0000-0000-000000000001', 'PLA', 'Black', 'forged', 1)$$,
   '428C9',
   'cannot insert a non-DEFAULT value into column "colour_key"',
-  'owner A cannot supply a derived colour key'
+  'the database rejects a supplied derived colour key'
 );
+SET LOCAL ROLE authenticated;
 
 SELECT throws_ok(
   $$INSERT INTO public.prints (user_id, material, colour, required_grams)
     VALUES ('00000000-0000-0000-0000-000000000002', 'PLA', 'Black', 1)$$,
   '42501',
-  'new row violates row-level security policy for table "prints"',
+  'permission denied for table prints',
   'owner A cannot forge owner B on insert'
 );
 
 SELECT is(
   (SELECT count(*)::integer FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000001'),
+    WHERE id = current_setting('test.print_a')::uuid),
   1,
   'the original print identity remains unchanged after blocked reassignment'
 );
 
 SELECT lives_ok(
-  $$INSERT INTO public.prints (user_id, material, colour, required_grams)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'DELETE-ME', 'White', 1)$$,
+  $$SELECT public.create_print(NULL, 'DELETE-ME', 'White', 1)$$,
   'owner A can create a print for deletion'
 );
 
 SELECT lives_ok(
-  $$DELETE FROM public.prints WHERE material = 'DELETE-ME'$$,
+  $$SELECT public.delete_print((SELECT id FROM public.prints WHERE material = 'DELETE-ME'))$$,
   'owner A can delete their own print'
 );
 
@@ -643,20 +586,23 @@ SELECT is(
   'owner A no longer reads their deleted print'
 );
 
-SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = 1
-    WHERE id = '20000000-0000-0000-0000-000000000002'$$,
-  'owner A update of owner B print completes without exposing the row'
+SELECT throws_ok(
+  $$SELECT public.update_print(current_setting('test.print_b')::uuid, 1, 'Owner B print', 'PETG', 'Blue', 1)$$,
+  'P0002',
+  'not_found',
+  'owner A update of owner B print returns not_found without exposing the row'
 );
 
-SELECT lives_ok(
-  $$DELETE FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000002'$$,
-  'owner A delete of owner B print completes without exposing the row'
+SELECT throws_ok(
+  $$SELECT public.delete_print(current_setting('test.print_b')::uuid)$$,
+  'P0002',
+  'not_found',
+  'owner A delete of owner B print returns not_found without exposing the row'
 );
 
 SELECT is(
   (SELECT count(*)::integer FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000002'),
+    WHERE id = current_setting('test.print_b')::uuid),
   0,
   'owner A cannot read owner B print'
 );
@@ -669,20 +615,23 @@ SELECT is(
   'owner B reads only their own print'
 );
 
-SELECT lives_ok(
-  $$UPDATE public.prints SET required_grams = 1
-    WHERE id = '20000000-0000-0000-0000-000000000001'$$,
-  'owner B update of owner A print completes without exposing the row'
+SELECT throws_ok(
+  $$SELECT public.update_print(current_setting('test.print_a')::uuid, 7, NULL, 'PETG', 'Black / Red / Gold', 1)$$,
+  'P0002',
+  'not_found',
+  'owner B update of owner A print returns not_found without exposing the row'
 );
 
-SELECT lives_ok(
-  $$DELETE FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000001'$$,
-  'owner B delete of owner A print completes without exposing the row'
+SELECT throws_ok(
+  $$SELECT public.delete_print(current_setting('test.print_a')::uuid)$$,
+  'P0002',
+  'not_found',
+  'owner B delete of owner A print returns not_found without exposing the row'
 );
 
 SELECT is(
   (SELECT count(*)::integer FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000001'),
+    WHERE id = current_setting('test.print_a')::uuid),
   0,
   'owner B cannot read owner A print after update and delete attempts'
 );
@@ -691,7 +640,7 @@ SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001
 
 SELECT is(
   (SELECT count(*)::integer FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000001'
+    WHERE id = current_setting('test.print_a')::uuid
       AND name IS NULL
       AND material = 'PETG'
       AND colour = 'Black / Red / Gold'
@@ -705,26 +654,25 @@ SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002
 
 SELECT is(
   (SELECT required_grams FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000002'),
+    WHERE id = current_setting('test.print_b')::uuid),
   80::numeric,
   'owner B print remains unchanged'
 );
 
 SELECT lives_ok(
-  $$DELETE FROM public.prints WHERE id = '20000000-0000-0000-0000-000000000002'$$,
+  $$SELECT public.delete_print(current_setting('test.print_b')::uuid)$$,
   'owner B can delete their own print'
 );
 
 SELECT is(
   (SELECT count(*)::integer FROM public.prints
-    WHERE id = '20000000-0000-0000-0000-000000000002'),
+    WHERE id = current_setting('test.print_b')::uuid),
   0,
   'deleted print is no longer visible to its owner'
 );
 
 -- The shared text contract preserves non-whitespace and combining marks without composition.
-INSERT INTO public.prints (user_id, name, material, colour, required_grams)
-SELECT auth.uid(), input, 'LABEL-BOUNDARY-' || suffix, input, 1
+SELECT public.create_print(input, 'LABEL-BOUNDARY-' || suffix, input, 1)
 FROM (VALUES
     ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
     ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
@@ -762,14 +710,13 @@ FROM (VALUES
     ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
 ) AS fixture(suffix, input, expected);
 
-INSERT INTO public.prints (user_id, material, colour, required_grams, name)
-SELECT auth.uid(), 'LABEL-EDIT-BOUNDARY-' || suffix, 'Before Unicode edit', 1, 'Before Unicode edit'
+SELECT public.create_print('Before Unicode edit', 'LABEL-EDIT-BOUNDARY-' || suffix, 'Before Unicode edit', 1)
 FROM generate_series(1, 6) AS fixture(suffix);
 
 WITH changed AS (
-UPDATE public.prints AS record
-SET colour = fixture.input, name = fixture.input
-FROM (VALUES
+SELECT public.update_print(record.id, record.version, fixture.input, record.material, fixture.input, record.required_grams) AS receipt
+FROM public.prints AS record
+JOIN (VALUES
     ('1', U&'\200BBlack\200B', U&'\200BBlack\200B'),
     ('2', U&'\2060Black\2060', U&'\2060Black\2060'),
     ('3', U&'\180EBlack\180E', U&'\180EBlack\180E'),
@@ -777,11 +724,10 @@ FROM (VALUES
     ('5', U&'\00E9', U&'\00E9'),
     ('6', U&' \0009\200BBlack\0085\00A0Red\200B \0009', U&'\200BBlack Red\200B')
 ) AS fixture(suffix, input, expected)
-WHERE record.material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix
-RETURNING record.id
+  ON record.material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix
 )
 SELECT is(
-  (SELECT count(*)::integer FROM changed),
+  (SELECT count(receipt->>'id')::integer FROM changed),
   6,
   'Unicode edits affect all six independently seeded rows'
 );

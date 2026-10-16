@@ -44,6 +44,14 @@ export const POST: APIRoute = async (context) => {
     if (!result.ok) {
       if (result.reason === "not_found") return createPrintNotFoundResponse();
       if (result.reason === "conflict") return createPrintConflictResponse();
+      if (result.reason === "reserved_print_edit_requires_cancellation") {
+        return createPrintJsonResponse(
+          {
+            error: { code: result.reason, message: "Cancel this reservation before changing the print requirements." },
+          },
+          409,
+        );
+      }
       return createPrintDatabaseErrorResponse(result.error, result.status, "mutation");
     }
     return createPrintJsonResponse({ print: result.value });

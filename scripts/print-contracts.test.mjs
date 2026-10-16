@@ -1,4 +1,4 @@
-/* global Blob, FormData, Request, Response */
+/* global Blob, FormData, Request, Response, URL */
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -76,6 +76,9 @@ function row(index, values = {}) {
     version: 1,
     created_at: "2026-10-10T10:00:00.000Z",
     updated_at: "2026-10-10T10:00:00.000Z",
+    reservation_id: null,
+    reservation_spool_id: null,
+    reserved_grams: null,
     ...values,
   };
 }
@@ -91,11 +94,17 @@ function compareRows(left, right, orders) {
   return 0;
 }
 
-function makePrintClient({ rows = [], mutationResponses = [], probeResponse, pageErrors = {} } = {}) {
+function makePrintClient({ rows = [], mutationResponses = [], pageErrors = {} } = {}) {
   const calls = [];
   const client = {
+    rpc(name, args) {
+      calls.push({ operation: "rpc", name, args });
+      const response = mutationResponses.shift() ?? { data: null, error: null, status: 200 };
+      if (response.data && typeof response.data === "object" && response.data.id) rows.push(response.data);
+      return Promise.resolve(response);
+    },
     from(table) {
-      assert.equal(table, "prints");
+      assert.equal(table, "planned_prints");
       const state = { table, filters: [], orders: [], selection: undefined, operation: "select" };
       const builder = {
         select(columns) {
@@ -112,7 +121,10 @@ function makePrintClient({ rows = [], mutationResponses = [], probeResponse, pag
         },
         range(from, to) {
           assert.equal(to - from + 1, PRINT_QUERY_BATCH_SIZE);
-          assert.equal(state.selection, "id, name, material, colour, required_grams, version, created_at, updated_at");
+          assert.equal(
+            state.selection,
+            "id, name, material, colour, required_grams, version, created_at, updated_at, reservation_id, reservation_spool_id, reserved_grams",
+          );
           assert.deepEqual(state.filters, [{ field: "user_id", value: OWNER_ID }]);
           assert.deepEqual(state.orders, [
             { field: "created_at", ascending: false },
@@ -126,35 +138,12 @@ function makePrintClient({ rows = [], mutationResponses = [], probeResponse, pag
             .sort((left, right) => compareRows(left, right, state.orders));
           return Promise.resolve({ data: matchingRows.slice(from, to + 1), error: null, status: 200 });
         },
-        insert(values) {
-          state.operation = "insert";
-          state.values = values;
-          return builder;
-        },
-        update(values) {
-          state.operation = "update";
-          state.values = values;
-          return builder;
-        },
-        delete() {
-          state.operation = "delete";
-          return builder;
-        },
         maybeSingle() {
           calls.push(state);
-          if (state.operation === "select") {
-            assert.equal(state.selection, "id");
-            assert.deepEqual(state.filters, [
-              { field: "id", value: PRINT_ID },
-              { field: "user_id", value: OWNER_ID },
-            ]);
-            if (probeResponse) return Promise.resolve(probeResponse);
-            const id = state.filters.find(({ field }) => field === "id").value;
-            const ownerId = state.filters.find(({ field }) => field === "user_id").value;
-            const ownedRow = rows.find((item) => item.id === id && item.user_id === ownerId);
-            return Promise.resolve({ data: ownedRow ? { id: ownedRow.id } : null, error: null, status: 200 });
-          }
-          return Promise.resolve(mutationResponses.shift() ?? { data: null, error: null, status: 200 });
+          const id = state.filters.find(({ field }) => field === "id")?.value;
+          const ownerId = state.filters.find(({ field }) => field === "user_id")?.value;
+          const ownedRow = rows.find((item) => item.id === id && item.user_id === ownerId);
+          return Promise.resolve({ data: ownedRow ?? null, error: null, status: 200 });
         },
         then() {
           assert.fail("Print list reads must use a bounded range before they are awaited.");
@@ -386,7 +375,7 @@ test("print form content type, malformed body, and identifiers are constrained",
   assert.equal(isValidPrintId("not-a-uuid"), false);
 });
 
-test("create returns the committed canonical row and writes verified owner plus editable fields", async () => {
+test("create returns the reservation-aware committed row through RPC and the shared view", async () => {
   const canonicalRow = row(1, {
     id: PRINT_ID,
     name: "Phone holder",
@@ -411,13 +400,12 @@ test("create returns the committed canonical row and writes verified owner plus 
     version: 1,
     createdAt: canonicalRow.created_at,
     updatedAt: canonicalRow.updated_at,
+    reservation: null,
   });
-  assert.deepEqual(fixture.calls[0].values, {
-    user_id: OWNER_ID,
-    name: "Phone holder",
-    material: "Straße",
-    colour: "Black / Red / Gold",
-    required_grams: 80,
+  assert.deepEqual(fixture.calls[0], {
+    operation: "rpc",
+    name: "create_print",
+    args: { p_name: "Phone holder", p_material: "Straße", p_colour: "Black / Red / Gold", p_required_grams: 80 },
   });
   assert.equal(Object.hasOwn(result.value, "user_id"), false);
   assert.equal(Object.hasOwn(result.value, "colour_key"), false);
@@ -439,49 +427,36 @@ test("update is owner, ID, and expected-version scoped and returns the increment
   assert.equal(result.ok, true);
   assert.equal(result.value.version, 2);
   assert.equal(result.value.requiredGrams, 250);
-  assert.deepEqual(fixture.calls[0].filters, [
-    { field: "id", value: PRINT_ID },
-    { field: "user_id", value: OWNER_ID },
-    { field: "version", value: 1 },
-  ]);
-  assert.deepEqual(fixture.calls[0].values, {
-    name: null,
-    material: "PETG",
-    colour: "Blue",
-    required_grams: 250,
+  assert.deepEqual(fixture.calls[0], {
+    operation: "rpc",
+    name: "update_print",
+    args: {
+      p_print_id: PRINT_ID,
+      p_expected_version: 1,
+      p_name: null,
+      p_material: "PETG",
+      p_colour: "Blue",
+      p_required_grams: 250,
+    },
   });
 });
 
-test("a zero-row update distinguishes owned conflict from absent or foreign targets", async () => {
+test("database RPC distinguishes stale print version from missing print", async () => {
   const input = { name: null, material: "PLA", colour: "Blue", requiredGrams: 125 };
   const owned = makePrintClient({
-    mutationResponses: [{ data: null, error: null, status: 200 }],
-    probeResponse: { data: { id: PRINT_ID }, error: null, status: 200 },
+    mutationResponses: [{ data: null, error: { message: "edit_conflict" }, status: 409 }],
   });
   assert.deepEqual(await updatePrint(owned.client, OWNER_ID, PRINT_ID, 1, input), { ok: false, reason: "conflict" });
-  assert.deepEqual(owned.calls[1].filters, [
-    { field: "id", value: PRINT_ID },
-    { field: "user_id", value: OWNER_ID },
-  ]);
 
-  const missing = makePrintClient({ mutationResponses: [{ data: null, error: null, status: 200 }] });
+  const missing = makePrintClient({
+    mutationResponses: [{ data: null, error: { message: "not_found" }, status: 404 }],
+  });
   assert.deepEqual(await updatePrint(missing.client, OWNER_ID, PRINT_ID, 1, input), { ok: false, reason: "not_found" });
-
-  const foreign = makePrintClient({
-    rows: [row(1, { id: PRINT_ID, user_id: OTHER_OWNER_ID })],
-    mutationResponses: [{ data: null, error: null, status: 200 }],
-  });
-  assert.deepEqual(await updatePrint(foreign.client, OWNER_ID, PRINT_ID, 1, input), {
-    ok: false,
-    reason: "not_found",
-  });
-  assert.equal(foreign.calls[1].filters.find(({ field }) => field === "user_id").value, OWNER_ID);
 });
 
-test("a failed post-update ownership probe remains a database error", async () => {
+test("RPC update transport failures remain database errors", async () => {
   const fixture = makePrintClient({
-    mutationResponses: [{ data: null, error: null, status: 200 }],
-    probeResponse: { data: null, error: { code: "08006", message: "connection failed" }, status: 503 },
+    mutationResponses: [{ data: null, error: { code: "08006", message: "connection failed" }, status: 503 }],
   });
   const result = await updatePrint(fixture.client, OWNER_ID, PRINT_ID, 1, {
     name: null,
@@ -494,20 +469,93 @@ test("a failed post-update ownership probe remains a database error", async () =
   assert.equal(result.status, 503);
 });
 
-test("delete requires a returned ID and remains owner/ID scoped without a version filter", async () => {
-  const missing = makePrintClient({ mutationResponses: [{ data: null, error: null, status: 200 }] });
+test("delete uses the owner-checked RPC and returns its release receipt", async () => {
+  const missing = makePrintClient({
+    mutationResponses: [{ data: null, error: { message: "not_found" }, status: 404 }],
+  });
   assert.deepEqual(await deletePrint(missing.client, OWNER_ID, PRINT_ID), { ok: false, reason: "not_found" });
-  assert.deepEqual(missing.calls[0].filters, [
-    { field: "id", value: PRINT_ID },
-    { field: "user_id", value: OWNER_ID },
-  ]);
 
-  const deleted = makePrintClient({ mutationResponses: [{ data: { id: PRINT_ID }, error: null, status: 200 }] });
-  assert.deepEqual(await deletePrint(deleted.client, OWNER_ID, PRINT_ID), { ok: true, value: { id: PRINT_ID } });
-  assert.equal(
-    deleted.calls[0].filters.some(({ field }) => field === "version"),
-    false,
-  );
+  const deleted = makePrintClient({
+    mutationResponses: [
+      {
+        data: {
+          id: PRINT_ID,
+          cancelledReservations: [],
+          releasedReservationId: null,
+          releasedGrams: null,
+          spool: null,
+        },
+        error: null,
+        status: 200,
+      },
+    ],
+  });
+  assert.deepEqual(await deletePrint(deleted.client, OWNER_ID, PRINT_ID), {
+    ok: true,
+    value: { id: PRINT_ID, cancelledReservations: [], releasedReservationId: null, releasedGrams: null, spool: null },
+  });
+  assert.deepEqual(deleted.calls[0], { operation: "rpc", name: "delete_print", args: { p_print_id: PRINT_ID } });
+});
+
+test("reserved print deletion preserves the cancellation summary and existing release fields", async () => {
+  const reservationId = "55555555-5555-4555-8555-555555555555";
+  const spoolId = "44444444-4444-4444-8444-444444444444";
+  const cancellations = [
+    { reservationId, printId: PRINT_ID, printName: null, material: "PLA", colour: "Blue", releasedGrams: 88 },
+  ];
+  const spool = {
+    id: spoolId,
+    user_id: OWNER_ID,
+    material: "PLA",
+    colour: "Blue",
+    created_at: "2026-10-10T10:00:00.000Z",
+    updated_at: "2026-10-10T10:00:00.000Z",
+    recorded_grams: 150,
+    reserved_grams: 0,
+    available_grams: 150,
+  };
+  const client = makeSdkClient(async (url, options) => {
+    const requestUrl = new URL(url);
+    if (requestUrl.pathname.endsWith("/rpc/delete_print")) {
+      assert.equal(options.method, "POST");
+      assert.deepEqual(JSON.parse(options.body), { p_print_id: PRINT_ID });
+      return new Response(
+        JSON.stringify({
+          id: PRINT_ID,
+          cancelledReservations: cancellations,
+          releasedReservationId: reservationId,
+          releasedGrams: 88,
+          spool,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    assert.equal(requestUrl.pathname, "/rest/v1/spool_inventory");
+    assert.equal(requestUrl.searchParams.get("user_id"), `eq.${OWNER_ID}`);
+    return new Response(JSON.stringify([spool]), { status: 200, headers: { "Content-Type": "application/json" } });
+  });
+  const result = await deletePrint(client, OWNER_ID, PRINT_ID);
+  assert.deepEqual(result, {
+    ok: true,
+    value: {
+      id: PRINT_ID,
+      cancelledReservations: cancellations,
+      releasedReservationId: reservationId,
+      releasedGrams: 88,
+      spool: {
+        id: spoolId,
+        material: "PLA",
+        colour: "Blue",
+        createdAt: spool.created_at,
+        updatedAt: spool.updated_at,
+        recordedGrams: 150,
+        reservedGrams: 0,
+        availableGrams: 150,
+      },
+    },
+  });
+  const response = createPrintJsonResponse(result.value);
+  assert.deepEqual(await response.json(), result.value);
 });
 
 test("database canonicalization constraints map back to print fields", () => {
@@ -720,6 +768,7 @@ test("print list reads all ordered bounded pages and hides owner and matching-ke
     "material",
     "name",
     "requiredGrams",
+    "reservation",
     "updatedAt",
     "version",
   ]);

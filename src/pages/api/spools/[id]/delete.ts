@@ -36,9 +36,9 @@ export const POST: APIRoute = async (context) => {
   const result = await deleteSpool(client, user.id, id);
   if (!result.ok) {
     if (result.reason === "not_found") return createSpoolNotFoundResponse();
-    return createSpoolDatabaseErrorResponse(result.error, result.status);
+    return createSpoolDatabaseErrorResponse(result.error, result.status, "mutation");
   }
-  return createSpoolJsonResponse({ id: result.value.id });
+  return createSpoolJsonResponse(result.value);
 };
 
 export const ALL: APIRoute = (context) => {

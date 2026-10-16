@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import { MAX_REQUIRED_GRAMS, isValidPrintId, type PrintFieldErrors } from "@/lib/print-validation";
+import { MAX_REQUIRED_GRAMS, type PrintFieldErrors } from "@/lib/print-validation";
+import { readPrintDto } from "@/lib/print-dto";
 import type { PrintDto } from "@/lib/prints";
 
 interface PrintFormProps {
@@ -19,37 +20,12 @@ interface PrintFormProps {
 type RequestErrorKind = "unauthenticated" | "not_found" | "generic" | "uncertain" | "conflict";
 type ApiFieldName = "name" | "material" | "colour" | "requiredGrams";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 const materialSuggestions = ["PLA", "PETG", "ABS", "ASA", "TPU"];
 const colourSuggestions = ["Black", "White", "Red", "Blue", "Black / Red / Gold"];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function readPrint(value: unknown): PrintDto | undefined {
-  if (!isRecord(value)) return undefined;
-  const { id, name, material, colour, requiredGrams, version, createdAt, updatedAt } = value;
-  if (
-    typeof id !== "string" ||
-    !isValidPrintId(id) ||
-    (name !== null && typeof name !== "string") ||
-    typeof material !== "string" ||
-    typeof colour !== "string" ||
-    typeof requiredGrams !== "number" ||
-    !Number.isSafeInteger(requiredGrams) ||
-    requiredGrams < 1 ||
-    requiredGrams > MAX_REQUIRED_GRAMS ||
-    typeof version !== "number" ||
-    !Number.isSafeInteger(version) ||
-    version < 1 ||
-    version > MAX_REQUIRED_GRAMS ||
-    typeof createdAt !== "string" ||
-    typeof updatedAt !== "string"
-  ) {
-    return undefined;
-  }
-  return { id, name, material, colour, requiredGrams, version, createdAt, updatedAt };
-}
 
 function fieldMessage(field: ApiFieldName, code: unknown): string | undefined {
   if (code === "required")
@@ -167,7 +143,7 @@ export function PrintForm({
 
     const expectedStatus = mode === "create" ? 201 : 200;
     if (response.ok) {
-      const saved = response.status === expectedStatus && isRecord(body) ? readPrint(body.print) : undefined;
+      const saved = response.status === expectedStatus && isRecord(body) ? readPrintDto(body.print) : undefined;
       if (saved) {
         updatePending(false);
         onSaved(saved);
@@ -200,10 +176,14 @@ export function PrintForm({
         setRequestError({ kind: "generic", message: "Please review the form and try again." });
       }
     } else if (response.status === 409 && mode === "edit") {
+      const apiError = isRecord(body) && isRecord(body.error) ? body.error : undefined;
+      const code = apiError?.code;
       setRequestError({
         kind: "conflict",
         message:
-          "Another save changed this print after you opened it. Your entries are still here; read the latest print before saving again.",
+          code === "reserved_print_edit_requires_cancellation"
+            ? "Cancel this print's reservation before changing its material, colour, or required grams. Your entries are still here."
+            : "Another save changed this print after you opened it. Your entries are still here; read the latest print before saving again.",
       });
     } else if (response.status === 401) {
       setRequestError({ kind: "unauthenticated", message: "Your session has expired. Sign in to continue." });
@@ -265,8 +245,12 @@ export function PrintForm({
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending}
-          hint="Suggestions are optional; a spool does not need to exist."
+          disabled={pending || mutationPending || Boolean(print?.reservation)}
+          hint={
+            print?.reservation
+              ? "Cancel this print's reservation before changing its material."
+              : "Suggestions are optional; a spool does not need to exist."
+          }
           error={fieldErrors.material?.message}
         />
         <datalist id={`${prefix}-material-options`}>
@@ -288,8 +272,12 @@ export function PrintForm({
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending}
-          hint="Keep a multicolour label together, for example Black / Red / Gold."
+          disabled={pending || mutationPending || Boolean(print?.reservation)}
+          hint={
+            print?.reservation
+              ? "Cancel this print's reservation before changing its colour."
+              : "Keep a multicolour label together, for example Black / Red / Gold."
+          }
           error={fieldErrors.colour?.message}
         />
         <datalist id={`${prefix}-colour-options`}>
@@ -312,11 +300,28 @@ export function PrintForm({
           min={1}
           max={MAX_REQUIRED_GRAMS}
           step={1}
-          disabled={pending || mutationPending}
-          hint="Whole grams before any safety margin; this does not reserve stock."
+          disabled={pending || mutationPending || Boolean(print?.reservation)}
+          hint={
+            print?.reservation
+              ? "Cancel this print's reservation before changing required grams."
+              : "Whole grams before any safety margin; this does not reserve stock."
+          }
           error={fieldErrors.requiredGrams?.message}
         />
       </div>
+
+      {mode === "edit" && print?.reservation && (
+        <div role="note" className="carbon-feedback carbon-feedback-warning">
+          <p className="font-medium">This print has an active material reservation.</p>
+          <p className="mt-1 text-sm leading-relaxed">
+            You can change its name while it is reserved. Material, colour, and required grams are locked; release the
+            reservation first using the reservation controls on this print to change them.
+          </p>
+          <p className="mt-1 text-xs break-all">
+            {print.reservation.reservedGrams} g held · reservation <code>{print.reservation.id}</code>
+          </p>
+        </div>
+      )}
 
       {mode === "edit" && print && (
         <p className="text-muted-foreground text-xs break-all">

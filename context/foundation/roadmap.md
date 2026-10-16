@@ -1,10 +1,10 @@
 ---
 project: PrintPlan
-version: 2
+version: 3
 status: draft
 created: 2026-10-09
-updated: 2026-10-14
-prd_version: 2
+updated: 2026-10-16
+prd_version: 3
 main_goal: speed
 top_blocker: decisions
 milestone_id: usable-filament-planning
@@ -37,7 +37,7 @@ Here, the north star means the smallest complete user flow that demonstrates the
 
 **S-03: Reserve and release material safely** — Deliver the first primary success flow as soon as account access, spool stock, and planned prints permit it: reserve 88 g from 150 g for an 80 g print, reject an identical second reservation, then release the first reservation so the second can succeed.
 
-The sequencing goal is `speed`, confirmed by the author. The principal constraint is `decisions`: the author must resolve the numeric and ordering policies listed below. Invest in data and operation correctness because PRD guardrails prohibit overbooking and repeated deductions; keep frontend and infrastructure scope minimal.
+The sequencing goal is `speed`, confirmed by the author. The author has resolved the reservation margin, rounding, and tie-breaking policies. Invest in data and operation correctness because PRD guardrails prohibit overbooking and repeated deductions; keep frontend and infrastructure scope minimal.
 
 ## At a glance
 
@@ -47,11 +47,11 @@ The sequencing goal is `speed`, confirmed by the author. The principal constrain
 | F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done     |
 | S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | done |
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | done |
-| S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | blocked  |
-| S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | blocked  |
-| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | blocked  |
-| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | proposed |
-| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | blocked  |
+| S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done |
+| S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | proposed  |
+| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | proposed  |
+| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | proposed  |
+| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | proposed  |
 
 ## Streams
 
@@ -141,11 +141,9 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Prerequisites:** S-01, S-02
 - **Parallel with:** F-02
 - **Blockers:** —
-- **Unknowns:**
-  - Which numeric precision and rounding rule should reservation calculations use? (PRD question 1) — Owner: author. Block: yes.
-  - How should equally eligible best-fit spools be ordered? (PRD question 2) — Owner: author. Block: yes.
+- **Unknowns:** —
 - **Risk:** The 150 g / 80 g / 88 g acceptance flow must hold under competing requests; reserve and release form one reversible workflow, with stock corrections below reservations rejected and reserved spool/print deletion safely cancelling reservations.
-- **Status:** blocked
+- **Status:** done
 
 ### S-04: Configure the account safety margin
 
@@ -155,10 +153,9 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Prerequisites:** S-03
 - **Parallel with:** F-02, S-06, S-07
 - **Blockers:** —
-- **Unknowns:**
-  - Which percentage bounds and input precision are allowed, using the agreed reservation rounding rule? (PRD question 1) — Owner: author. Block: yes.
+- **Unknowns:** —
 - **Risk:** A settings change must not silently resize existing reservations; verify 88 g remains reserved while a new 5% reservation requires 84 g.
-- **Status:** blocked
+- **Status:** proposed
 
 ### S-05: Recalculate a reservation after editing its print
 
@@ -168,10 +165,9 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Prerequisites:** S-03, S-04
 - **Parallel with:** F-02, S-06, S-07
 - **Blockers:** —
-- **Unknowns:**
-  - Which agreed margin, rounding, and best-fit tie rules should govern recalculation? (PRD questions 1 and 2) — Owner: author. Block: yes.
+- **Unknowns:** —
 - **Risk:** Recalculation must release or replace the prior reservation as one change without transient overbooking; explain when the saved print has become unreserved.
-- **Status:** blocked
+- **Status:** proposed
 
 ### S-06: Maintain a spool that has active reservations
 
@@ -193,10 +189,9 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Prerequisites:** S-03
 - **Parallel with:** F-02, S-04, S-05, S-06
 - **Blockers:** —
-- **Unknowns:**
-  - How should reservations with equal creation times be ordered during newest-first cancellation? (PRD question 2) — Owner: author. Block: yes.
+- **Unknowns:** —
 - **Risk:** Retries and concurrent stock changes must preserve a single settlement; consumption above recorded stock sets the estimate to 0 g, cancels other reservations, and explains that the estimate was exceeded.
-- **Status:** blocked
+- **Status:** proposed
 
 ## Backlog Handoff
 
@@ -206,24 +201,20 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 | F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; see `context/changes/hosted-auth-verification/verification.md`. |
 | S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Done; archived at `context/archive/2026-10-10-personal-filament-stock/`. |
 | S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Done; archived at `context/archive/2026-10-12-personal-planned-prints/`. |
-| S-03       | reserve-and-release-material | Reserve and release material safely               | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
-| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
-| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
-| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Complete S-03.                                                        |
-| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Resolve blocking Unknowns and complete prerequisites.                 |
+| S-03       | reserve-and-release-material | Reserve and release material safely               | yes                   | Run `/10x-plan reserve-and-release-material`.                          |
+| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Depends on S-03.                                                       |
+| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Depends on S-03 and S-04.                                              |
+| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Depends on S-03.                                                       |
+| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Depends on S-03.                                                       |
 
 ## Open Roadmap Questions
 
 The author resolved the access question: unauthenticated visitors opening protected pages are redirected to sign-in. F-01 is ready for planning; backend configuration and verification remain to be completed.
 
-The remaining source questions below are retained verbatim; the appended Block labels route them to affected items.
+The author resolved the margin, rounding, and ordering questions in PRD v3. The remaining source questions are non-blocking.
 
-1. **Which margin values and numeric rounding rules should be accepted?** Owner: author. Resolve during implementation planning; no percentage bounds or numeric precision have been selected during discovery. **Block:** S-03 (reservation precision and rounding), S-04 (accepted margin values), S-05 (recalculation).
-2. **How should equal best-fit results and reservations with equal creation times be ordered?** Owner: author. Resolve during implementation planning; best-fit and newest-first cancellation are confirmed, but tie-breaking rules have not been chosen. **Block:** S-03 and S-05 (best-fit ties), S-07 (cancellation ties).
-3. **What secondary success criteria, if any, should be specified?** Owner: author. The author has not specified an additional goal; the confirmed scope covers the primary flow and actual-consumption settlement. **Block:** none; retain the confirmed primary acceptance flows.
-4. **Which non-functional qualities are explicitly outside the MVP scope?** Owner: author. No non-functional exclusions are specified in the input. **Block:** none for declared scope; preserve the four explicit quality requirements without inventing additional work.
-
-The roadmap exposes these policies before planning. Their answers are product decisions owned by the author; implementation plans record the agreed answers rather than silently supplying defaults.
+1. **What secondary success criteria, if any, should be specified?** Owner: author. The author has not specified an additional goal; the confirmed scope covers the primary flow and actual-consumption settlement. **Block:** none; retain the confirmed primary acceptance flows.
+2. **Which non-functional qualities are explicitly outside the MVP scope?** Owner: author. No non-functional exclusions are specified in the input. **Block:** none for declared scope; preserve the four explicit quality requirements without inventing additional work.
 
 ## Parked
 
@@ -248,3 +239,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 - **S-01: user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.** — Archived 2026-10-11 → `context/archive/2026-10-10-personal-filament-stock/`. Lesson: —.
 
 - **S-02: user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.** — Archived 2026-10-14 → `context/archive/2026-10-12-personal-planned-prints/`. Lesson: —.
+
+- **S-03: user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.** — Archived 2026-10-16 → `context/archive/2026-10-16-reserve-and-release-material/`. Lesson: —.
