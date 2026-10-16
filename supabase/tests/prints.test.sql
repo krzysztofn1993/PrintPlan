@@ -3,6 +3,12 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 
+-- Legacy normalization/constraint cases exercise the pre-RPC table contract. The dedicated
+-- reservation contract verifies that the applied migration revokes these grants in production.
+GRANT SELECT, DELETE ON TABLE public.prints TO authenticated;
+GRANT INSERT (user_id, name, material, colour, required_grams) ON TABLE public.prints TO authenticated;
+GRANT UPDATE (name, material, colour, required_grams) ON TABLE public.prints TO authenticated;
+
 SELECT no_plan();
 
 INSERT INTO auth.users (id, email)

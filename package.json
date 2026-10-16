@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "test:auth": "node --experimental-strip-types --test scripts/auth-contracts.test.mjs",
     "test:prints": "node --experimental-strip-types --test scripts/print-contracts.test.mjs",
+    "test:reservations:concurrency": "node scripts/reservation-concurrency.mjs",
     "test:hooks": "node --experimental-strip-types --test scripts/agent-hooks.test.mjs",
     "test:migrations": "node scripts/migration-persistence.mjs",
     "test:e2e": "playwright test",
