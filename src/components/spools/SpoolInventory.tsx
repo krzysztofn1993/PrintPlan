@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SpoolForm } from "@/components/spools/SpoolForm";
+import { readSpoolDto } from "@/lib/spool-dto";
 import type { SpoolDto } from "@/lib/spools";
 
 interface SpoolInventoryProps {
@@ -36,8 +37,12 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<DeleteError | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [uncertaintyGuard, setUncertaintyGuard] = useState(false);
+  const [listError, setListError] = useState("");
   const focusTarget = useRef<string | null>(null);
   const mutationPendingRef = useRef(false);
+  const refreshingRef = useRef(false);
 
   useEffect(() => {
     const target = focusTarget.current;
@@ -56,8 +61,56 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     updateMutationPending(pending);
   }
 
+  function handleUncertainMutation() {
+    setUncertaintyGuard(true);
+    setStatusMessage("");
+  }
+
+  async function refreshStock(): Promise<boolean> {
+    if (mutationPendingRef.current || refreshingRef.current) return false;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    let response: Response;
+    try {
+      response = await fetch("/api/spools", { method: "GET", cache: "no-store" });
+    } catch {
+      setListError("Stock could not be reached. The pending action remains blocked; try refreshing again.");
+      refreshingRef.current = false;
+      setRefreshing(false);
+      return false;
+    }
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    const values = response.ok && isRecord(body) && Array.isArray(body.spools) ? body.spools : undefined;
+    const latest = values?.map(readSpoolDto);
+    const validSpools = latest?.filter((spool): spool is SpoolDto => spool !== undefined);
+    if (!latest || latest.length !== validSpools?.length) {
+      setListError(
+        "The latest stock state could not be read. The pending action remains blocked; try refreshing again.",
+      );
+      refreshingRef.current = false;
+      setRefreshing(false);
+      return false;
+    }
+    setSpools(orderedSpools(validSpools));
+    setUncertaintyGuard(false);
+    setListError("");
+    setDeleteError(null);
+    setDeleteSpoolId(null);
+    setCreateOpen(false);
+    setEditingSpoolId(null);
+    setStatusMessage("Stock refreshed. Review the current saved spools before making another change.");
+    refreshingRef.current = false;
+    setRefreshing(false);
+    return true;
+  }
+
   function openCreate() {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setStatusMessage("");
     setDeleteSpoolId(null);
     setDeleteError(null);
@@ -66,7 +119,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   function openEdit(spoolId: string) {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setStatusMessage("");
     setDeleteSpoolId(null);
     setDeleteError(null);
@@ -75,19 +128,19 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   function closeCreate() {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     focusTarget.current = "add-spool-button";
     setCreateOpen(false);
   }
 
   function closeEdit(spoolId: string) {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     focusTarget.current = `edit-spool-${spoolId}`;
     setEditingSpoolId(null);
   }
 
   function openDelete(spoolId: string) {
-    if (mutationPendingRef.current) return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setDeleteError(null);
     setStatusMessage("");
     focusTarget.current = `confirm-delete-${spoolId}`;
@@ -117,7 +170,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
   }
 
   async function confirmDelete(spool: SpoolDto) {
-    if (mutationPendingRef.current || deleteError?.kind === "uncertain") return;
+    if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setDeleteError(null);
     updateDeletePending(true);
     let response: Response;
@@ -128,6 +181,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         body: "",
       });
     } catch {
+      handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
         message: "We couldn't confirm whether deletion completed. Refresh stock before trying again.",
@@ -143,17 +197,44 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       body = undefined;
     }
 
-    if (response.status === 200 && response.ok && isRecord(body) && body.id === spool.id) {
+    if (
+      response.status === 200 &&
+      response.ok &&
+      isRecord(body) &&
+      body.id === spool.id &&
+      Array.isArray(body.cancelledReservations)
+    ) {
+      const cancelled = body.cancelledReservations.flatMap((value) => {
+        if (
+          !isRecord(value) ||
+          typeof value.printId !== "string" ||
+          typeof value.material !== "string" ||
+          typeof value.colour !== "string" ||
+          typeof value.releasedGrams !== "number" ||
+          !Number.isSafeInteger(value.releasedGrams)
+        )
+          return [];
+        const description =
+          typeof value.printName === "string" && value.printName
+            ? value.printName
+            : `${value.material}, ${value.colour}`;
+        return [`${description} (print ${value.printId}) released ${value.releasedGrams} g`];
+      });
       setSpools((previous) => previous.filter((item) => item.id !== spool.id));
       setDeleteSpoolId(null);
       setDeleteError(null);
-      setStatusMessage(`${describeSpool(spool)} deleted.`);
+      setStatusMessage(
+        cancelled.length
+          ? `${describeSpool(spool)} deleted. Cancelled reservations: ${cancelled.join("; ")}.`
+          : `${describeSpool(spool)} deleted. No active reservations were cancelled.`,
+      );
       focusTarget.current = "add-spool-button";
       updateDeletePending(false);
       return;
     }
 
-    if (response.ok) {
+    if (response.status >= 500 || response.ok) {
+      handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
         message: "Deletion may have completed, but its result could not be read. Refresh stock before trying again.",
@@ -166,7 +247,11 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         message: "This spool is no longer available. Refresh stock to see the latest inventory.",
       });
     } else if (response.status === 503) {
-      setDeleteError({ kind: "retryable", message: "Stock is temporarily unavailable. You can try again." });
+      handleUncertainMutation();
+      setDeleteError({
+        kind: "uncertain",
+        message: "The deletion outcome may be uncertain. Refresh stock and review it before trying again.",
+      });
     } else if (response.status === 403) {
       setDeleteError({ kind: "generic", message: "This request was rejected. Refresh stock and try again." });
     } else {
@@ -187,7 +272,20 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
           </p>
         </div>
         <div className="carbon-collection-actions">
-          <Button id="add-spool-button" type="button" onClick={openCreate} disabled={createOpen || mutationPending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void refreshStock()}
+            disabled={mutationPending || refreshing}
+          >
+            {refreshing ? "Refreshing…" : "Refresh stock"}
+          </Button>
+          <Button
+            id="add-spool-button"
+            type="button"
+            onClick={openCreate}
+            disabled={createOpen || mutationPending || refreshing || uncertaintyGuard}
+          >
             Add a spool
           </Button>
         </div>
@@ -196,6 +294,27 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       <p role="status" aria-live="polite" className="carbon-status-message">
         {statusMessage}
       </p>
+      {uncertaintyGuard && (
+        <div role="alert" className="carbon-feedback carbon-feedback-warning">
+          <p>
+            A stock change may have completed without confirmation. Refresh stock and review it before repeating any
+            action.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void refreshStock()}
+            disabled={refreshing || mutationPending}
+          >
+            {refreshing ? "Refreshing…" : "Refresh and review stock"}
+          </Button>
+        </div>
+      )}
+      {listError && (
+        <div role="alert" className="carbon-feedback carbon-feedback-error">
+          {listError}
+        </div>
+      )}
 
       {createOpen && (
         <section aria-labelledby="create-spool-heading" className="carbon-inline-panel">
@@ -210,6 +329,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
               saveSpool(saved, "create");
             }}
             onCancel={closeCreate}
+            onUncertain={handleUncertainMutation}
+            onRefreshLatest={refreshStock}
+            mutationGuarded={uncertaintyGuard}
           />
         </section>
       )}
@@ -269,7 +391,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={mutationPending}
+                        disabled={mutationPending || refreshing || uncertaintyGuard}
                         onClick={() => {
                           openEdit(spool.id);
                         }}
@@ -282,7 +404,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         type="button"
                         size="sm"
                         variant="ghost"
-                        disabled={mutationPending}
+                        disabled={mutationPending || refreshing || uncertaintyGuard}
                         onClick={() => {
                           openDelete(spool.id);
                         }}
@@ -308,6 +430,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         onCancel={() => {
                           closeEdit(spool.id);
                         }}
+                        onUncertain={handleUncertainMutation}
+                        onRefreshLatest={refreshStock}
+                        mutationGuarded={uncertaintyGuard}
                       />
                     </div>
                   )}
@@ -345,7 +470,9 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           type="button"
                           variant="destructive"
                           onClick={() => void confirmDelete(spool)}
-                          disabled={mutationPending || deleteError?.kind === "uncertain"}
+                          disabled={
+                            mutationPending || refreshing || uncertaintyGuard || deleteError?.kind === "uncertain"
+                          }
                         >
                           {deletePending ? "Deleting…" : "Confirm deletion"}
                         </Button>

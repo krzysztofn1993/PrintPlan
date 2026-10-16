@@ -42,10 +42,7 @@ test("server validation retains stock fields, focuses material, then saves canon
   expect(browserPosts).toBe(2);
 });
 
-test("a held stock 503 keeps fields and pending controls unavailable until explicit retry", async ({
-  page,
-  recoveryApi,
-}) => {
+test("a stock 503 preserves the draft and requires a fresh review before retry", async ({ page, recoveryApi }) => {
   const existing = await recoveryApi.createSpool({
     material: "PETG",
     colour: recoveryApi.label("stock-pending-existing"),
@@ -89,14 +86,24 @@ test("a held stock 503 keeps fields and pending controls unavailable until expli
 
   releaseResponse.resolve();
   await submitClick;
-  await expect(page.getByRole("alert")).toContainText("Stock is temporarily unavailable.");
+  await expect(page.getByRole("region", { name: "Add a spool" }).getByRole("alert")).toContainText(
+    "The save outcome may be uncertain. Refresh stock and review it before trying again.",
+  );
   await expect(page.getByLabel("Material")).toHaveValue("PLA");
   await expect(page.getByLabel("Colour")).toHaveValue(colour);
   await expect(page.getByLabel("Recorded stock (g)")).toHaveValue("42");
   expect(browserPosts).toBe(1);
-  await expect(page.getByRole("button", { name: "Add spool", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Add spool", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled();
 
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "A stock change may have completed without confirmation" })
+    .getByRole("button", { name: "Refresh and review stock" })
+    .click();
+  await expect(page.getByRole("region", { name: "Add a spool" })).toHaveCount(0);
+  await openSpoolCreate(page);
+  await fillSpoolForm(page, { material: "PLA", colour, recordedGrams: 42 });
   await page.getByRole("button", { name: "Add spool", exact: true }).click();
   await expect(page.getByRole("status")).toContainText(`PLA, ${colour}, 42 g saved.`);
   const saved = (await recoveryApi.listSpools()).filter((spool) => spool.colour === colour);
@@ -132,7 +139,9 @@ test("a committed stock save with an unreadable reply keeps the active-form guar
 
   await fillSpoolForm(page, { material: "PETG", colour, recordedGrams: 117 });
   await page.getByRole("button", { name: "Add spool", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("The save may have completed, but its result could not be read.");
+  await expect(page.getByRole("region", { name: "Add a spool" }).getByRole("alert")).toContainText(
+    "The save may have completed, but its result could not be read.",
+  );
   expect(acknowledged?.spool).toMatchObject({ material: "PETG", colour, recordedGrams: 117 });
   await expect(page.getByLabel("Material")).toHaveValue("PETG");
   await expect(page.getByLabel("Colour")).toHaveValue(colour);
@@ -151,7 +160,11 @@ test("a committed stock save with an unreadable reply keeps the active-form guar
   await expect(page.getByRole("button", { name: "Add spool", exact: true })).toBeDisabled();
   expect(browserPosts).toBe(1);
 
-  await page.getByRole("link", { name: "Refresh stock" }).click();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "A stock change may have completed without confirmation" })
+    .getByRole("button", { name: "Refresh and review stock" })
+    .click();
   await expect(page).toHaveURL(/\/dashboard\/spools$/);
   await expect(page.getByRole("article").filter({ hasText: colour })).toBeVisible();
   expect((await recoveryApi.listSpools()).filter((spool) => spool.colour === colour)).toHaveLength(1);
@@ -191,7 +204,9 @@ test("a committed stock delete with an unreadable reply stays visible until refr
   });
 
   await page.getByRole("button", { name: "Confirm deletion" }).click();
-  await expect(page.getByRole("alert")).toContainText("Deletion may have completed, but its result could not be read.");
+  await expect(spoolRow(page, target.id).getByRole("alert")).toContainText(
+    "Deletion may have completed, but its result could not be read.",
+  );
   expect(deletedId).toBe(target.id);
   await expect(spoolRow(page, target.id)).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirm deletion" })).toBeDisabled();

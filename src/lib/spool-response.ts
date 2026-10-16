@@ -159,7 +159,11 @@ function isTransientDatabaseError(error: unknown, responseStatus?: number): bool
   return properties.name === "FetchError";
 }
 
-export function mapSpoolDatabaseError(error: unknown, responseStatus?: number): MappedSpoolFailure {
+export function mapSpoolDatabaseError(
+  error: unknown,
+  responseStatus?: number,
+  operation: "read" | "mutation" = "read",
+): MappedSpoolFailure {
   const fieldErrors: SpoolFieldErrors = {};
   if (namedConstraint(error, "spools_material_length_check")) {
     fieldErrors.material = {
@@ -191,7 +195,11 @@ export function mapSpoolDatabaseError(error: unknown, responseStatus?: number): 
       body: {
         error: {
           code: "temporarily_unavailable",
-          message: "Stock is temporarily unavailable. Please try again.",
+          message:
+            operation === "mutation"
+              ? "The stock change may have completed. Refresh stock and review it before trying again."
+              : "Stock is temporarily unavailable. Please try again.",
+          ...(operation === "mutation" ? { refreshRequired: true } : {}),
           retryAfter: SPOOL_RETRY_AFTER_SECONDS,
         },
       },
@@ -201,7 +209,16 @@ export function mapSpoolDatabaseError(error: unknown, responseStatus?: number): 
 
   return {
     status: 500,
-    body: { error: { code: "internal_error", message: "We couldn't complete the stock request. Please try again." } },
+    body: {
+      error: {
+        code: "internal_error",
+        message:
+          operation === "mutation"
+            ? "The stock change may have completed. Refresh stock and review it before trying again."
+            : "We couldn't complete the stock request. Please try again.",
+        ...(operation === "mutation" ? { refreshRequired: true } : {}),
+      },
+    },
     cause: new Error("Unexpected spool database failure", { cause: error }),
   };
 }
@@ -261,6 +278,10 @@ export function createMappedSpoolFailureResponse(failure: MappedSpoolFailure): R
   return createSpoolJsonResponse(failure.body, failure.status, failure.headers);
 }
 
-export function createSpoolDatabaseErrorResponse(error: unknown, responseStatus?: number): Response {
-  return createMappedSpoolFailureResponse(mapSpoolDatabaseError(error, responseStatus));
+export function createSpoolDatabaseErrorResponse(
+  error: unknown,
+  responseStatus?: number,
+  operation: "read" | "mutation" = "read",
+): Response {
+  return createMappedSpoolFailureResponse(mapSpoolDatabaseError(error, responseStatus, operation));
 }

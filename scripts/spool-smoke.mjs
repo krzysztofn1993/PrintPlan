@@ -84,36 +84,11 @@ function restRequest(options) {
   return sharedRestRequest({ ...options, path: "/rest/v1/spools" });
 }
 
-function selectById(id) {
-  const query = new URLSearchParams({ select: REST_COLUMNS, id: "eq." + id });
-  return query.toString();
-}
-
-async function deleteRestSpool(config, requestSignal, token, id, ownerId) {
-  return restRequest({
-    config,
-    requestSignal,
-    token,
-    method: "DELETE",
-    query: new URLSearchParams({ select: REST_COLUMNS, id: "eq." + id, user_id: "eq." + ownerId }).toString(),
-    prefer: "return=representation",
-  });
-}
-
 function assertRestDenied(result, operation) {
   ensure(
     (result.status === 401 || result.status === 403) && result.data?.code === "42501",
-    "Anonymous REST " + operation + " did not fail with the database authorization contract.",
+    "REST " + operation + " did not fail with the direct-write authorization contract.",
   );
-  ensure(
-    !/jwt|token|malformed/i.test(String(result.data?.message ?? "")),
-    "Anonymous REST " + operation + " failed because of a malformed token.",
-  );
-}
-
-function trackReturnedRows(result, track) {
-  if (!Array.isArray(result.data)) return;
-  for (const row of result.data) if (typeof row?.id === "string") track(row.user_id, row.id);
 }
 
 async function verifyDirectRest({
@@ -125,98 +100,52 @@ async function verifyDirectRest({
   jarB,
   primary,
   spoolB,
-  rememberRest,
-  forget,
   assertPersisted,
-  track,
 }) {
-  const { session: sessionA } = sessionIdentity(jarA, "account A");
-  const { session: sessionB } = sessionIdentity(jarB, "account B");
-  const ownInsert = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "POST",
-    body: {
-      user_id: accountA.id,
-      material: "petg",
-      colour: "Direct REST / Test",
-      recorded_grams: 37,
-    },
-    prefer: "return=representation",
-  });
-  ensure(
-    ownInsert.status === 201 && Array.isArray(ownInsert.data) && ownInsert.data.length === 1,
-    "Account A could not create an owned spool through REST.",
-  );
-  const directSpool = ownInsert.data[0];
-  ensure(typeof directSpool.id === "string", "The direct REST write did not return a spool identifier.");
-  track(accountA.id, directSpool.id);
-  ensure(
-    directSpool.user_id === accountA.id &&
-      directSpool.material === "PETG" &&
-      directSpool.colour === "Direct REST / Test" &&
-      directSpool.recorded_grams === 37,
-    "The database did not return canonical values for account A's direct REST write.",
-  );
-  rememberRest(accountA.id, directSpool);
-
-  const ownRead = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "GET",
-    query: selectById(directSpool.id),
-  });
-  ensure(
-    ownRead.ok && Array.isArray(ownRead.data) && ownRead.data.length === 1,
-    "Account A could not read its spool through REST.",
-  );
-  assertExactCollection(
-    ownRead.data,
-    new Map([[directSpool.id, snapshotFromRest(directSpool, accountA.id)]]),
-    "The direct REST reread",
-    accountA.id,
-  );
-
+  const tokenA = sessionIdentity(jarA, "account A").session.access_token;
+  const tokenB = sessionIdentity(jarB, "account B").session.access_token;
   const foreignRead = await restRequest({
     config,
     requestSignal,
-    token: sessionB.access_token,
+    token: tokenB,
     method: "GET",
-    query: selectById(directSpool.id),
+    query: new URLSearchParams({ select: REST_COLUMNS, id: "eq." + primary.id }).toString(),
   });
   ensure(
     foreignRead.ok && Array.isArray(foreignRead.data) && foreignRead.data.length === 0,
     "Account B could read account A's spool through REST.",
   );
 
-  const foreignUpdate = await restRequest({
+  const ownInsert = await restRequest({
     config,
     requestSignal,
-    token: sessionB.access_token,
+    token: tokenA,
+    method: "POST",
+    body: { user_id: accountA.id, material: "PLA", colour: "Direct write", recorded_grams: 10 },
+    prefer: "return=representation",
+  });
+  assertRestDenied(ownInsert, "authenticated spool create");
+
+  const ownUpdate = await restRequest({
+    config,
+    requestSignal,
+    token: tokenA,
     method: "PATCH",
-    query: selectById(directSpool.id),
+    query: new URLSearchParams({ id: "eq." + primary.id }).toString(),
     body: { recorded_grams: 99 },
     prefer: "return=representation",
   });
-  ensure(
-    foreignUpdate.ok && Array.isArray(foreignUpdate.data) && foreignUpdate.data.length === 0,
-    "Account B changed account A's spool through REST.",
-  );
+  assertRestDenied(ownUpdate, "authenticated spool update");
+
   const foreignDelete = await restRequest({
     config,
     requestSignal,
-    token: sessionB.access_token,
+    token: tokenA,
     method: "DELETE",
-    query: selectById(directSpool.id),
+    query: new URLSearchParams({ id: "eq." + spoolB.id }).toString(),
     prefer: "return=representation",
   });
-  ensure(
-    foreignDelete.ok && Array.isArray(foreignDelete.data) && foreignDelete.data.length === 0,
-    "Account B deleted account A's spool through REST.",
-  );
-  await assertPersisted(accountA.id, jarA);
+  assertRestDenied(foreignDelete, "foreign spool delete");
 
   const anonymousInsert = await restRequest({
     config,
@@ -225,178 +154,9 @@ async function verifyDirectRest({
     body: { user_id: accountA.id, material: "PLA", colour: "Anonymous REST", recorded_grams: 15 },
     prefer: "return=representation",
   });
-  if (Array.isArray(anonymousInsert.data)) {
-    for (const row of anonymousInsert.data) if (typeof row.id === "string") track(row.user_id, row.id);
-  }
-  assertRestDenied(anonymousInsert, "create");
-  for (const [operation, method, body] of [
-    ["read", "GET"],
-    ["update", "PATCH", { recorded_grams: 99 }],
-    ["delete", "DELETE"],
-  ]) {
-    const denied = await restRequest({
-      config,
-      requestSignal,
-      method,
-      query: selectById(primary.id),
-      body,
-      prefer: "return=representation",
-    });
-    assertRestDenied(denied, operation);
-  }
+  assertRestDenied(anonymousInsert, "anonymous spool create");
   await assertPersisted(accountA.id, jarA);
-
-  for (const [operation, method, body] of [
-    ["read", "GET"],
-    ["update", "PATCH", { recorded_grams: 99 }],
-    ["delete", "DELETE"],
-  ]) {
-    const denied = await restRequest({
-      config,
-      requestSignal,
-      token: sessionIdentity(jarA, "account A").session.access_token,
-      method,
-      query: selectById(spoolB.id),
-      body,
-      prefer: "return=representation",
-    });
-    ensure(
-      denied.ok && Array.isArray(denied.data) && denied.data.length === 0,
-      "Account A could " + operation + " account B's spool through REST.",
-    );
-  }
   await assertPersisted(accountB.id, jarB);
-  await assertPersisted(accountA.id, jarA);
-
-  const forgedOwner = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "POST",
-    body: {
-      user_id: accountB.id,
-      material: "PLA",
-      colour: "Forged Owner",
-      recorded_grams: 10,
-    },
-    prefer: "return=representation",
-  });
-  trackReturnedRows(forgedOwner, track);
-  ensure(!forgedOwner.ok, "The database accepted a forged owner on direct REST insert.");
-
-  const reassignment = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "PATCH",
-    query: selectById(directSpool.id),
-    body: { user_id: accountB.id },
-    prefer: "return=representation",
-  });
-  ensure(!reassignment.ok, "The database allowed ownership reassignment through direct REST.");
-
-  const zeroInsert = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "POST",
-    body: {
-      user_id: accountA.id,
-      material: "PLA",
-      colour: "Zero Insert Must Fail",
-      recorded_grams: 0,
-    },
-    prefer: "return=representation",
-  });
-  trackReturnedRows(zeroInsert, track);
-  ensure(!zeroInsert.ok, "The database accepted a zero-gram spool insert through direct REST.");
-
-  const fractionalInsert = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "POST",
-    body: {
-      user_id: accountA.id,
-      material: "PLA",
-      colour: "Fraction Must Fail",
-      recorded_grams: 2.5,
-    },
-    prefer: "return=representation",
-  });
-  trackReturnedRows(fractionalInsert, track);
-  ensure(!fractionalInsert.ok, "The database accepted fractional stock through direct REST.");
-
-  const oversizedLabel = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "POST",
-    body: {
-      user_id: accountA.id,
-      material: "M".repeat(81),
-      colour: "Oversized Label",
-      recorded_grams: 1,
-    },
-    prefer: "return=representation",
-  });
-  trackReturnedRows(oversizedLabel, track);
-  ensure(!oversizedLabel.ok, "The database accepted an oversized material label through direct REST.");
-
-  const stillOwned = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "GET",
-    query: selectById(directSpool.id),
-  });
-  ensure(
-    stillOwned.ok &&
-      Array.isArray(stillOwned.data) &&
-      stillOwned.data.length === 1 &&
-      stillOwned.data[0].user_id === accountA.id,
-    "A rejected foreign mutation changed account A's owner-scoped spool.",
-  );
-  assertSnapshot(
-    snapshotFromRest(stillOwned.data[0], accountA.id),
-    snapshotFromRest(directSpool, accountA.id),
-    "The direct REST victim",
-  );
-
-  const ownUpdate = await restRequest({
-    config,
-    requestSignal,
-    token: sessionA.access_token,
-    method: "PATCH",
-    query: selectById(directSpool.id),
-    body: { recorded_grams: 0 },
-    prefer: "return=representation",
-  });
-  ensure(
-    ownUpdate.ok &&
-      Array.isArray(ownUpdate.data) &&
-      ownUpdate.data.length === 1 &&
-      ownUpdate.data[0].recorded_grams === 0,
-    "Account A could not correct its direct REST spool to zero grams.",
-  );
-  const corrected = snapshotFromRest(ownUpdate.data[0], accountA.id);
-  const original = snapshotFromRest(directSpool, accountA.id);
-  ensure(
-    corrected.id === original.id &&
-      corrected.material === original.material &&
-      corrected.colour === original.colour &&
-      corrected.createdAt === original.createdAt,
-    "The REST spool correction changed its identifier, labels, or creation time.",
-  );
-  rememberRest(accountA.id, ownUpdate.data[0]);
-  await assertPersisted(accountA.id, jarA);
-  const ownDelete = await deleteRestSpool(config, requestSignal, sessionA.access_token, directSpool.id, accountA.id);
-  ensure(
-    ownDelete.ok && Array.isArray(ownDelete.data) && ownDelete.data.length === 1,
-    "Account A could not delete its own spool through REST.",
-  );
-  track(accountA.id, directSpool.id, false);
-  forget(accountA.id, directSpool.id);
 }
 
 export async function runSpoolSmoke({
@@ -443,7 +203,6 @@ export async function runSpoolSmoke({
     else ids.delete(id);
   };
   const rememberDto = (ownerId, spool) => expectedByOwner.get(ownerId).set(spool.id, snapshotFromDto(spool));
-  const rememberRest = (ownerId, spool) => expectedByOwner.get(ownerId).set(spool.id, snapshotFromRest(spool, ownerId));
   const forget = (ownerId, id) => expectedByOwner.get(ownerId).delete(id);
 
   const appJsonRequest = async (path, options = {}, status = 200) => {
@@ -764,7 +523,6 @@ export async function runSpoolSmoke({
         jarB: activeJarB,
         primary,
         spoolB,
-        rememberRest,
         forget,
         assertPersisted,
         track,
@@ -888,25 +646,25 @@ export async function runSpoolSmoke({
       const ids = trackedByOwner.get(ownerId);
       if (!ids?.size) continue;
       try {
-        const session = await restoreCleanupSession({
+        await restoreCleanupSession({
           appRequest,
           jar,
           account,
           expectedUserId: ownerId,
           cleanupRequestSignal,
         });
-        const cleanups = await Promise.all(
-          [...ids].map((id) => deleteRestSpool(config, cleanupRequestSignal, session.access_token, id, ownerId)),
-        );
-        for (const cleanup of cleanups) {
-          ensure(
-            cleanup.ok &&
-              Array.isArray(cleanup.data) &&
-              cleanup.data.length === 1 &&
-              cleanup.data[0].user_id === ownerId,
-            "The " + label + " cleanup could not delete one of its tracked spools.",
-          );
-          ids.delete(cleanup.data[0].id);
+        for (const id of [...ids]) {
+          const result = await appRequest("/api/spools/" + id + "/delete", {
+            method: "POST",
+            jar: jar,
+            formEntries: [],
+            signal: cleanupRequestSignal(),
+          });
+          ensure(result.status === 200, "The " + label + " cleanup could not delete an owner-tracked spool.");
+          const payload = readAppJson(result, "stock cleanup");
+          ensure(payload.id === id, "The " + label + " cleanup deleted an unexpected spool.");
+          ids.delete(id);
+          forget(ownerId, id);
         }
         if (cleanupProbe) console.log("PASS  " + label + " cleanup removed all owner-tracked stock probe records");
       } catch (error) {

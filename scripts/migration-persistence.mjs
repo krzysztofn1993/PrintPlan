@@ -1,4 +1,4 @@
-// Prove the additive print migration preserves committed spool rows in a disposable local database.
+// Prove additive product and reservation migrations preserve committed rows in a disposable local database.
 
 /* global Buffer, setTimeout, clearTimeout */
 
@@ -8,7 +8,11 @@ import { spawn } from "node:child_process";
 
 const PROJECT_CONFIG = "supabase/config.toml";
 const MIGRATIONS_DIR = "supabase/migrations";
-const KNOWN_MIGRATIONS = ["20261010000000_create_spools.sql", "20261012000000_create_prints.sql"];
+const KNOWN_MIGRATIONS = [
+  "20261010000000_create_spools.sql",
+  "20261012000000_create_prints.sql",
+  "20261016000000_reserve_and_release_material.sql",
+];
 const COMMAND_TIMEOUT_MS = 45_000;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
 
@@ -207,6 +211,18 @@ async function restrictedRows(container, database, ownerId, label) {
   return parseJsonRows(await queryValue(container, database, sql, { label }), label);
 }
 
+async function restrictedPrintRows(container, database, ownerId, label) {
+  const sql = [
+    "BEGIN;",
+    "SET LOCAL ROLE authenticated;",
+    "SET LOCAL request.jwt.claim.sub = '" + ownerId + "';",
+    "SELECT COALESCE(jsonb_agg(to_jsonb(record) ORDER BY record.id), '[]'::jsonb)::text",
+    "FROM public.prints AS record;",
+    "COMMIT;",
+  ].join("\n");
+  return parseJsonRows(await queryValue(container, database, sql, { label }), label);
+}
+
 async function main() {
   const migrations = (await readdir(MIGRATIONS_DIR)).filter((file) => file.endsWith(".sql")).sort();
   ensure(
@@ -336,20 +352,45 @@ async function main() {
     await psql(container, scratch, "BEGIN;\n" + printMigration + "\nCOMMIT;\n", {
       label: "Transactional populated print migration",
     });
+    const printSeed = [
+      "BEGIN;",
+      "SET LOCAL ROLE authenticated;",
+      "SET LOCAL request.jwt.claim.sub = '" + ownerA + "';",
+      "INSERT INTO public.prints (user_id,name,material,colour,required_grams) VALUES",
+      "  ('" + ownerA + "','Upgrade print A','pla','Black / Red / Gold',80),",
+      "  ('" + ownerA + "','Upgrade print B','petg','Blue',120);",
+      "COMMIT;",
+    ].join("\n");
+    await psql(container, scratch, printSeed, { label: "Committed print rows before reservation migration" });
+    const printBaselineA = await restrictedPrintRows(container, scratch, ownerA, "Owner A committed print baseline");
+    const printBaselineB = await restrictedPrintRows(container, scratch, ownerB, "Owner B committed print baseline");
+    const printBaseline = [...printBaselineA, ...printBaselineB].sort((left, right) => left.id.localeCompare(right.id));
+    ensure(printBaseline.length === 2, "Committed print baseline did not contain both seeded prints.");
+
+    const reservationMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[2], "utf8");
+    await psql(container, scratch, "BEGIN;\n" + reservationMigration + "\nCOMMIT;\n", {
+      label: "Transactional populated reservation migration",
+    });
     const afterA = await restrictedRows(container, scratch, ownerA, "Owner A fresh restricted upgrade read");
     const afterB = await restrictedRows(container, scratch, ownerB, "Owner B fresh restricted upgrade read");
     const after = [...afterA, ...afterB].sort((left, right) => left.id.localeCompare(right.id));
     assertBaseline(after, ids, ownerA, ownerB);
     ensure(
       JSON.stringify(stable(after)) === JSON.stringify(stable(baseline)),
-      "The populated print migration altered committed spool rows.",
+      "The populated reservation migration altered committed spool rows.",
+    );
+    const printAfterA = await restrictedPrintRows(container, scratch, ownerA, "Owner A post-migration print read");
+    const printAfterB = await restrictedPrintRows(container, scratch, ownerB, "Owner B post-migration print read");
+    const printAfter = [...printAfterA, ...printAfterB].sort((left, right) => left.id.localeCompare(right.id));
+    ensure(
+      JSON.stringify(stable(printAfter)) === JSON.stringify(stable(printBaseline)),
+      "The populated reservation migration altered committed print rows.",
     );
     const hasPrints = await queryValue(container, scratch, "SELECT to_regclass('public.prints') IS NOT NULL;", {
       label: "Print table upgrade check",
     });
     ensure(hasPrints === "t", "The print migration did not add public.prints to the populated database.");
-    console.log("PASS  fresh restricted connections confirm complete spool-row preservation and the prints table");
-    console.log("INFO  print-upgrade preservation: not applicable; the migration inventory has no prior print table");
+    console.log("PASS  fresh restricted connections confirm complete spool and print row preservation");
   } catch (error) {
     scenarioError = error;
   } finally {

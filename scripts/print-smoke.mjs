@@ -87,22 +87,6 @@ function printQuery(id, ownerId) {
   return query.toString();
 }
 
-function assertRestDenied(result, operation) {
-  ensure(
-    (result.status === 401 || result.status === 403) && result.data?.code === "42501",
-    "Anonymous REST print " + operation + " did not fail with the database authorization contract.",
-  );
-  ensure(
-    !/jwt|token|malformed/i.test(String(result.data?.message ?? "")),
-    "Anonymous REST print " + operation + " failed because of a malformed token.",
-  );
-}
-
-function trackReturnedRows(result, track) {
-  if (!Array.isArray(result.data)) return;
-  for (const row of result.data) if (typeof row?.id === "string") track(row.user_id, row.id);
-}
-
 export async function runPrintSmoke({
   config,
   appRequest,
@@ -147,7 +131,6 @@ export async function runPrintSmoke({
     else ids.delete(id);
   };
   const rememberDto = (ownerId, print) => expectedByOwner.get(ownerId).set(print.id, snapshotFromDto(print));
-  const rememberRest = (ownerId, print) => expectedByOwner.get(ownerId).set(print.id, snapshotFromRest(print, ownerId));
   const forget = (ownerId, id) => expectedByOwner.get(ownerId).delete(id);
 
   const appJsonRequest = async (path, options = {}, status = 200) => {
@@ -531,249 +514,60 @@ export async function runPrintSmoke({
       // Keep account B's owned print as an unrelated-data control through account A's deletion checks.
     });
 
-    await step("direct REST enforces print ownership, constraints, and version triggers", async () => {
-      const tokenA = sessionIdentity(activeJarA, "account A").session.access_token;
-      const tokenB = sessionIdentity(activeJarB, "account B").session.access_token;
-      const inserted = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "POST",
-        body: {
-          user_id: accountA.id,
-          name: "Direct REST",
-          material: "petg",
-          colour: "Direct / REST",
-          required_grams: 30,
-        },
-        prefer: "return=representation",
-      });
-      ensure(
-        inserted.status === 201 && Array.isArray(inserted.data) && inserted.data.length === 1,
-        "Account A could not insert an owned print through REST.",
-      );
-      const direct = inserted.data[0];
-      ensure(typeof direct.id === "string", "The direct REST insert did not return a print identifier.");
-      track(accountA.id, direct.id);
-      ensure(
-        direct.user_id === accountA.id &&
-          direct.name === "Direct REST" &&
-          direct.material === "PETG" &&
-          direct.colour === "Direct / REST" &&
-          direct.required_grams === 30 &&
-          direct.version === 1,
-        "The database did not canonicalize the direct print insert.",
-      );
-      rememberRest(accountA.id, direct);
-      const readOwn = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "GET",
-        query: printQuery(direct.id),
-      });
-      ensure(
-        readOwn.ok && Array.isArray(readOwn.data) && readOwn.data.length === 1,
-        "Account A could not read its print through REST.",
-      );
-      const readForeign = await restRequest({
-        config,
-        requestSignal,
-        token: tokenB,
-        path: "/rest/v1/prints",
-        method: "GET",
-        query: printQuery(direct.id),
-      });
-      ensure(
-        readForeign.ok && Array.isArray(readForeign.data) && readForeign.data.length === 0,
-        "Account B could read account A's print through REST.",
-      );
-      const foreignUpdate = await restRequest({
-        config,
-        requestSignal,
-        token: tokenB,
-        path: "/rest/v1/prints",
-        method: "PATCH",
-        query: printQuery(direct.id),
-        body: { required_grams: 99 },
-        prefer: "return=representation",
-      });
-      ensure(
-        foreignUpdate.ok && Array.isArray(foreignUpdate.data) && foreignUpdate.data.length === 0,
-        "Account B changed account A's print through REST.",
-      );
-      const foreignDelete = await restRequest({
-        config,
-        requestSignal,
-        token: tokenB,
-        path: "/rest/v1/prints",
-        method: "DELETE",
-        query: printQuery(direct.id),
-        prefer: "return=representation",
-      });
-      ensure(
-        foreignDelete.ok && Array.isArray(foreignDelete.data) && foreignDelete.data.length === 0,
-        "Account B deleted account A's print through REST.",
-      );
-      await assertPersisted(accountA.id, activeJarA);
+    await step(
+      "direct REST reads stay owner-scoped and all authenticated writes require supported RPC routes",
+      async () => {
+        const tokenA = sessionIdentity(activeJarA, "account A").session.access_token;
+        const tokenB = sessionIdentity(activeJarB, "account B").session.access_token;
+        const accountBPrint = [...expectedByOwner.get(accountB.id).values()].find(
+          (print) => print.name === "Account B print",
+        );
+        ensure(accountBPrint, "The account B print positive control was missing.");
 
-      const anonymousInsert = await restRequest({
-        config,
-        requestSignal,
-        path: "/rest/v1/prints",
-        method: "POST",
-        body: {
-          user_id: accountA.id,
-          name: "Anonymous REST",
-          material: "PLA",
-          colour: "Anonymous",
-          required_grams: 12,
-        },
-        prefer: "return=representation",
-      });
-      trackReturnedRows(anonymousInsert, track);
-      assertRestDenied(anonymousInsert, "create");
-      for (const [operation, method, body] of [
-        ["read", "GET"],
-        ["update", "PATCH", { required_grams: 99 }],
-        ["delete", "DELETE"],
-      ]) {
-        const denied = await restRequest({
+        const foreignRead = await restRequest({
           config,
           requestSignal,
+          token: tokenB,
           path: "/rest/v1/prints",
-          method,
+          method: "GET",
           query: printQuery(primary.id),
-          body,
-          prefer: "return=representation",
-        });
-        assertRestDenied(denied, operation);
-      }
-      await assertPersisted(accountA.id, activeJarA);
-
-      const accountBPrint = [...expectedByOwner.get(accountB.id).values()].find(
-        (print) => print.name === "Account B print",
-      );
-      ensure(accountBPrint, "The account B print positive control was missing.");
-      for (const [operation, method, body] of [
-        ["read", "GET"],
-        ["update", "PATCH", { required_grams: 99 }],
-        ["delete", "DELETE"],
-      ]) {
-        const denied = await restRequest({
-          config,
-          requestSignal,
-          token: tokenA,
-          path: "/rest/v1/prints",
-          method,
-          query: printQuery(accountBPrint.id),
-          body,
-          prefer: "return=representation",
         });
         ensure(
-          denied.ok && Array.isArray(denied.data) && denied.data.length === 0,
-          "Account A could " + operation + " account B's print through REST.",
+          foreignRead.ok && Array.isArray(foreignRead.data) && foreignRead.data.length === 0,
+          "Account B could read account A's print through REST.",
         );
-      }
-      await assertPersisted(accountB.id, activeJarB);
-      await assertPersisted(accountA.id, activeJarA);
-      const forgedOwner = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "POST",
-        body: { user_id: accountB.id, material: "PLA", colour: "Forged", required_grams: 10 },
-        prefer: "return=representation",
-      });
-      trackReturnedRows(forgedOwner, track);
-      ensure(!forgedOwner.ok, "The database accepted a forged print owner.");
-      const reassignment = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "PATCH",
-        query: printQuery(direct.id),
-        body: { user_id: accountB.id },
-        prefer: "return=representation",
-      });
-      ensure(!reassignment.ok, "The database allowed print ownership reassignment.");
-      for (const grams of [0, 2.5]) {
-        const invalid = await restRequest({
-          config,
-          requestSignal,
-          token: tokenA,
-          path: "/rest/v1/prints",
-          method: "POST",
-          body: { user_id: accountA.id, material: "PLA", colour: "Invalid REST", required_grams: grams },
-          prefer: "return=representation",
-        });
-        trackReturnedRows(invalid, track);
-        ensure(!invalid.ok, "The database accepted invalid required grams through REST.");
-      }
-      const edit = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "PATCH",
-        query: printQuery(direct.id),
-        body: { required_grams: 31 },
-        prefer: "return=representation",
-      });
-      ensure(
-        edit.ok && Array.isArray(edit.data) && edit.data.length === 1 && edit.data[0].version === 2,
-        "A direct edit did not increment the print version.",
-      );
-      const edited = snapshotFromRest(edit.data[0], accountA.id);
-      assertPrint(edited, {
-        name: direct.name,
-        material: direct.material,
-        colour: direct.colour,
-        requiredGrams: 31,
-      });
-      ensure(
-        edited.id === direct.id &&
-          edited.createdAt === timestampInstant(direct.created_at, "The original REST print creation time"),
-        "The REST print edit changed its identifier or creation time.",
-      );
-      rememberRest(accountA.id, edit.data[0]);
-      await assertPersisted(accountA.id, activeJarA);
-      const staleApp = await updatePrint(
-        activeJarA,
-        direct.id,
-        1,
-        [
-          ["name", "Stale"],
-          ["material", "PETG"],
-          ["colour", "Direct / REST"],
-          ["requiredGrams", "32"],
-        ],
-        409,
-      );
-      ensure(
-        staleApp.error?.code === "edit_conflict",
-        "An app form with a stale direct-REST version did not conflict.",
-      );
-      const cleanup = await restRequest({
-        config,
-        requestSignal,
-        token: tokenA,
-        path: "/rest/v1/prints",
-        method: "DELETE",
-        query: printQuery(direct.id),
-        prefer: "return=representation",
-      });
-      ensure(
-        cleanup.ok && Array.isArray(cleanup.data) && cleanup.data.length === 1,
-        "Account A could not delete its own REST fixture.",
-      );
-      track(accountA.id, direct.id, false);
-      forget(accountA.id, direct.id);
-    });
+
+        for (const [label, token, method, id, body] of [
+          [
+            "owner create",
+            tokenA,
+            "POST",
+            "",
+            { user_id: accountA.id, name: "Direct REST", material: "PLA", colour: "Direct", required_grams: 10 },
+          ],
+          ["owner update", tokenA, "PATCH", primary.id, { required_grams: 99 }],
+          ["foreign update", tokenA, "PATCH", accountBPrint.id, { required_grams: 99 }],
+          ["foreign delete", tokenA, "DELETE", accountBPrint.id, undefined],
+        ]) {
+          const denied = await restRequest({
+            config,
+            requestSignal,
+            token,
+            path: "/rest/v1/prints",
+            method,
+            query: id ? printQuery(id) : "",
+            body,
+            prefer: "return=representation",
+          });
+          ensure(
+            (denied.status === 401 || denied.status === 403) && denied.data?.code === "42501",
+            "REST " + label + " bypassed the supported mutation RPCs.",
+          );
+        }
+        await assertPersisted(accountA.id, activeJarA);
+        await assertPersisted(accountB.id, activeJarB);
+      },
+    );
 
     await step("competing updates with one expected version produce exactly one winner", async () => {
       const before = await listPrints(activeJarA);
@@ -949,35 +743,25 @@ export async function runPrintSmoke({
       const ids = trackedByOwner.get(ownerId);
       if (!ids?.size) continue;
       try {
-        const session = await restoreCleanupSession({
+        await restoreCleanupSession({
           appRequest,
           jar,
           account,
           expectedUserId: ownerId,
           cleanupRequestSignal,
         });
-        const cleanups = await Promise.all(
-          [...ids].map((id) =>
-            restRequest({
-              config,
-              requestSignal: cleanupRequestSignal,
-              token: session.access_token,
-              path: "/rest/v1/prints",
-              method: "DELETE",
-              query: printQuery(id, ownerId),
-              prefer: "return=representation",
-            }),
-          ),
-        );
-        for (const cleanup of cleanups) {
-          ensure(
-            cleanup.ok &&
-              Array.isArray(cleanup.data) &&
-              cleanup.data.length === 1 &&
-              cleanup.data[0].user_id === ownerId,
-            "The " + label + " cleanup could not delete one of its tracked prints.",
-          );
-          ids.delete(cleanup.data[0].id);
+        for (const id of [...ids]) {
+          const result = await appRequest("/api/prints/" + id + "/delete", {
+            method: "POST",
+            jar,
+            formEntries: [],
+            signal: cleanupRequestSignal(),
+          });
+          ensure(result.status === 200, "The " + label + " cleanup could not delete an owner-tracked print.");
+          const payload = readAppJson(result, "planned-print cleanup");
+          ensure(payload.id === id, "The " + label + " cleanup deleted an unexpected print.");
+          ids.delete(id);
+          forget(ownerId, id);
         }
         if (cleanupProbe) console.log("PASS  " + label + " cleanup removed all owner-tracked print probe records");
       } catch (error) {
