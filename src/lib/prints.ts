@@ -200,6 +200,7 @@ export async function deletePrint(
 ): Promise<
   PrintDeleteResult<{
     id: string;
+    cancelledReservations: CancelledPrintReservation[];
     releasedReservationId: string | null;
     releasedGrams: number | null;
     spool: SpoolDto | null;
@@ -221,6 +222,7 @@ export async function deletePrint(
       };
     const receipt = data as unknown as {
       id: string;
+      cancelledReservations?: CancelledPrintReservation[];
       releasedReservationId?: string | null;
       releasedGrams?: number | null;
       spool?: { id?: string } | null;
@@ -235,6 +237,7 @@ export async function deletePrint(
       ok: true,
       value: {
         id: receipt.id,
+        cancelledReservations: receipt.cancelledReservations ?? [],
         releasedReservationId: receipt.releasedReservationId ?? null,
         releasedGrams: receipt.releasedGrams ?? null,
         spool,

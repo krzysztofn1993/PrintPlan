@@ -1,4 +1,4 @@
-/* global Blob, FormData, Request, Response */
+/* global Blob, FormData, Request, Response, URL */
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -478,7 +478,13 @@ test("delete uses the owner-checked RPC and returns its release receipt", async 
   const deleted = makePrintClient({
     mutationResponses: [
       {
-        data: { id: PRINT_ID, releasedReservationId: null, releasedGrams: null, spool: null },
+        data: {
+          id: PRINT_ID,
+          cancelledReservations: [],
+          releasedReservationId: null,
+          releasedGrams: null,
+          spool: null,
+        },
         error: null,
         status: 200,
       },
@@ -486,9 +492,70 @@ test("delete uses the owner-checked RPC and returns its release receipt", async 
   });
   assert.deepEqual(await deletePrint(deleted.client, OWNER_ID, PRINT_ID), {
     ok: true,
-    value: { id: PRINT_ID, releasedReservationId: null, releasedGrams: null, spool: null },
+    value: { id: PRINT_ID, cancelledReservations: [], releasedReservationId: null, releasedGrams: null, spool: null },
   });
   assert.deepEqual(deleted.calls[0], { operation: "rpc", name: "delete_print", args: { p_print_id: PRINT_ID } });
+});
+
+test("reserved print deletion preserves the cancellation summary and existing release fields", async () => {
+  const reservationId = "55555555-5555-4555-8555-555555555555";
+  const spoolId = "44444444-4444-4444-8444-444444444444";
+  const cancellations = [
+    { reservationId, printId: PRINT_ID, printName: null, material: "PLA", colour: "Blue", releasedGrams: 88 },
+  ];
+  const spool = {
+    id: spoolId,
+    user_id: OWNER_ID,
+    material: "PLA",
+    colour: "Blue",
+    created_at: "2026-10-10T10:00:00.000Z",
+    updated_at: "2026-10-10T10:00:00.000Z",
+    recorded_grams: 150,
+    reserved_grams: 0,
+    available_grams: 150,
+  };
+  const client = makeSdkClient(async (url, options) => {
+    const requestUrl = new URL(url);
+    if (requestUrl.pathname.endsWith("/rpc/delete_print")) {
+      assert.equal(options.method, "POST");
+      assert.deepEqual(JSON.parse(options.body), { p_print_id: PRINT_ID });
+      return new Response(
+        JSON.stringify({
+          id: PRINT_ID,
+          cancelledReservations: cancellations,
+          releasedReservationId: reservationId,
+          releasedGrams: 88,
+          spool,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    assert.equal(requestUrl.pathname, "/rest/v1/spool_inventory");
+    assert.equal(requestUrl.searchParams.get("user_id"), `eq.${OWNER_ID}`);
+    return new Response(JSON.stringify([spool]), { status: 200, headers: { "Content-Type": "application/json" } });
+  });
+  const result = await deletePrint(client, OWNER_ID, PRINT_ID);
+  assert.deepEqual(result, {
+    ok: true,
+    value: {
+      id: PRINT_ID,
+      cancelledReservations: cancellations,
+      releasedReservationId: reservationId,
+      releasedGrams: 88,
+      spool: {
+        id: spoolId,
+        material: "PLA",
+        colour: "Blue",
+        createdAt: spool.created_at,
+        updatedAt: spool.updated_at,
+        recordedGrams: 150,
+        reservedGrams: 0,
+        availableGrams: 150,
+      },
+    },
+  });
+  const response = createPrintJsonResponse(result.value);
+  assert.deepEqual(await response.json(), result.value);
 });
 
 test("database canonicalization constraints map back to print fields", () => {

@@ -41,7 +41,7 @@ export const POST: APIRoute = async (context) => {
       "Provide one valid request ID, print version, spool ID and selection mode.",
     );
   const result = await reservePrintMaterial(client, user.id, { printId, ...validation.value });
-  if (!result.ok) return mapReservationFailure(result.reason);
+  if (!result.ok) return mapReservationFailure(result, "mutation");
   return createReservationJsonResponse(result.value);
 };
 

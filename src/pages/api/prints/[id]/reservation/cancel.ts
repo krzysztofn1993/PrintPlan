@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { releasePrintMaterial } from "@/lib/reservations";
+import { isValidPrintId } from "@/lib/print-validation";
 import {
   createReservationErrorResponse,
   createReservationJsonResponse,
@@ -25,6 +26,9 @@ export const POST: APIRoute = async (context) => {
     return createReservationErrorResponse("unauthenticated", 401, "Your session has expired. Sign in to continue.", {
       signInUrl: "/auth/signin",
     });
+  const printId = context.params.id ?? "";
+  if (!isValidPrintId(printId))
+    return createReservationErrorResponse("not_found", 404, "This print is no longer available.");
   if (!hasSupportedReservationFormContentType(context.request))
     return createReservationErrorResponse("unsupported_media_type", 415, "Submit cancellation as a form.");
   const form = await readReservationFormData(context.request);
@@ -36,8 +40,8 @@ export const POST: APIRoute = async (context) => {
       422,
       "Provide one valid reservation ID.",
     );
-  const result = await releasePrintMaterial(client, user.id, validation.value.reservationId);
-  if (!result.ok) return mapReservationFailure(result.reason);
+  const result = await releasePrintMaterial(client, user.id, validation.value.reservationId, printId);
+  if (!result.ok) return mapReservationFailure(result, "mutation");
   return createReservationJsonResponse(result.value);
 };
 

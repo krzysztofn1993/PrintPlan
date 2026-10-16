@@ -1,3 +1,5 @@
+import { createPrintDatabaseErrorResponse } from "./print-response.ts";
+
 const PRINT_CACHE_CONTROL = "private, no-cache, no-store, must-revalidate, max-age=0";
 
 export function createReservationJsonResponse(body: unknown, status = 200, additionalHeaders?: HeadersInit): Response {
@@ -22,7 +24,10 @@ export function createReservationErrorResponse(
   );
 }
 
-export function mapReservationFailure(reason: string): Response {
+export function mapReservationFailure(
+  failure: { reason: string; error?: unknown; status?: number },
+  operation: "read" | "mutation" = "mutation",
+): Response {
   const messages: Partial<Record<string, { status: number; message: string }>> = {
     not_found: { status: 404, message: "This print or reservation is no longer available." },
     already_reserved: { status: 409, message: "This print already has an active reservation." },
@@ -38,12 +43,7 @@ export function mapReservationFailure(reason: string): Response {
       message: "This request was already completed. Refresh the current print and stock state.",
     },
   };
-  const result = messages[reason];
-  if (result) return createReservationErrorResponse(reason, result.status, result.message);
-  return createReservationErrorResponse(
-    "temporarily_unavailable",
-    503,
-    "Reservations are temporarily unavailable. Refresh before trying again.",
-    { refreshRequired: true, retryAfter: 30 },
-  );
+  const result = messages[failure.reason];
+  if (result) return createReservationErrorResponse(failure.reason, result.status, result.message);
+  return createPrintDatabaseErrorResponse(failure.error, failure.status, operation);
 }
