@@ -65,6 +65,8 @@ function row(index, values = {}) {
     created_at: "2026-10-10T10:00:00.000Z",
     updated_at: "2026-10-10T10:00:00.000Z",
     recorded_grams: index + 1,
+    reserved_grams: 0,
+    available_grams: index + 1,
     ...values,
   };
 }
@@ -83,8 +85,14 @@ function compareRows(left, right, orders) {
 function makeSpoolClient({ rows = [], mutationResponses = [] } = {}) {
   const calls = [];
   const client = {
+    rpc(name, args) {
+      calls.push({ operation: "rpc", name, args });
+      const response = mutationResponses.shift() ?? { data: null, error: null, status: 200 };
+      if (response.data && typeof response.data === "object" && response.data.id) rows.push(response.data);
+      return Promise.resolve(response);
+    },
     from(table) {
-      assert.equal(table, "spools");
+      assert.equal(table, "spool_inventory");
       const state = { table, filters: [], orders: [], selection: undefined, operation: "select" };
       const builder = {
         select(columns) {
@@ -101,7 +109,10 @@ function makeSpoolClient({ rows = [], mutationResponses = [] } = {}) {
         },
         range(from, to) {
           assert.equal(to - from + 1, SPOOL_QUERY_BATCH_SIZE, "queries must request one configured page");
-          assert.equal(state.selection, "id, material, colour, created_at, updated_at, recorded_grams");
+          assert.equal(
+            state.selection,
+            "id, material, colour, created_at, updated_at, recorded_grams, reserved_grams, available_grams",
+          );
           assert.deepEqual(state.filters, [{ field: "user_id", value: OWNER_ID }]);
           assert.deepEqual(state.orders, [
             { field: "created_at", ascending: false },
@@ -115,23 +126,12 @@ function makeSpoolClient({ rows = [], mutationResponses = [] } = {}) {
             .sort((left, right) => compareRows(left, right, state.orders));
           return Promise.resolve({ data: matchingRows.slice(from, to + 1), error: null, status: 200 });
         },
-        insert(values) {
-          state.operation = "insert";
-          state.values = values;
-          return builder;
-        },
-        update(values) {
-          state.operation = "update";
-          state.values = values;
-          return builder;
-        },
-        delete() {
-          state.operation = "delete";
-          return builder;
-        },
         maybeSingle() {
           calls.push(state);
-          return Promise.resolve(mutationResponses.shift() ?? { data: null, error: null });
+          const id = state.filters.find(({ field }) => field === "id")?.value;
+          const ownerId = state.filters.find(({ field }) => field === "user_id")?.value;
+          const ownedRow = rows.find((item) => item.id === id && item.user_id === ownerId);
+          return Promise.resolve({ data: ownedRow ?? null, error: null, status: 200 });
         },
         then(_resolve, _reject) {
           assert.fail("A spool list query must use a bounded range before it is awaited.");
@@ -379,7 +379,9 @@ test("label bounds count Unicode code points and database canonicalization stays
   assert.equal(caseExpansionError.status, 422);
   assert.equal(caseExpansionError.body.error.fieldErrors.material.code, "too_long");
 
-  const rowFromDatabase = toSpoolDto(row(1, { material: "STRASSE", colour: "İ", recorded_grams: 75 }));
+  const rowFromDatabase = toSpoolDto(
+    row(1, { material: "STRASSE", colour: "İ", recorded_grams: 75, available_grams: 75 }),
+  );
   assert.equal(rowFromDatabase.material, "STRASSE");
   assert.equal(rowFromDatabase.colour, "İ");
   assert.equal(Object.hasOwn(rowFromDatabase, "colour_key"), false);
@@ -388,7 +390,7 @@ test("label bounds count Unicode code points and database canonicalization stays
   assert.equal(toSpoolDto(row(2, { material: "S".repeat(80) })).material, "S".repeat(80));
 });
 
-test("create returns committed canonical values and writes only server-owned identity plus editable fields", async () => {
+test("create returns committed canonical values through the RPC and shared read view", async () => {
   const canonicalRow = row(1, { id: SPOOL_ID, material: "STRASSE", colour: "Black / Red / Gold", recorded_grams: 12 });
   const { client, calls } = makeSpoolClient({ mutationResponses: [{ data: canonicalRow, error: null }] });
   const input = validateSpoolInput(
@@ -400,32 +402,34 @@ test("create returns committed canonical values and writes only server-owned ide
   assert.equal(result.ok, true);
   assert.equal(result.value.material, "STRASSE");
   assert.equal(result.value.colour, "Black / Red / Gold");
-  assert.deepEqual(calls[0].values, {
-    user_id: OWNER_ID,
-    material: "Straße",
-    colour: "Black / Red / Gold",
-    recorded_grams: 12,
+  assert.deepEqual(calls[0], {
+    operation: "rpc",
+    name: "create_spool",
+    args: { p_material: "Straße", p_colour: "Black / Red / Gold", p_recorded_grams: 12 },
   });
 });
 
-test("update and delete require a returned affected row", async () => {
-  const updateFixture = makeSpoolClient({ mutationResponses: [{ data: null, error: null }] });
+test("update and delete use owner-checked RPC receipts", async () => {
   const edit = validateSpoolInput({ material: "PLA", colour: "Blue", recordedGrams: "0" }, "edit").data;
-  const updated = await updateSpool(updateFixture.client, OWNER_ID, SPOOL_ID, edit);
-  assert.deepEqual(updated, { ok: false, reason: "not_found" });
-  assert.deepEqual(updateFixture.calls[0].filters, [
-    { field: "id", value: SPOOL_ID },
-    { field: "user_id", value: OWNER_ID },
-  ]);
-  assert.deepEqual(updateFixture.calls[0].values, { material: "PLA", colour: "Blue", recorded_grams: 0 });
+  const updateFixture = makeSpoolClient({
+    mutationResponses: [{ data: null, error: { message: "not_found" }, status: 404 }],
+  });
+  assert.deepEqual(await updateSpool(updateFixture.client, OWNER_ID, SPOOL_ID, edit), {
+    ok: false,
+    reason: "not_found",
+  });
+  assert.deepEqual(updateFixture.calls[0], {
+    operation: "rpc",
+    name: "update_spool",
+    args: { p_spool_id: SPOOL_ID, p_material: "PLA", p_colour: "Blue", p_recorded_grams: 0 },
+  });
 
-  const deleteFixture = makeSpoolClient({ mutationResponses: [{ data: null, error: null }] });
+  const deleteFixture = makeSpoolClient({
+    mutationResponses: [{ data: null, error: { message: "not_found" }, status: 404 }],
+  });
   const deleted = await deleteSpool(deleteFixture.client, OWNER_ID, SPOOL_ID);
   assert.deepEqual(deleted, { ok: false, reason: "not_found" });
-  assert.deepEqual(deleteFixture.calls[0].filters, [
-    { field: "id", value: SPOOL_ID },
-    { field: "user_id", value: OWNER_ID },
-  ]);
+  assert.deepEqual(deleteFixture.calls[0], { operation: "rpc", name: "delete_spool", args: { p_spool_id: SPOOL_ID } });
 
   const response = createSpoolDatabaseErrorResponse({ message: "temporary" }, 503);
   assert.equal(response.status, 503);

@@ -41,7 +41,26 @@ export const POST: APIRoute = async (context) => {
   const result = await updateSpool(client, user.id, id, validation.data);
   if (!result.ok) {
     if (result.reason === "not_found") return createSpoolNotFoundResponse();
-    return createSpoolDatabaseErrorResponse(result.error, result.status);
+    if (result.reason === "reserved_spool_change_requires_cancellation") {
+      return createSpoolJsonResponse(
+        {
+          error: { code: result.reason, message: "Cancel reservations before changing this spool's matching labels." },
+        },
+        409,
+      );
+    }
+    if (result.reason === "stock_below_reservations") {
+      return createSpoolJsonResponse(
+        {
+          error: {
+            code: result.reason,
+            message: "Recorded stock cannot be lower than grams reserved from this spool.",
+          },
+        },
+        409,
+      );
+    }
+    return createSpoolDatabaseErrorResponse(result.error, result.status, "mutation");
   }
   return createSpoolJsonResponse({ spool: result.value });
 };

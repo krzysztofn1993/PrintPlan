@@ -37,7 +37,7 @@ export const POST: APIRoute = async (context) => {
       if (result.reason === "not_found") return createPrintNotFoundResponse();
       return createPrintDatabaseErrorResponse(result.error, result.status, "mutation");
     }
-    return createPrintJsonResponse({ id: result.value.id });
+    return createPrintJsonResponse(result.value);
   } catch (error) {
     return createPrintDatabaseErrorResponse(
       new Error("Unexpected print API boundary failure", { cause: error }),

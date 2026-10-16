@@ -293,30 +293,30 @@ Ship database and application compatibility changes together after all phases pa
 
 #### Automated
 
-- [x] 1.1 `npx supabase test db` passes existing and reservation contracts, including denied direct writes and owner isolation.
-- [x] 1.2 `npm run test:reservations:concurrency` proves blocking, fresh-state rechecks, no overbooking, replay safety and independent-owner progress with bounded cleanup.
-- [x] 1.3 `npm run test:migrations` preserves populated spools and prints across the new additive migration.
-- [x] 1.4 `npm run verify:deploy` passes with the extended database types and no unrelated source changes.
+- [x] 1.1 `npx supabase test db` passes existing and reservation contracts, including denied direct writes and owner isolation. — 9cbb455
+- [x] 1.2 `npm run test:reservations:concurrency` proves blocking, fresh-state rechecks, no overbooking, replay safety and independent-owner progress with bounded cleanup. — 9cbb455
+- [x] 1.3 `npm run test:migrations` preserves populated spools and prints across the new additive migration. — 9cbb455
+- [x] 1.4 `npm run verify:deploy` passes with the extended database types and no unrelated source changes. — 9cbb455
 
 ### Phase 2: Services, API and authoritative read models
 
 #### Automated
 
-- [ ] 2.1 `npm run test:reservations` passes preview, confirmation, cancellation, payload/authentication, replay and receipt contract cases.
-- [ ] 2.2 `npm run test:spools` and `npm run test:prints` pass with real reservation-aware DTO contracts while retaining unreserved fixture expectations.
-- [ ] 2.3 `npm run verify:deploy` passes with all existing mutations using RPC and SSR/GET/mutation responses sharing the same read contract.
+- [x] 2.1 `npm run test:reservations` passes preview, confirmation, cancellation, payload/authentication, replay and receipt contract cases.
+- [x] 2.2 `npm run test:spools` and `npm run test:prints` pass with real reservation-aware DTO contracts while retaining unreserved fixture expectations.
+- [x] 2.3 `npm run verify:deploy` passes with all existing mutations using RPC and SSR/GET/mutation responses sharing the same read contract.
 
 ### Phase 3: Reservation UI and safe existing editing
 
 #### Automated
 
-- [ ] 3.1 `npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts` passes primary interaction, stale selection, guarded editing, deletion feedback and lost-acknowledgement reconciliation against real persistence.
-- [ ] 3.2 `npm run verify:deploy` passes with shared DTO parsing, existing design tokens and collection-owned mutations.
+- [x] 3.1 `npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts` passes primary interaction, stale selection, guarded editing, deletion feedback and lost-acknowledgement reconciliation against real persistence.
+- [x] 3.2 `npm run verify:deploy` passes with shared DTO parsing, existing design tokens and collection-owned mutations.
 
 #### Manual
 
-- [ ] 3.3 Keyboard use reaches selection, confirmation and cancellation; focus returns to an appropriate surviving action and status/error feedback is announced without relying on colour alone.
-- [ ] 3.4 At phone width the suggested/manual choices, required/reserved amounts, edit restrictions and cancellation summaries remain readable without horizontal scrolling.
+- [x] 3.3 Keyboard use reaches selection, confirmation and cancellation; focus returns to an appropriate surviving action and status/error feedback is announced without relying on colour alone.
+- [x] 3.4 At phone width the suggested/manual choices, required/reserved amounts, edit restrictions and cancellation summaries remain readable without horizontal scrolling.
 
 ### Phase 4: Integrated verification and release evidence
 
