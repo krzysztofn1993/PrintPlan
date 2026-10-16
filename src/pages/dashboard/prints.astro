@@ -36,8 +36,8 @@ if (authUnavailable || !supabase) {
 <DashboardShell title="Planned prints" heading="Planned prints">
   <p slot="eyebrow">Print requirements</p>
   <p slot="description">
-    Keep a list of the material, colour, and filament each print requires. These requirements exclude any future safety
-    margin and do not reserve or consume stock.
+    Keep each print's material, colour, and required grams. Preview the default 10% safety margin before reserving a
+    matching spool; releasing a reservation returns those grams to availability without consuming recorded stock.
   </p>
 
   {pageError ? (
