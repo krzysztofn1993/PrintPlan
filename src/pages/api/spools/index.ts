@@ -41,7 +41,7 @@ export const POST: APIRoute = async (context) => {
   if (!validation.data || validation.payloadError) return createSpoolValidationResponse(validation);
 
   const result = await insertSpool(client, user.id, validation.data);
-  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error, result.status);
+  if (!result.ok) return createSpoolDatabaseErrorResponse(result.error, result.status, "mutation");
   return createSpoolJsonResponse({ spool: result.value }, 201);
 };
 
