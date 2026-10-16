@@ -302,9 +302,9 @@ Ship database and application compatibility changes together after all phases pa
 
 #### Automated
 
-- [x] 2.1 `npm run test:reservations` passes preview, confirmation, cancellation, payload/authentication, replay and receipt contract cases.
-- [x] 2.2 `npm run test:spools` and `npm run test:prints` pass with real reservation-aware DTO contracts while retaining unreserved fixture expectations.
-- [x] 2.3 `npm run verify:deploy` passes with all existing mutations using RPC and SSR/GET/mutation responses sharing the same read contract.
+- [x] 2.1 `npm run test:reservations` passes preview, confirmation, cancellation, payload/authentication, replay and receipt contract cases. — e23459a
+- [x] 2.2 `npm run test:spools` and `npm run test:prints` pass with real reservation-aware DTO contracts while retaining unreserved fixture expectations. — e23459a
+- [x] 2.3 `npm run verify:deploy` passes with all existing mutations using RPC and SSR/GET/mutation responses sharing the same read contract. — e23459a
 
 ### Phase 3: Reservation UI and safe existing editing
 

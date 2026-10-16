@@ -20,6 +20,16 @@ export interface PrintRecord {
   colour: string;
   requiredGrams: number;
   version: number;
+  reservation?: { id: string; spoolId: string; reservedGrams: number } | null;
+}
+
+export interface ReservationPreviewRecord {
+  printId: string;
+  expectedVersion: number;
+  marginPercent: number;
+  reservationGrams: number;
+  suggestedSpoolId: string | null;
+  eligibleSpools: SpoolRecord[];
 }
 
 interface FixtureLedger {
@@ -45,6 +55,7 @@ export interface RecoveryApi {
   label(prefix: string): string;
   createSpool(input: SpoolInput): Promise<SpoolRecord>;
   listSpools(): Promise<SpoolRecord[]>;
+  updateSpool(id: string, input: SpoolInput): Promise<SpoolRecord>;
   trackSpool(id: string): Promise<void>;
   deleteSpool(id: string): Promise<void>;
   createPrint(input: PrintInput): Promise<PrintRecord>;
@@ -52,6 +63,9 @@ export interface RecoveryApi {
   trackPrint(id: string): Promise<void>;
   updatePrint(id: string, expectedVersion: number, input: PrintInput): Promise<PrintRecord>;
   deletePrint(id: string): Promise<void>;
+  previewReservation(printId: string): Promise<ReservationPreviewRecord>;
+  reserveMaterial(print: PrintRecord, spoolId: string, selectionMode: "best_fit" | "manual"): Promise<string>;
+  releaseMaterial(printId: string, reservationId: string): Promise<void>;
 }
 
 interface E2EFixtures {
@@ -190,6 +204,18 @@ export const test = base.extend<E2EFixtures>({
       listSpools,
       trackSpool,
 
+      async updateSpool(id, input) {
+        const payload = await readJson<{ spool: SpoolRecord }>(
+          await context.request.post(endpoint(`/api/spools/${id}/update`), {
+            form: { ...input },
+            headers: { Origin: new URL(baseURL).origin },
+          }),
+          200,
+        );
+        expect(payload.spool.id).toBe(id);
+        return payload.spool;
+      },
+
       async deleteSpool(id) {
         const response = await context.request.post(endpoint(`/api/spools/${id}/delete`), {
           form: {},
@@ -242,6 +268,39 @@ export const test = base.extend<E2EFixtures>({
         }
         const payload = await readJson<{ id: string }>(response, 200);
         expect(payload.id).toBe(id);
+      },
+
+      async previewReservation(printId) {
+        return await readJson<ReservationPreviewRecord>(
+          await context.request.get(endpoint(`/api/prints/${printId}/reservation`)),
+          200,
+        );
+      },
+
+      async reserveMaterial(print, spoolId, selectionMode) {
+        const payload = await readJson<{ reservationId: string }>(
+          await context.request.post(endpoint(`/api/prints/${print.id}/reservation/reserve`), {
+            form: {
+              requestId: randomUUID(),
+              expectedVersion: String(print.version),
+              spoolId,
+              selectionMode,
+            },
+            headers: { Origin: new URL(baseURL).origin },
+          }),
+          200,
+        );
+        return payload.reservationId;
+      },
+
+      async releaseMaterial(printId, reservationId) {
+        await readJson<{ reservationId: string }>(
+          await context.request.post(endpoint(`/api/prints/${printId}/reservation/cancel`), {
+            form: { reservationId },
+            headers: { Origin: new URL(baseURL).origin },
+          }),
+          200,
+        );
       },
     };
 
