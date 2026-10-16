@@ -186,7 +186,7 @@ BEGIN
   PERFORM private.acquire_owner_mutation_lock(v_user_id);
   SELECT * INTO v_current FROM public.prints WHERE id = p_print_id AND user_id = v_user_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'not_found'; END IF;
-  IF v_current.version <> p_expected_version THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'edit_conflict'; END IF;
+  IF v_current.version IS DISTINCT FROM p_expected_version THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'edit_conflict'; END IF;
   v_material := upper(btrim(regexp_replace(p_material COLLATE "C", U&'[\0009-\000D\0020\0085\00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]+' COLLATE "C", ' ', 'g'), ' ') COLLATE "und-x-icu");
   v_colour := btrim(regexp_replace(p_colour COLLATE "C", U&'[\0009-\000D\0020\0085\00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]+' COLLATE "C", ' ', 'g'), ' ');
   IF EXISTS (SELECT 1 FROM public.print_reservations WHERE print_id = p_print_id AND user_id = v_user_id)
@@ -201,11 +201,12 @@ $$;
 
 CREATE FUNCTION public.delete_print(p_print_id uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
-DECLARE v_user_id uuid := auth.uid(); v_reservation public.print_reservations; v_spool jsonb;
+DECLARE v_user_id uuid := auth.uid(); v_print public.prints;
+        v_reservation public.print_reservations; v_spool jsonb;
 BEGIN
   IF v_user_id IS NULL THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'not_authenticated'; END IF;
   PERFORM private.acquire_owner_mutation_lock(v_user_id);
-  PERFORM 1 FROM public.prints WHERE id = p_print_id AND user_id = v_user_id FOR UPDATE;
+  SELECT * INTO v_print FROM public.prints WHERE id = p_print_id AND user_id = v_user_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'not_found'; END IF;
   SELECT * INTO v_reservation FROM public.print_reservations WHERE print_id = p_print_id AND user_id = v_user_id;
   IF FOUND THEN
@@ -217,7 +218,11 @@ BEGIN
   END IF;
   DELETE FROM public.prints WHERE id = p_print_id AND user_id = v_user_id;
   RETURN jsonb_build_object('id', p_print_id, 'releasedReservationId', v_reservation.id,
-    'releasedGrams', v_reservation.reserved_grams, 'spool', v_spool);
+    'releasedGrams', v_reservation.reserved_grams, 'spool', v_spool,
+    'cancelledReservations', CASE WHEN v_reservation.id IS NULL THEN '[]'::jsonb
+      ELSE jsonb_build_array(jsonb_build_object('reservationId', v_reservation.id,
+        'printId', v_print.id, 'printName', v_print.name, 'material', v_print.material,
+        'colour', v_print.colour, 'releasedGrams', v_reservation.reserved_grams)) END);
 END;
 $$;
 
@@ -262,7 +267,7 @@ BEGIN
   PERFORM private.acquire_owner_mutation_lock(v_user_id);
   SELECT * INTO v_existing FROM private.reservation_requests WHERE user_id=v_user_id AND request_id=p_request_id;
   IF FOUND THEN
-    IF v_existing.print_id <> p_print_id OR v_existing.spool_id <> p_spool_id OR v_existing.expected_version <> p_expected_version OR v_existing.selection_mode <> p_selection_mode THEN
+    IF v_existing.print_id IS DISTINCT FROM p_print_id OR v_existing.spool_id IS DISTINCT FROM p_spool_id OR v_existing.expected_version IS DISTINCT FROM p_expected_version OR v_existing.selection_mode IS DISTINCT FROM p_selection_mode THEN
       RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'idempotency_conflict';
     END IF;
     IF v_existing.state <> 'active' THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'reservation_request_completed'; END IF;
@@ -270,7 +275,7 @@ BEGIN
   END IF;
   SELECT * INTO v_print FROM public.prints WHERE id=p_print_id AND user_id=v_user_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'not_found'; END IF;
-  IF v_print.version <> p_expected_version THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'edit_conflict'; END IF;
+  IF v_print.version IS DISTINCT FROM p_expected_version THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'edit_conflict'; END IF;
   IF EXISTS (SELECT 1 FROM public.print_reservations WHERE print_id=p_print_id AND user_id=v_user_id) THEN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'already_reserved';
   END IF;
@@ -298,14 +303,15 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION public.release_print_material(p_reservation_id uuid)
+CREATE FUNCTION public.release_print_material(p_reservation_id uuid, p_print_id uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_user_id uuid := auth.uid(); v_request private.reservation_requests; v_reservation public.print_reservations;
         v_print jsonb; v_spool jsonb; v_disposition text;
 BEGIN
   IF v_user_id IS NULL THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'not_authenticated'; END IF;
   PERFORM private.acquire_owner_mutation_lock(v_user_id);
-  SELECT * INTO v_request FROM private.reservation_requests WHERE user_id=v_user_id AND reservation_id=p_reservation_id;
+  SELECT * INTO v_request FROM private.reservation_requests
+    WHERE user_id=v_user_id AND reservation_id=p_reservation_id AND print_id=p_print_id;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = 'P0002', MESSAGE = 'not_found'; END IF;
   SELECT * INTO v_reservation FROM public.print_reservations WHERE id=p_reservation_id AND user_id=v_user_id;
   IF FOUND THEN
@@ -341,7 +347,7 @@ REVOKE ALL ON FUNCTION public.update_print(uuid,integer,text,text,text,numeric) 
 REVOKE ALL ON FUNCTION public.delete_print(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.preview_print_reservation(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.reserve_print_material(uuid,uuid,integer,uuid,text) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.release_print_material(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.release_print_material(uuid,uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_spool(text,text,numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_spool(uuid,text,text,numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_spool(uuid) TO authenticated;
@@ -350,4 +356,4 @@ GRANT EXECUTE ON FUNCTION public.update_print(uuid,integer,text,text,text,numeri
 GRANT EXECUTE ON FUNCTION public.delete_print(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.preview_print_reservation(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.reserve_print_material(uuid,uuid,integer,uuid,text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.release_print_material(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.release_print_material(uuid,uuid) TO authenticated;

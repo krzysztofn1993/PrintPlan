@@ -250,10 +250,13 @@ test("reserve and release commands call exact RPCs and return the committed rese
       p_selection_mode: "best_fit",
     },
   });
-  const release = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID);
+  const release = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID, PRINT_ID);
   assert.equal(release.ok, true);
   assert.equal(release.value.disposition, "released");
-  assert.deepEqual(calls[1], { name: "release_print_material", args: { p_reservation_id: RESERVATION_ID } });
+  assert.deepEqual(calls[1], {
+    name: "release_print_material",
+    args: { p_reservation_id: RESERVATION_ID, p_print_id: PRINT_ID },
+  });
 });
 
 test("reservation responses are private and business failures keep precise status codes", async () => {
@@ -273,11 +276,110 @@ test("reservation responses are private and business failures keep precise statu
     "idempotency_conflict",
     "reservation_request_completed",
   ]) {
-    const conflict = mapReservationFailure(code);
+    const conflict = mapReservationFailure({ reason: code });
     assert.equal(conflict.status, 409);
     assert.equal((await conflict.json()).error.code, code);
     assert.equal(conflict.headers.get("Cache-Control"), "private, no-cache, no-store, must-revalidate, max-age=0");
   }
-  assert.equal(mapReservationFailure("not_found").status, 404);
-  assert.equal(mapReservationFailure("database_error").status, 503);
+  assert.equal(mapReservationFailure({ reason: "not_found" }).status, 404);
+  assert.equal(mapReservationFailure({ reason: "database_error", status: 503 }).status, 503);
+});
+
+test("reservation failures distinguish outages and internal errors while preserving private recovery guidance", async (t) => {
+  const log = t.mock.method(console, "error", () => undefined);
+  const error = Object.assign(new TypeError("private provider payload"), {
+    code: "42P01",
+    stack:
+      "TypeError: private provider payload\n    at reservePrintMaterial (https://private-key:private-token@provider.test/src/lib/reservations.ts:150:3)\n    at caller (/private-path/private-form-value.js:1:2)",
+    cause: new RangeError("private nested error"),
+  });
+  for (const operation of ["read", "mutation"]) {
+    const response = mapReservationFailure({ reason: "database_error", error, status: 400 }, operation);
+    assert.equal(response.status, 500);
+    assert.equal(response.headers.get("Retry-After"), null);
+    assert.equal(response.headers.get("Cache-Control"), "private, no-cache, no-store, must-revalidate, max-age=0");
+    const body = await response.json();
+    assert.equal(body.error.code, "internal_error");
+    assert.equal(body.error.refreshRequired, operation === "mutation" ? true : undefined);
+    assert.doesNotMatch(JSON.stringify(body), /private-|provider payload|nested error/);
+  }
+  assert.equal(log.mock.calls.length, 2);
+  const diagnostic = log.mock.calls[0].arguments[1];
+  assert.equal(diagnostic.boundary, "api");
+  assert.equal(diagnostic.causes[1].name, "TypeError");
+  assert.equal(diagnostic.causes[1].code, "42P01");
+  assert.deepEqual(diagnostic.causes[1].frames, ["reservations.ts:150:3"]);
+  assert.equal(diagnostic.causes[2].name, "RangeError");
+  assert.doesNotMatch(
+    JSON.stringify(log.mock.calls.map((call) => call.arguments)),
+    /private-|provider payload|nested error/,
+  );
+
+  for (const failure of [
+    { reason: "database_error", status: 0, error: new TypeError("fetch failed") },
+    { reason: "database_error", status: 503, error: new Error("unavailable") },
+    { reason: "database_error", status: 400, error: { code: "08006" } },
+  ]) {
+    for (const operation of ["read", "mutation"]) {
+      const response = mapReservationFailure(failure, operation);
+      assert.equal(response.status, 503);
+      assert.equal(response.headers.get("Retry-After"), "30");
+      assert.equal(response.headers.get("Expires"), "0");
+      assert.equal(response.headers.get("Pragma"), "no-cache");
+      const body = await response.json();
+      assert.equal(body.error.code, "temporarily_unavailable");
+      assert.equal(body.error.refreshRequired, operation === "mutation" ? true : undefined);
+    }
+  }
+  assert.equal(log.mock.calls.length, 2, "expected outages are not logged as internal failures");
+});
+
+test("a committed reservation preserves the original failure and status when its confirmation read fails", async () => {
+  for (const failedTable of ["planned_prints", "spool_inventory"]) {
+    const error = Object.assign(new Error("confirmation read failed"), { code: "08006" });
+    const client = {
+      rpc() {
+        return Promise.resolve({
+          data: { reservationId: RESERVATION_ID, disposition: "active" },
+          error: null,
+          status: 200,
+        });
+      },
+      from(table) {
+        const builder = {
+          select() {
+            return builder;
+          },
+          eq() {
+            return builder;
+          },
+          order() {
+            return builder;
+          },
+          range() {
+            return Promise.resolve(
+              table === failedTable
+                ? { data: null, error, status: 0 }
+                : { data: table === "planned_prints" ? [printRow()] : [spoolRow()], error: null, status: 200 },
+            );
+          },
+        };
+        return builder;
+      },
+    };
+    const result = await reservePrintMaterial(client, OWNER_ID, {
+      printId: PRINT_ID,
+      requestId: REQUEST_ID,
+      expectedVersion: 2,
+      spoolId: SPOOL_ID,
+      selectionMode: "best_fit",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "database_error");
+    assert.equal(result.error, error);
+    assert.equal(result.status, 0);
+    const response = mapReservationFailure(result, "mutation");
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error.refreshRequired, true);
+  }
 });

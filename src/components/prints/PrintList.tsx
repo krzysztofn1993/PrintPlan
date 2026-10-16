@@ -63,6 +63,16 @@ export function PrintList({ initialPrints }: PrintListProps) {
   const focusTarget = useRef<string | null>(null);
   const mutationPendingRef = useRef(false);
   const refreshingRef = useRef(false);
+  const reservationPrintIdRef = useRef<string | null>(null);
+  const reservationPreviewRequestRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      reservationPrintIdRef.current = null;
+      reservationPreviewRequestRef.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     const target = focusTarget.current;
@@ -81,8 +91,23 @@ export function PrintList({ initialPrints }: PrintListProps) {
     updateMutationPending(pending);
   }
 
+  function invalidateReservationPreview() {
+    reservationPreviewRequestRef.current += 1;
+    setReservationPreviewLoading(false);
+  }
+
+  function closeReservation() {
+    invalidateReservationPreview();
+    reservationPrintIdRef.current = null;
+    setReservationPrintId(null);
+    setReservationPreview(null);
+    setSelectedSpoolId("");
+    setReservationError("");
+  }
+
   function openCreate() {
     if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
+    closeReservation();
     setStatusMessage("");
     setDeletePrintId(null);
     setDeleteError(null);
@@ -92,6 +117,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
   function openEdit(printId: string) {
     if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
+    closeReservation();
     setStatusMessage("");
     setDeletePrintId(null);
     setDeleteError(null);
@@ -113,6 +139,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
   function openDelete(printId: string) {
     if (mutationPendingRef.current || refreshingRef.current) return;
+    closeReservation();
     setDeleteError(null);
     setStatusMessage("");
     focusTarget.current = `confirm-delete-${printId}`;
@@ -197,6 +224,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       if (!accepted) return false;
     }
     refreshingRef.current = true;
+    invalidateReservationPreview();
     setRefreshing(true);
     const refreshed = await fetchLatestPrints();
     refreshingRef.current = false;
@@ -205,8 +233,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
     setPrints(refreshed);
     setUncertaintyGuard(false);
-    setReservationPrintId(null);
-    setReservationPreview(null);
+    closeReservation();
     setDeleteError(null);
     setDeletePrintId(null);
     setCreateOpen(false);
@@ -225,12 +252,18 @@ export function PrintList({ initialPrints }: PrintListProps) {
   }
 
   async function loadReservationPreview(printId: string) {
+    if (reservationPrintIdRef.current !== printId || refreshingRef.current) return;
+    const requestId = ++reservationPreviewRequestRef.current;
+    const isCurrentPreview = () =>
+      reservationPreviewRequestRef.current === requestId && reservationPrintIdRef.current === printId;
+    setReservationPreview(null);
     setReservationPreviewLoading(true);
     setReservationError("");
     let response: Response;
     try {
       response = await fetch(`/api/prints/${printId}/reservation`, { method: "GET", cache: "no-store" });
     } catch {
+      if (!isCurrentPreview()) return;
       setReservationError("The preview could not be reached. Try loading it again.");
       setReservationPreviewLoading(false);
       return;
@@ -241,6 +274,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     } catch {
       body = undefined;
     }
+    if (!isCurrentPreview()) return;
     if (response.ok && isRecord(body) && Array.isArray(body.eligibleSpools)) {
       const eligibleSpools = body.eligibleSpools.map(readSpoolDto);
       if (
@@ -277,7 +311,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     }
     if (response.status === 409 && isRecord(body) && isRecord(body.error) && body.error.code === "already_reserved") {
       await refreshList({ conflictId: printId });
-      setReservationError("This print already has a reservation. The current saved state has been refreshed.");
+      return;
     } else {
       setReservationError(
         response.status >= 500
@@ -291,15 +325,24 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
   function openReservation(print: PrintDto) {
     if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
+    closeReservation();
+    reservationPrintIdRef.current = print.id;
     setReservationPrintId(print.id);
-    setReservationPreview(null);
-    setReservationError("");
     if (!print.reservation) void loadReservationPreview(print.id);
   }
 
   async function confirmReservation(print: PrintDto) {
     const preview = reservationPreview;
-    if (!preview || !selectedSpoolId || mutationPendingRef.current || uncertaintyGuard) return;
+    if (
+      preview?.printId !== print.id ||
+      reservationPrintIdRef.current !== print.id ||
+      !selectedSpoolId ||
+      reservationPreviewLoading ||
+      mutationPendingRef.current ||
+      refreshingRef.current ||
+      uncertaintyGuard
+    )
+      return;
     setReservationPending(true);
     updateMutationPending(true);
     setReservationError("");
@@ -337,8 +380,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         setStatusMessage(
           `${describePrint(saved)} now has ${saved.reservation.reservedGrams} g reserved. Recorded stock was not consumed.`,
         );
-        setReservationPrintId(null);
-        setReservationPreview(null);
+        closeReservation();
         focusTarget.current = `manage-reservation-${print.id}`;
       } else {
         handleUncertainMutation();
@@ -416,7 +458,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         setReservationPrintId(print.id);
       } else {
         setStatusMessage(`${print.reservation?.reservedGrams} g released. Recorded stock remains unchanged.`);
-        setReservationPrintId(null);
+        closeReservation();
       }
       setReservationPreview(null);
       focusTarget.current = current.reservation ? `manage-reservation-${print.id}` : `reserve-material-${print.id}`;
@@ -781,7 +823,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
                   {reservationPrintId === print.id && !isEditing && !isDeleting && (
                     <ReservationPanel
                       print={print}
-                      preview={reservationPreview}
+                      preview={reservationPreview?.printId === print.id ? reservationPreview : null}
                       previewLoading={reservationPreviewLoading}
                       selectedSpoolId={selectedSpoolId}
                       pending={reservationPending || uncertaintyGuard}
@@ -793,9 +835,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
                       onReserve={() => void confirmReservation(print)}
                       onCancelReservation={() => void releaseReservation(print)}
                       onRefreshPreview={() => void loadReservationPreview(print.id)}
-                      onClose={() => {
-                        setReservationPrintId(null);
-                      }}
+                      onClose={closeReservation}
                       spoolForReservation={reservationPreview?.eligibleSpools.find(
                         (spool) => spool.id === print.reservation?.spoolId,
                       )}

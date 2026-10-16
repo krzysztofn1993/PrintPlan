@@ -108,12 +108,16 @@ async function currentPrintAndSpool(
   ownerId: string,
   printId: string,
   spoolId: string,
-): Promise<{ print: PrintDto | null; spool: SpoolDto | null } | undefined> {
+): Promise<ReservationResult<{ print: PrintDto | null; spool: SpoolDto | null }>> {
   const [prints, spools] = await Promise.all([listPrints(client, ownerId), listSpools(client, ownerId)]);
-  if (!prints.ok || !spools.ok) return undefined;
+  if (!prints.ok) return { ok: false, reason: "database_error", error: prints.error, status: prints.status };
+  if (!spools.ok) return { ok: false, reason: "database_error", error: spools.error, status: spools.status };
   return {
-    print: prints.value.find((print) => print.id === printId) ?? null,
-    spool: spools.value.find((spool) => spool.id === spoolId) ?? null,
+    ok: true,
+    value: {
+      print: prints.value.find((print) => print.id === printId) ?? null,
+      spool: spools.value.find((spool) => spool.id === spoolId) ?? null,
+    },
   };
 }
 
@@ -151,13 +155,9 @@ export async function reservePrintMaterial(
         error: new Error("The reservation RPC returned an invalid receipt."),
       };
     }
-    const current = await currentPrintAndSpool(client, ownerId, input.printId, input.spoolId);
-    if (!current)
-      return {
-        ok: false,
-        reason: "database_error",
-        error: new Error("The reservation committed but its current state could not be read."),
-      };
+    const currentResult = await currentPrintAndSpool(client, ownerId, input.printId, input.spoolId);
+    if (!currentResult.ok) return currentResult;
+    const current = currentResult.value;
     if (!current.print || !current.spool || current.print.reservation?.id !== receipt.reservationId) {
       return {
         ok: false,
@@ -189,9 +189,13 @@ export async function releasePrintMaterial(
   client: Client,
   ownerId: string,
   reservationId: string,
+  expectedPrintId: string,
 ): Promise<ReservationCommandResult<ReleaseReceipt>> {
   try {
-    const { data, error, status } = await client.rpc("release_print_material", { p_reservation_id: reservationId });
+    const { data, error, status } = await client.rpc("release_print_material", {
+      p_reservation_id: reservationId,
+      p_print_id: expectedPrintId,
+    });
     if (error) return rpcError(error, status);
     const receipt = data && asRecord(data);
     if (

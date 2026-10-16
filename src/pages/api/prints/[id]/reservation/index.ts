@@ -37,7 +37,7 @@ export const GET: APIRoute = async (context) => {
         result.current,
       );
     }
-    return mapReservationFailure(result.reason);
+    return mapReservationFailure(result, "read");
   }
   return createReservationJsonResponse(result.value);
 };
