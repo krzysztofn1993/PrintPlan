@@ -539,7 +539,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
             id="add-print-button"
             type="button"
             onClick={openCreate}
-            disabled={createOpen || mutationPending || refreshing}
+            disabled={createOpen || mutationPending || refreshing || uncertaintyGuard}
           >
             Add a print
           </Button>

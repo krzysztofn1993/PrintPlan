@@ -339,7 +339,12 @@ export function SpoolForm({
         >
           {pending ? "Saving…" : mode === "create" ? "Add spool" : "Save changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={pending || mutationPending}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={pending || mutationPending || mutationGuarded}
+        >
           Cancel
         </Button>
       </div>

@@ -129,8 +129,26 @@ test("committed reserve and release with unreadable acknowledgements stay guarde
   await expect(row.getByRole("alert")).toContainText("outcome may be uncertain");
   await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
   expect(reservePosts).toBe(1);
+
+  let failedPrintReads = 0;
+  await page.route("**/api/prints", async (route) => {
+    if (route.request().method() === "GET" && failedPrintReads === 0) {
+      failedPrintReads += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "temporary" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Refresh and review prints" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "temporarily unavailable" })).toBeVisible();
+  await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
   await page.getByRole("button", { name: "Refresh and review prints" }).click();
   await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
+  await page.unroute("**/api/prints");
 
   await row.getByRole("button", { name: "Manage reservation" }).click();
   await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
@@ -142,14 +160,61 @@ test("committed reserve and release with unreadable acknowledgements stay guarde
   await row.getByRole("button", { name: "Release reservation" }).click();
   await expect(row.getByRole("alert")).toContainText("release outcome may be uncertain");
   expect(cancelPosts).toBe(1);
+
+  failedPrintReads = 0;
+  await page.route("**/api/prints", async (route) => {
+    if (route.request().method() === "GET" && failedPrintReads === 0) {
+      failedPrintReads += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "temporary" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Refresh and review prints" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "temporarily unavailable" })).toBeVisible();
+  await expect(row.getByRole("button", { name: "Reserve material" })).toHaveCount(0);
   await page.getByRole("button", { name: "Refresh and review prints" }).click();
   await expect(row.getByRole("button", { name: "Reserve material" })).toBeVisible();
+  await page.unroute("**/api/prints");
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     reservedGrams: 0,
     availableGrams: 130,
   });
   expect(reservePosts).toBe(1);
   expect(cancelPosts).toBe(1);
+});
+
+test("a stale release cannot cancel a replacement reservation", async ({ recoveryApi }) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PLA",
+    colour: recoveryApi.label("reservation-replacement"),
+    recordedGrams: 150,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("reservation-replacement-print"),
+    material: "PLA",
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+
+  const oldReservationId = await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+  await recoveryApi.releaseMaterial(print.id, oldReservationId);
+  const refreshed = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+  if (!refreshed) throw new Error("The print disappeared after releasing its reservation.");
+  const replacementId = await recoveryApi.reserveMaterial(refreshed, spool.id, "best_fit");
+  expect(replacementId).not.toBe(oldReservationId);
+
+  await recoveryApi.releaseMaterial(print.id, oldReservationId);
+  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation?.id).toBe(replacementId);
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 150,
+    reservedGrams: 88,
+    availableGrams: 62,
+  });
 });
 
 test("reservation selection, confirmation, and release are reachable with the keyboard", async ({
