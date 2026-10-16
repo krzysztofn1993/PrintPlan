@@ -19,6 +19,7 @@ jobs:
       - run: npm run test:auth
       - run: npm run test:spools
       - run: npm run test:prints
+      - run: npm run test:reservations
       - run: npx astro sync
       - run: npm run lint
       - run: npx astro check
@@ -49,7 +50,9 @@ jobs:
           fi
       - name: Run database contract tests
         run: supabase test db
-      - name: Verify populated migration upgrade preserves spools
+      - name: Run reservation concurrency contracts
+        run: npm run test:reservations:concurrency
+      - name: Verify populated migration upgrade preserves spools and prints
         run: npm run test:migrations
       - name: Wait for Mailpit
         run: |

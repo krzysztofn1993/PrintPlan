@@ -212,15 +212,8 @@ test("a held committed print save blocks collection actions and recovers after a
   await page.getByLabel("Required filament (g)").fill("94");
   await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Add a planned print" })).toHaveCount(0);
-
-  await openPrintCreate(page);
-  await fillPrintForm(page, {
-    name: `${name}-reopened`,
-    material: "PLA",
-    colour: `${colour}-reopened`,
-    requiredGrams: 95,
-  });
+  await expect(page.getByRole("heading", { name: "Add a planned print" })).toBeVisible();
+  await expect(page.getByLabel("Name (optional)")).toHaveValue(`${name}-edited`);
   await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeDisabled();
   await respondToConfirm(
     page,
@@ -229,7 +222,7 @@ test("a held committed print save blocks collection actions and recovers after a
     "Refreshing the list will discard unsaved form entries",
   );
   await expect(page.getByRole("alert").filter({ hasText: "Prints are temporarily unavailable." })).toBeVisible();
-  await expect(page.getByLabel("Name (optional)")).toHaveValue(`${name}-reopened`);
+  await expect(page.getByLabel("Name (optional)")).toHaveValue(`${name}-edited`);
   await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeDisabled();
   expect(browserReads).toBe(1);
 
@@ -242,6 +235,7 @@ test("a held committed print save blocks collection actions and recovers after a
   await expect(printRow(page, persistedWhileHeld[0].id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a print" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Add a planned print" })).toHaveCount(0);
   await openPrintCreate(page);
   await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -391,9 +385,7 @@ test("a committed print delete keeps the collection guard through a failed read 
   });
 
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await openPrintCreate(page);
-  await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Refresh and review prints" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Prints are temporarily unavailable." })).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toBeVisible();
@@ -404,6 +396,7 @@ test("a committed print delete keeps the collection guard through a failed read 
   await expect(printRow(page, target.id)).toHaveCount(0);
   await expect(printRow(page, survivor.id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
+  expect(browserReads).toBe(2);
   await openPrintCreate(page);
   await expect(page.getByRole("button", { name: "Add print", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();

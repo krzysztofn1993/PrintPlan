@@ -143,7 +143,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The 150 g / 80 g / 88 g acceptance flow must hold under competing requests; reserve and release form one reversible workflow, with stock corrections below reservations rejected and reserved spool/print deletion safely cancelling reservations.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-04: Configure the account safety margin
 

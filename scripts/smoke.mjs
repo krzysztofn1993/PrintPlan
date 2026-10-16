@@ -5,6 +5,7 @@
 
 import { randomUUID } from "node:crypto";
 import { runPrintSmoke } from "./print-smoke.mjs";
+import { runReservationSmoke } from "./reservation-smoke.mjs";
 import { runSpoolSmoke } from "./spool-smoke.mjs";
 import { readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
 
@@ -787,6 +788,17 @@ async function runSmoke() {
     cleanupRequestSignal,
     expireScenarioForCleanupProbe,
     cleanupProbe: cleanupProbe?.startsWith("print-") ? cleanupProbe.slice("print-".length) : undefined,
+  });
+
+  await runReservationSmoke({
+    config: localSupabase,
+    appRequest,
+    accountA,
+    accountB,
+    activeJarA,
+    activeJarB,
+    requestSignal,
+    cleanupRequestSignal,
   });
 
   const sessionA = activeJarA.session();

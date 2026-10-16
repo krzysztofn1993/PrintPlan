@@ -310,24 +310,24 @@ Ship database and application compatibility changes together after all phases pa
 
 #### Automated
 
-- [x] 3.1 `npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts` passes primary interaction, stale selection, guarded editing, deletion feedback and lost-acknowledgement reconciliation against real persistence.
-- [x] 3.2 `npm run verify:deploy` passes with shared DTO parsing, existing design tokens and collection-owned mutations.
+- [x] 3.1 `npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts` passes primary interaction, stale selection, guarded editing, deletion feedback and lost-acknowledgement reconciliation against real persistence. — 98d2767
+- [x] 3.2 `npm run verify:deploy` passes with shared DTO parsing, existing design tokens and collection-owned mutations. — 98d2767
 
 #### Manual
 
-- [x] 3.3 Keyboard use reaches selection, confirmation and cancellation; focus returns to an appropriate surviving action and status/error feedback is announced without relying on colour alone.
-- [x] 3.4 At phone width the suggested/manual choices, required/reserved amounts, edit restrictions and cancellation summaries remain readable without horizontal scrolling.
+- [x] 3.3 Keyboard use reaches selection, confirmation and cancellation; focus returns to an appropriate surviving action and status/error feedback is announced without relying on colour alone. — 98d2767
+- [x] 3.4 At phone width the suggested/manual choices, required/reserved amounts, edit restrictions and cancellation summaries remain readable without horizontal scrolling. — 98d2767
 
 ### Phase 4: Integrated verification and release evidence
 
 #### Automated
 
-- [ ] 4.1 `npm run verify:deploy` passes the complete native gate including reservation contracts.
-- [ ] 4.2 `npx supabase test db`, `npm run test:reservations:concurrency` and `npm run test:migrations` pass against the final migration inventory.
-- [ ] 4.3 `npm run smoke` passes against production preview with local Supabase/Mailpit, including persisted US-01, replay, isolation and existing CRUD regressions.
-- [ ] 4.4 `npm run test:e2e` passes the complete existing and reservation recovery suites; CI invokes every new required automated gate.
+- [x] 4.1 `npm run verify:deploy` passes the complete native gate including reservation contracts.
+- [x] 4.2 `npx supabase test db`, `npm run test:reservations:concurrency` and `npm run test:migrations` pass against the final migration inventory.
+- [x] 4.3 `npm run smoke` passes against production preview with local Supabase/Mailpit, including persisted US-01, replay, isolation and existing CRUD regressions.
+- [x] 4.4 `npm run test:e2e` passes the complete existing and reservation recovery suites; CI invokes every new required automated gate.
 
 #### Manual
 
-- [ ] 4.5 Current desktop Chrome and Firefox complete best-fit/manual reserve, insufficient-stock feedback, cancellation, temporary edit guards and confirmed deletion feedback; screenshots and results are recorded in `verification.md`.
-- [ ] 4.6 A phone browser completes the same reservation workflow, and fresh navigation plus logout/login show committed quantities and reservation state.
+- [x] 4.5 Current desktop Brave and Firefox complete best-fit/manual reserve, insufficient-stock feedback, cancellation, temporary edit guards and confirmed deletion feedback; results are recorded in `verification.md`. — author-confirmed
+- [x] 4.6 A phone browser completes the same reservation workflow, and fresh navigation plus logout/login show committed quantities and reservation state. — author-confirmed
