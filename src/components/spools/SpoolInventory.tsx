@@ -13,6 +13,9 @@ interface DeleteError {
   message: string;
 }
 
+const uncertainDeletionMessage =
+  "Deletion may have completed, but its cancellation details could not be read. Refresh stock to review current spools; refreshing cannot recover the original cancellation list.";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -199,7 +202,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "We couldn't confirm whether deletion completed. Refresh stock before trying again.",
+        message: uncertainDeletionMessage,
       });
       updateDeletePending(false);
       return;
@@ -252,7 +255,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "Deletion may have completed, but its result could not be read. Refresh stock before trying again.",
+        message: uncertainDeletionMessage,
       });
     } else if (response.status === 401) {
       setDeleteError({ kind: "unauthenticated", message: "Your session has expired. Sign in to continue." });
@@ -265,7 +268,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "The deletion outcome may be uncertain. Refresh stock and review it before trying again.",
+        message: uncertainDeletionMessage,
       });
     } else if (response.status === 403) {
       setDeleteError({ kind: "generic", message: "This request was rejected. Refresh stock and try again." });
@@ -475,9 +478,19 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                             </a>
                           )}
                           {deleteError.kind === "uncertain" && (
-                            <a className="carbon-feedback-link" href="/dashboard/spools">
-                              Refresh stock
-                            </a>
+                            <div className="carbon-feedback-actions">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void refreshStock()}
+                                disabled={mutationPending || refreshing}
+                              >
+                                {refreshing ? "Refreshing…" : "Refresh stock"}
+                              </Button>
+                              <a className="carbon-feedback-link" href="/dashboard/prints">
+                                Manage reservations in planned prints
+                              </a>
+                            </div>
                           )}
                         </div>
                       )}

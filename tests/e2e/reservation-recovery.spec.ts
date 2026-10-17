@@ -505,6 +505,94 @@ test("a changed best fit needs a new confirmation, manual choice works, and spoo
   await expect(reservedSpool).toHaveCount(0);
 });
 
+test("deleting a spool reports every reservation and leaves its prints unreserved", async ({ page, recoveryApi }) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PETG",
+    colour: recoveryApi.label("multi-reservation-delete"),
+    recordedGrams: 200,
+  });
+  const namedPrint = await recoveryApi.createPrint({
+    name: recoveryApi.label("multi-reservation-named-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  const unnamedPrint = await recoveryApi.createPrint({
+    name: null,
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 50,
+  });
+  const unrelatedSpool = await recoveryApi.createSpool({
+    material: "TPU",
+    colour: recoveryApi.label("multi-reservation-unrelated"),
+    recordedGrams: 73,
+  });
+  const namedReservationId = await recoveryApi.reserveMaterial(namedPrint, spool.id, "best_fit");
+  const unnamedReservationId = await recoveryApi.reserveMaterial(unnamedPrint, spool.id, "best_fit");
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 200,
+    reservedGrams: 143,
+    availableGrams: 57,
+  });
+
+  await openSpools(page);
+  await spoolAction(page, "Delete", spool.id).click();
+  await expect(page.getByRole("heading", { name: "Delete this spool?" })).toBeVisible();
+  const deletionResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/spools/${spool.id}/delete`) && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Confirm deletion" }).click();
+  const deletionResponse = await deletionResponsePromise;
+  expect(deletionResponse.status()).toBe(200);
+  const receipt = (await deletionResponse.json()) as {
+    cancelledReservations: {
+      reservationId: string;
+      printId: string;
+      printName: string | null;
+      material: string;
+      colour: string;
+      releasedGrams: number;
+    }[];
+  };
+  expect(receipt.cancelledReservations).toHaveLength(2);
+  expect(receipt.cancelledReservations).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        reservationId: namedReservationId,
+        printId: namedPrint.id,
+        printName: namedPrint.name,
+        releasedGrams: 88,
+      }),
+      expect.objectContaining({
+        reservationId: unnamedReservationId,
+        printId: unnamedPrint.id,
+        printName: null,
+        material: spool.material,
+        colour: spool.colour,
+        releasedGrams: 55,
+      }),
+    ]),
+  );
+
+  const status = page.getByRole("status");
+  await expect(status).toContainText(`${namedPrint.name} (print ${namedPrint.id}) released 88 g`);
+  await expect(status).toContainText(`${spool.material}, ${spool.colour} (print ${unnamedPrint.id}) released 55 g`);
+  await expect(spoolRow(page, spool.id)).toHaveCount(0);
+  const savedPrints = await recoveryApi.listPrints();
+  expect(savedPrints.find((item) => item.id === namedPrint.id)).toMatchObject({ reservation: null });
+  expect(savedPrints.find((item) => item.id === unnamedPrint.id)).toMatchObject({ reservation: null });
+  const savedSpools = await recoveryApi.listSpools();
+  expect(savedSpools.some((item) => item.id === spool.id)).toBe(false);
+  expect(savedSpools.find((item) => item.id === unrelatedSpool.id)).toMatchObject({
+    material: unrelatedSpool.material,
+    colour: unrelatedSpool.colour,
+    recordedGrams: 73,
+    reservedGrams: 0,
+    availableGrams: 73,
+  });
+});
+
 test("committed reserve and release with unreadable acknowledgements stay guarded until refresh", async ({
   page,
   recoveryApi,
