@@ -12,6 +12,7 @@ const KNOWN_MIGRATIONS = [
   "20261010000000_create_spools.sql",
   "20261012000000_create_prints.sql",
   "20261016000000_reserve_and_release_material.sql",
+  "20261017000000_settle_print_consumption.sql",
 ];
 const COMMAND_TIMEOUT_MS = 45_000;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
@@ -223,6 +224,39 @@ async function restrictedPrintRows(container, database, ownerId, label) {
   return parseJsonRows(await queryValue(container, database, sql, { label }), label);
 }
 
+async function restrictedReservationRows(container, database, ownerId, label) {
+  const sql = [
+    "BEGIN;",
+    "SET LOCAL ROLE authenticated;",
+    "SET LOCAL request.jwt.claim.sub = '" + ownerId + "';",
+    "SELECT COALESCE(jsonb_agg(to_jsonb(record) ORDER BY record.print_id), '[]'::jsonb)::text",
+    "FROM public.print_reservations AS record WHERE record.user_id = auth.uid();",
+    "COMMIT;",
+  ].join("\n");
+  return parseJsonRows(await queryValue(container, database, sql, { label }), label);
+}
+
+async function restrictedPlannedPrintRows(container, database, ownerId, label) {
+  const sql = [
+    "BEGIN;",
+    "SET LOCAL ROLE authenticated;",
+    "SET LOCAL request.jwt.claim.sub = '" + ownerId + "';",
+    "SELECT COALESCE(jsonb_agg(to_jsonb(record) ORDER BY record.id), '[]'::jsonb)::text",
+    "FROM public.planned_prints AS record WHERE record.user_id = auth.uid();",
+    "COMMIT;",
+  ].join("\n");
+  return parseJsonRows(await queryValue(container, database, sql, { label }), label);
+}
+
+async function ownerRequestRows(container, database, ownerId, label) {
+  const sql =
+    "SELECT COALESCE(jsonb_agg(to_jsonb(record) ORDER BY record.request_id), '[]'::jsonb)::text " +
+    "FROM private.reservation_requests AS record WHERE record.user_id = '" +
+    ownerId +
+    "';";
+  return parseJsonRows(await queryValue(container, database, sql, { label }), label);
+}
+
 async function main() {
   const migrations = (await readdir(MIGRATIONS_DIR)).filter((file) => file.endsWith(".sql")).sort();
   ensure(
@@ -358,7 +392,7 @@ async function main() {
       "SET LOCAL request.jwt.claim.sub = '" + ownerA + "';",
       "INSERT INTO public.prints (user_id,name,material,colour,required_grams) VALUES",
       "  ('" + ownerA + "','Upgrade print A','pla','Black / Red / Gold',80),",
-      "  ('" + ownerA + "','Upgrade print B','petg','Blue',120);",
+      "  ('" + ownerA + "','Upgrade print B','pla','Black / Red / Gold',50);",
       "COMMIT;",
     ].join("\n");
     await psql(container, scratch, printSeed, { label: "Committed print rows before reservation migration" });
@@ -371,6 +405,70 @@ async function main() {
     await psql(container, scratch, "BEGIN;\n" + reservationMigration + "\nCOMMIT;\n", {
       label: "Transactional populated reservation migration",
     });
+    const printAfterA = await restrictedPrintRows(container, scratch, ownerA, "Owner A post-migration print read");
+    const printAfterB = await restrictedPrintRows(container, scratch, ownerB, "Owner B post-migration print read");
+    const printAfter = [...printAfterA, ...printAfterB].sort((left, right) => left.id.localeCompare(right.id));
+    ensure(
+      JSON.stringify(stable(printAfter)) === JSON.stringify(stable(printBaseline)),
+      "The populated reservation migration altered committed print rows.",
+    );
+    const upgradePrintA = printBaselineA.find((row) => row.name === "Upgrade print A");
+    const upgradePrintB = printBaselineA.find((row) => row.name === "Upgrade print B");
+    ensure(upgradePrintA && upgradePrintB, "The populated reservation fixtures could not be identified by name.");
+    const requestA = randomUUID();
+    const requestB = randomUUID();
+    const reserveBeforeSettlementMigration = [
+      "BEGIN;",
+      "SET LOCAL ROLE authenticated;",
+      "SET LOCAL request.jwt.claim.sub = '" + ownerA + "';",
+      "SELECT public.reserve_print_material('" +
+        requestA +
+        "','" +
+        upgradePrintA.id +
+        "',1,'" +
+        ids.duplicate +
+        "','manual');",
+      "SELECT public.reserve_print_material('" +
+        requestB +
+        "','" +
+        upgradePrintB.id +
+        "',1,'" +
+        ids.duplicate +
+        "','manual');",
+      "COMMIT;",
+    ].join("\n");
+    await psql(container, scratch, reserveBeforeSettlementMigration, {
+      label: "Committed authenticated reservations before settlement migration",
+    });
+    const settlementPrintBaseline = await restrictedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Pre-settlement print snapshot",
+    );
+    const settlementReservationBaseline = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Pre-settlement reservation snapshot",
+    );
+    const settlementRequestBaseline = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Pre-settlement request evidence snapshot",
+    );
+    ensure(
+      settlementReservationBaseline.length === 2 &&
+        settlementRequestBaseline.length === 2 &&
+        settlementRequestBaseline.every((request) => request.state === "active"),
+      "The pre-settlement snapshot did not contain both committed active reservations and their request evidence.",
+    );
+
+    const settlementMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[3], "utf8");
+    await psql(container, scratch, "BEGIN;\n" + settlementMigration + "\nCOMMIT;\n", {
+      label: "Transactional populated settlement migration",
+    });
     const afterA = await restrictedRows(container, scratch, ownerA, "Owner A fresh restricted upgrade read");
     const afterB = await restrictedRows(container, scratch, ownerB, "Owner B fresh restricted upgrade read");
     const after = [...afterA, ...afterB].sort((left, right) => left.id.localeCompare(right.id));
@@ -379,13 +477,97 @@ async function main() {
       JSON.stringify(stable(after)) === JSON.stringify(stable(baseline)),
       "The populated reservation migration altered committed spool rows.",
     );
-    const printAfterA = await restrictedPrintRows(container, scratch, ownerA, "Owner A post-migration print read");
-    const printAfterB = await restrictedPrintRows(container, scratch, ownerB, "Owner B post-migration print read");
-    const printAfter = [...printAfterA, ...printAfterB].sort((left, right) => left.id.localeCompare(right.id));
-    ensure(
-      JSON.stringify(stable(printAfter)) === JSON.stringify(stable(printBaseline)),
-      "The populated reservation migration altered committed print rows.",
+    const completionColumns = ["actual_grams", "settled_at", "settlement_id"];
+    const settledPrintsAfterMigration = await restrictedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Post-settlement migration print read",
     );
+    const priorFieldsAfterMigration = settledPrintsAfterMigration.map((row) => {
+      ensure(
+        completionColumns.every((column) => Object.hasOwn(row, column) && row[column] === null),
+        "An existing print received non-null completion fields during the additive migration.",
+      );
+      return Object.fromEntries(Object.entries(row).filter(([column]) => !completionColumns.includes(column)));
+    });
+    ensure(
+      JSON.stringify(stable(priorFieldsAfterMigration)) === JSON.stringify(stable(settlementPrintBaseline)),
+      "The settlement migration changed a prior print field, version, or timestamp.",
+    );
+    const settlementReservationsAfter = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Post-settlement migration reservation read",
+    );
+    ensure(
+      JSON.stringify(stable(settlementReservationsAfter)) === JSON.stringify(stable(settlementReservationBaseline)),
+      "The settlement migration altered committed active reservations.",
+    );
+    const settlementRequestsAfter = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Post-settlement migration request evidence read",
+    );
+    ensure(
+      JSON.stringify(stable(settlementRequestsAfter)) === JSON.stringify(stable(settlementRequestBaseline)),
+      "The settlement migration altered committed reservation request evidence.",
+    );
+    const plannedAfter = await restrictedPlannedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Post-settlement migration planned print read",
+    );
+    ensure(
+      plannedAfter.length === settlementPrintBaseline.length &&
+        plannedAfter.every((row) => row.settlement_id === null && row.settled_at === null && row.actual_grams === null),
+      "The planned print view did not append null completion fields to existing prints.",
+    );
+    console.log(
+      "PASS  additive settlement migration preserves stock, print timestamps, active reservations, and request evidence",
+    );
+
+    const settlementReservationId = settlementReservationBaseline.find((row) => row.print_id === upgradePrintA.id)?.id;
+    ensure(settlementReservationId, "The upgraded settlement fixture did not retain its active reservation identity.");
+    const settlementCommand = [
+      "BEGIN;",
+      "SET LOCAL ROLE authenticated;",
+      "SET LOCAL request.jwt.claim.sub = '" + ownerA + "';",
+      "SELECT public.settle_print_consumption('" +
+        randomUUID() +
+        "','" +
+        upgradePrintA.id +
+        "',2,'" +
+        settlementReservationId +
+        "',75)::text;",
+      "COMMIT;",
+    ].join("\n");
+    const settlementResult = JSON.parse(
+      await queryValue(container, scratch, settlementCommand, { label: "Settlement against upgraded reservation" }),
+    );
+    ensure(
+      settlementResult.replayed === false &&
+        settlementResult.settlement.actualGrams === 75 &&
+        settlementResult.settlement.spool.recordedGramsBefore === 250 &&
+        settlementResult.settlement.spool.recordedGramsAfter === 175 &&
+        settlementResult.settlement.spool.reservedGramsAfter === 55,
+      "Settlement did not complete with the expected receipt on the upgraded reservation.",
+    );
+    const postSettlementRequests = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Post-settlement upgraded request evidence read",
+    );
+    ensure(
+      postSettlementRequests.find((request) => request.request_id === requestA)?.state === "released" &&
+        postSettlementRequests.find((request) => request.request_id === requestB)?.state === "active",
+      "Settlement did not terminalize only the consumed reservation request.",
+    );
+    console.log("PASS  settlement succeeds against an active reservation preserved through the populated upgrade");
     const hasPrints = await queryValue(container, scratch, "SELECT to_regclass('public.prints') IS NOT NULL;", {
       label: "Print table upgrade check",
     });
