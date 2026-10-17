@@ -1,6 +1,6 @@
 # Verification: Maintain a Reserved Spool
 
-This record separates completed Phase 1 and Phase 2 evidence from the integrated Phase 3 gates and manual checks that are still pending. Phase 3 outcomes must be appended only after those checks actually run.
+This record captures the completed automated evidence for all three phases, the manual checks that remain pending, and hosted behavior that was not observed.
 
 ## Phase 1 and 2 commits
 
