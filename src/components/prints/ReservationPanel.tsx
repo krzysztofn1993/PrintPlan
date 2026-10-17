@@ -88,8 +88,10 @@ export function ReservationPanel({
       {preview && (
         <>
           <p className="mt-2 text-sm leading-relaxed">
-            Reserve <strong>{preview.reservationGrams} g</strong> including the {preview.marginPercent}% safety margin.
-            The print requires {print.requiredGrams} g; reserved grams are held, not consumed.
+            This preview uses a {preview.marginPercent}% safety margin and estimates{" "}
+            <strong>{preview.reservationGrams} g</strong> for a print requiring {print.requiredGrams} g. Confirmation
+            uses the current account margin; if it changes the amount, review a fresh preview and confirm again.
+            Reserved grams are held, not consumed.
           </p>
           <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
             Choices include only spools with matching material and colour and at least {preview.reservationGrams} g
@@ -143,9 +145,9 @@ export function ReservationPanel({
             {pending ? "Reserving…" : "Confirm reservation"}
           </Button>
         ) : null}
-        {!previewLoading && !preview ? (
+        {!previewLoading && (!preview || preview.eligibleSpools.length === 0) ? (
           <Button type="button" variant="outline" onClick={onRefreshPreview} disabled={pending}>
-            Load preview
+            {preview ? "Refresh preview" : "Load preview"}
           </Button>
         ) : null}
         <Button type="button" variant="outline" onClick={onClose} disabled={pending}>

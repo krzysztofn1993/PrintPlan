@@ -334,15 +334,15 @@ Rollback must preserve saved preferences, request identity and reservation snaps
 
 #### Automated
 
-- [x] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`.
-- [x] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`.
-- [x] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`.
+- [x] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`. — 9c6fec4
+- [x] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`. — 9c6fec4
+- [x] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`. — 9c6fec4
 
 ### Phase 3: Settings editor and reservation recovery
 
 #### Automated
 
-- [ ] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`.
+- [x] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`.
 
 ### Phase 4: Browser recovery and complete acceptance
 

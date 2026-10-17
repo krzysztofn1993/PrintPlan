@@ -197,10 +197,11 @@ function mapDatabaseFailure(
 export function mapAccountSettingsFailure(
   failure: { reason: string; error?: unknown; status?: number },
   operation: SettingsFailureOperation = "read",
+  boundary: "api" | "page" = "api",
 ): Response {
   if (failure.reason === "settings_conflict") return createAccountSettingsConflictResponse();
   const mapped = mapDatabaseFailure(failure.error, failure.status, operation);
-  reportAccountSettingsFailure(mapped, "api");
+  reportAccountSettingsFailure(mapped, boundary);
   return createAccountSettingsJsonResponse(mapped.body, mapped.status, mapped.headers);
 }
 
