@@ -66,15 +66,18 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     setStatusMessage("");
   }
 
-  async function refreshStock(): Promise<boolean> {
-    if (mutationPendingRef.current || refreshingRef.current) return false;
+  async function refreshStock(intent: "review" | "correction" = "review"): Promise<boolean> {
+    if ((mutationPendingRef.current && intent === "review") || refreshingRef.current) return false;
     refreshingRef.current = true;
     setRefreshing(true);
+    if (intent === "correction") setListError("");
     let response: Response;
     try {
       response = await fetch("/api/spools", { method: "GET", cache: "no-store" });
     } catch {
-      setListError("Stock could not be reached. The pending action remains blocked; try refreshing again.");
+      if (intent === "review") {
+        setListError("Stock could not be reached. The pending action remains blocked; try refreshing again.");
+      }
       refreshingRef.current = false;
       setRefreshing(false);
       return false;
@@ -89,21 +92,33 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     const latest = values?.map(readSpoolDto);
     const validSpools = latest?.filter((spool): spool is SpoolDto => spool !== undefined);
     if (!latest || latest.length !== validSpools?.length) {
-      setListError(
-        "The latest stock state could not be read. The pending action remains blocked; try refreshing again.",
-      );
+      if (intent === "review") {
+        setListError(
+          "The latest stock state could not be read. The pending action remains blocked; try refreshing again.",
+        );
+      }
       refreshingRef.current = false;
       setRefreshing(false);
       return false;
     }
     setSpools(orderedSpools(validSpools));
-    setUncertaintyGuard(false);
     setListError("");
-    setDeleteError(null);
-    setDeleteSpoolId(null);
-    setCreateOpen(false);
-    setEditingSpoolId(null);
-    setStatusMessage("Stock refreshed. Review the current saved spools before making another change.");
+    if (intent === "correction") {
+      const targetIsAvailable = validSpools.some((spool) => spool.id === editingSpoolId);
+      if (editingSpoolId && !targetIsAvailable) {
+        setEditingSpoolId(null);
+        setStatusMessage("This spool is no longer available. The unsaved correction was not saved.");
+      } else {
+        setStatusMessage("Reservation amounts refreshed. Review the latest saved quantities before saving.");
+      }
+    } else {
+      setUncertaintyGuard(false);
+      setDeleteError(null);
+      setDeleteSpoolId(null);
+      setCreateOpen(false);
+      setEditingSpoolId(null);
+      setStatusMessage("Stock refreshed. Review the current saved spools before making another change.");
+    }
     refreshingRef.current = false;
     setRefreshing(false);
     return true;
@@ -331,6 +346,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             onCancel={closeCreate}
             onUncertain={handleUncertainMutation}
             onRefreshLatest={refreshStock}
+            onRefreshCorrection={() => refreshStock("correction")}
             mutationGuarded={uncertaintyGuard}
           />
         </section>
@@ -432,6 +448,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         }}
                         onUncertain={handleUncertainMutation}
                         onRefreshLatest={refreshStock}
+                        onRefreshCorrection={() => refreshStock("correction")}
                         mutationGuarded={uncertaintyGuard}
                       />
                     </div>
