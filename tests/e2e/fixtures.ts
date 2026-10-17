@@ -294,11 +294,13 @@ export const test = base.extend<E2EFixtures>({
       },
 
       async reserveMaterial(print, spoolId, selectionMode) {
+        const preview = await api.previewReservation(print.id);
         const payload = await readJson<{ reservationId: string }>(
           await context.request.post(endpoint(`/api/prints/${print.id}/reservation/reserve`), {
             form: {
               requestId: randomUUID(),
               expectedVersion: String(print.version),
+              expectedReservationGrams: String(preview.reservationGrams),
               spoolId,
               selectionMode,
             },

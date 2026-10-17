@@ -81,6 +81,31 @@ test("reservation form validation rejects duplicates, files, unknown fields and 
     ok: true,
     value: { requestId: REQUEST_ID, expectedVersion: 2, spoolId: SPOOL_ID, selectionMode: "best_fit" },
   });
+  const witnessed = validateReserveForm(form([...entries, ["expectedReservationGrams", "88"]]));
+  assert.deepEqual(witnessed, {
+    ok: true,
+    value: {
+      requestId: REQUEST_ID,
+      expectedVersion: 2,
+      expectedReservationGrams: 88,
+      spoolId: SPOOL_ID,
+      selectionMode: "best_fit",
+    },
+  });
+  for (const value of ["", "1.5", "Infinity", "0", "4294967295"]) {
+    assert.deepEqual(
+      validateReserveForm(form([...entries, ["expectedReservationGrams", value]])),
+      { ok: false, reason: "invalid" },
+      `expected invalid preview amount ${value}`,
+    );
+  }
+  assert.deepEqual(
+    validateReserveForm(form([...entries, ["expectedReservationGrams", "88"], ["expectedReservationGrams", "88"]])),
+    { ok: false, reason: "invalid" },
+  );
+  const amountFile = form([...entries, ["expectedReservationGrams", "88"]]);
+  amountFile.set("expectedReservationGrams", new Blob(["88"]));
+  assert.deepEqual(validateReserveForm(amountFile), { ok: false, reason: "invalid" });
   const repeated = form([...entries, ["requestId", REQUEST_ID]]);
   assert.deepEqual(validateReserveForm(repeated), { ok: false, reason: "invalid" });
   const file = form(entries);
@@ -209,6 +234,31 @@ test("preview RPC maps its advisory result and eligible spools through the share
   assert.equal(result.value.reservationGrams, 88);
 });
 
+test("preview RPC refuses fractional margins and out-of-range adjusted grams", async () => {
+  for (const overrides of [{ marginPercent: 10.5 }, { marginPercent: 101 }, { reservationGrams: 4_294_967_295 }]) {
+    const client = {
+      rpc() {
+        return Promise.resolve({
+          data: {
+            printId: PRINT_ID,
+            expectedVersion: 2,
+            marginPercent: 10,
+            reservationGrams: 88,
+            suggestedSpoolId: SPOOL_ID,
+            eligibleSpools: [spoolRow({ reserved_grams: 0, available_grams: 150 })],
+            ...overrides,
+          },
+          error: null,
+          status: 200,
+        });
+      },
+    };
+    const result = await previewPrintReservation(client, OWNER_ID, PRINT_ID);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "database_error");
+  }
+});
+
 test("reserve and release commands call exact RPCs and return the committed reservation-aware view", async () => {
   const calls = [];
   const client = {
@@ -257,6 +307,7 @@ test("reserve and release commands call exact RPCs and return the committed rese
     printId: PRINT_ID,
     requestId: REQUEST_ID,
     expectedVersion: 2,
+    expectedReservationGrams: 88,
     spoolId: SPOOL_ID,
     selectionMode: "best_fit",
   });
@@ -269,14 +320,24 @@ test("reserve and release commands call exact RPCs and return the committed rese
       p_request_id: REQUEST_ID,
       p_print_id: PRINT_ID,
       p_expected_version: 2,
+      p_expected_reservation_grams: 88,
       p_spool_id: SPOOL_ID,
       p_selection_mode: "best_fit",
     },
   });
+  const legacyReplay = await reservePrintMaterial(client, OWNER_ID, {
+    printId: PRINT_ID,
+    requestId: REQUEST_ID,
+    expectedVersion: 2,
+    spoolId: SPOOL_ID,
+    selectionMode: "best_fit",
+  });
+  assert.equal(legacyReplay.ok, true);
+  assert.equal(calls[1].args.p_expected_reservation_grams, null);
   const release = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID, PRINT_ID);
   assert.equal(release.ok, true);
   assert.equal(release.value.disposition, "released");
-  assert.deepEqual(calls[1], {
+  assert.deepEqual(calls[2], {
     name: "release_print_material",
     args: { p_reservation_id: RESERVATION_ID, p_print_id: PRINT_ID },
   });
@@ -296,13 +357,19 @@ test("reservation responses are private and business failures keep precise statu
     "edit_conflict",
     "selection_stale",
     "insufficient_material",
+    "reservation_amount_stale",
+    "reservation_preview_required",
     "idempotency_conflict",
     "reservation_request_completed",
     "print_settled",
   ]) {
     const conflict = mapReservationFailure({ reason: code });
     assert.equal(conflict.status, 409);
-    assert.equal((await conflict.json()).error.code, code);
+    const body = await conflict.json();
+    assert.equal(body.error.code, code);
+    if (code === "reservation_amount_stale" || code === "reservation_preview_required") {
+      assert.equal(body.error.refreshRequired, true);
+    }
     assert.equal(conflict.headers.get("Cache-Control"), "private, no-cache, no-store, must-revalidate, max-age=0");
   }
   assert.equal(mapReservationFailure({ reason: "not_found" }).status, 404);
@@ -395,6 +462,7 @@ test("a committed reservation preserves the original failure and status when its
       printId: PRINT_ID,
       requestId: REQUEST_ID,
       expectedVersion: 2,
+      expectedReservationGrams: 88,
       spoolId: SPOOL_ID,
       selectionMode: "best_fit",
     });

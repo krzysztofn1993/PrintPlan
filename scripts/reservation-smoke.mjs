@@ -68,7 +68,14 @@ export async function runReservationSmoke({
     trackedPrints.add(payload.print.id);
     return payload.print;
   };
-  const reserve = (print, spoolId, selectionMode = "best_fit", requestId = randomUUID(), expectedStatus = 200) =>
+  const reserve = (
+    print,
+    spoolId,
+    expectedReservationGrams,
+    selectionMode = "best_fit",
+    requestId = randomUUID(),
+    expectedStatus = 200,
+  ) =>
     appJson(
       `/api/prints/${print.id}/reservation/reserve`,
       {
@@ -76,6 +83,7 @@ export async function runReservationSmoke({
         formEntries: [
           ["requestId", requestId],
           ["expectedVersion", String(print.version)],
+          ["expectedReservationGrams", String(expectedReservationGrams)],
           ["spoolId", spoolId],
           ["selectionMode", selectionMode],
         ],
@@ -96,25 +104,29 @@ export async function runReservationSmoke({
     const first = await createPrint("Reservation smoke first", colour);
     const second = await createPrint("Reservation smoke second", colour);
 
-    await step("best-fit preview applies the default margin and identifies the spool", async () => {
-      const { payload } = await appJson(`/api/prints/${first.id}/reservation`);
-      ensure(
-        payload.reservationGrams === 88 && payload.marginPercent === 10,
-        "The preview did not apply the 10% margin to 80 g.",
-      );
-      ensure(
-        payload.suggestedSpoolId === spool.id && payload.eligibleSpools.some((item) => item.id === spool.id),
-        "The matching spool was not suggested.",
-      );
-    });
+    const firstPreview = await step(
+      "best-fit preview applies the default margin and identifies the spool",
+      async () => {
+        const { payload } = await appJson(`/api/prints/${first.id}/reservation`);
+        ensure(
+          payload.reservationGrams === 88 && payload.marginPercent === 10,
+          "The preview did not apply the 10% margin to 80 g.",
+        );
+        ensure(
+          payload.suggestedSpoolId === spool.id && payload.eligibleSpools.some((item) => item.id === spool.id),
+          "The matching spool was not suggested.",
+        );
+        return payload;
+      },
+    );
 
     let reservationId;
     await step("reserve, retry, and fresh reads preserve recorded stock", async () => {
       const requestId = randomUUID();
-      const firstWrite = await reserve(first, spool.id, "best_fit", requestId);
+      const firstWrite = await reserve(first, spool.id, firstPreview.reservationGrams, "best_fit", requestId);
       ensure(firstWrite.payload.disposition === "active", "The confirmed reservation was not active.");
       reservationId = firstWrite.payload.reservationId;
-      const replay = await reserve(first, spool.id, "best_fit", requestId);
+      const replay = await reserve(first, spool.id, firstPreview.reservationGrams, "best_fit", requestId);
       ensure(
         replay.payload.reservationId === reservationId && replay.payload.disposition === "active",
         "Retry created a different reservation.",
@@ -131,7 +143,8 @@ export async function runReservationSmoke({
     });
 
     await step("second print is rejected until the first reservation is released", async () => {
-      const failed = await reserve(second, spool.id, "best_fit", randomUUID(), 409);
+      const secondPreview = (await appJson(`/api/prints/${second.id}/reservation`)).payload;
+      const failed = await reserve(second, spool.id, secondPreview.reservationGrams, "best_fit", randomUUID(), 409);
       ensure(
         failed.result.status === 409 && failed.payload.error?.code === "insufficient_material",
         "The second print did not receive insufficient-material feedback.",
@@ -162,7 +175,8 @@ export async function runReservationSmoke({
 
       const firstRefresh = (await listPrints()).find((item) => item.id === first.id);
       ensure(firstRefresh, "The print disappeared after release.");
-      const replacement = await reserve(firstRefresh, spool.id, "best_fit");
+      const replacementPreview = (await appJson(`/api/prints/${firstRefresh.id}/reservation`)).payload;
+      const replacement = await reserve(firstRefresh, spool.id, replacementPreview.reservationGrams, "best_fit");
       const replacementId = replacement.payload.reservationId;
       ensure(
         replacementId && replacementId !== reservationId,
@@ -196,7 +210,8 @@ export async function runReservationSmoke({
       await release(first.id, reservationId);
       const currentSecond = (await listPrints()).find((item) => item.id === second.id);
       ensure(currentSecond, "The second print disappeared before replacement reservation.");
-      const secondReservation = await reserve(currentSecond, spool.id);
+      const secondPreview = (await appJson(`/api/prints/${currentSecond.id}/reservation`)).payload;
+      const secondReservation = await reserve(currentSecond, spool.id, secondPreview.reservationGrams);
       ensure(secondReservation.payload.disposition === "active", "The second print could not reserve after release.");
       reservationId = secondReservation.payload.reservationId;
     });
