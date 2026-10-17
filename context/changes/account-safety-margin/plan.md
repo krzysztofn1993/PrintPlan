@@ -326,17 +326,17 @@ Rollback must preserve saved preferences, request identity and reservation snaps
 
 #### Automated
 
-- [x] 1.1 Database contracts pass against the S-04 schema: `npx supabase test db`.
-- [x] 1.2 Observed-lock concurrency scenarios pass, including save/reserve in both orders and competing settings versions: `npm run test:reservations:concurrency`.
-- [x] 1.3 Fresh and populated upgrades preserve committed product rows, reservation snapshots and legacy replay: `npm run test:migrations`.
+- [x] 1.1 Database contracts pass against the S-04 schema: `npx supabase test db`. — abf0bf1
+- [x] 1.2 Observed-lock concurrency scenarios pass, including save/reserve in both orders and competing settings versions: `npm run test:reservations:concurrency`. — abf0bf1
+- [x] 1.3 Fresh and populated upgrades preserve committed product rows, reservation snapshots and legacy replay: `npm run test:migrations`. — abf0bf1
 
 ### Phase 2: Settings API and reservation contracts
 
 #### Automated
 
-- [ ] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`.
-- [ ] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`.
-- [ ] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`.
+- [x] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`.
+- [x] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`.
+- [x] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`.
 
 ### Phase 3: Settings editor and reservation recovery
 

@@ -135,10 +135,12 @@ export type Database = {
       delete_print: { Args: { p_print_id: string }; Returns: Json };
       delete_spool: { Args: { p_spool_id: string }; Returns: Json };
       preview_print_reservation: { Args: { p_print_id: string }; Returns: Json };
+      get_account_settings: { Args: Record<PropertyKey, never>; Returns: Json };
       release_print_material: { Args: { p_print_id: string; p_reservation_id: string }; Returns: Json };
       reserve_print_material: {
         Args: {
           p_expected_version: number;
+          p_expected_reservation_grams: number | null;
           p_print_id: string;
           p_request_id: string;
           p_selection_mode: string;
@@ -155,6 +157,10 @@ export type Database = {
           p_request_id: string;
           p_reservation_id: string;
         };
+        Returns: Json;
+      };
+      save_account_safety_margin: {
+        Args: { p_expected_version: number; p_margin_percent: number };
         Returns: Json;
       };
       update_print: {
