@@ -207,8 +207,8 @@ For implementation prerequisites, use Node from `.nvmrc` and locked dependencies
 
 #### Automated
 
-- [ ] 2.1 Reserved and unreserved deletion browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts tests/e2e/spool-recovery.spec.ts`, including both cancellation identities, lost committed response, failed refresh, surviving prints, unchanged unrelated stock, and one deletion POST.
-- [ ] 2.2 Existing database safety regressions pass: `npx supabase test db` and `npm run test:reservations:concurrency`.
+- [x] 2.1 Reserved and unreserved deletion browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts tests/e2e/spool-recovery.spec.ts`, including both cancellation identities, lost committed response, failed refresh, surviving prints, unchanged unrelated stock, and one deletion POST.
+- [x] 2.2 Existing database safety regressions pass: `npx supabase test db` and `npm run test:reservations:concurrency`.
 
 ### Phase 3: Verify the bounded S-06 outcome and record evidence
 
