@@ -214,9 +214,9 @@ For implementation prerequisites, use Node from `.nvmrc` and locked dependencies
 
 #### Automated
 
-- [ ] 3.1 The complete native, lint, type and production-build gate passes: `npm run verify:deploy`.
-- [ ] 3.2 The complete configured browser suite passes: `E2E_PORT=4326 npm run test:e2e`.
-- [ ] 3.3 The existing authenticated smoke suite passes against a separately running production preview: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 3.1 The complete native, lint, type and production-build gate passes: `npm run verify:deploy`.
+- [x] 3.2 The complete configured browser suite passes: `E2E_PORT=4326 npm run test:e2e`.
+- [x] 3.3 The existing authenticated smoke suite passes against a separately running production preview: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
 
 #### Manual
 
