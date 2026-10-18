@@ -339,12 +339,12 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Automated
 
-- [x] 4.1 The complete native gate passes with settlement contracts wired in: `npm run verify:deploy`.
-- [x] 4.2 SQL behavior, observed-lock concurrency and populated upgrades pass: `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
-- [x] 4.3 Chromium settlement and existing recovery suites pass with persisted-state assertions: `npm run test:e2e`.
-- [x] 4.4 Authenticated settlement and existing smoke scenarios pass against a separate built preview with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 The complete native gate passes with settlement contracts wired in: `npm run verify:deploy`. — a634d14
+- [x] 4.2 SQL behavior, observed-lock concurrency and populated upgrades pass: `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`. — a634d14
+- [x] 4.3 Chromium settlement and existing recovery suites pass with persisted-state assertions: `npm run test:e2e`. — a634d14
+- [x] 4.4 Authenticated settlement and existing smoke scenarios pass against a separate built preview with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — a634d14
 
 #### Manual
 
-- [x] 4.5 In current Chrome and Firefox and on a phone, the form, completed rows, cancellation feedback and stock review remain readable and usable without clipped controls.
-- [x] 4.6 The author confirms ordinary, 0 g and exceeded-estimate settlement, result review after refresh/login, and completed deletion without a stock refund.
+- [x] 4.5 In current Chrome and Firefox and on a phone, the form, completed rows, cancellation feedback and stock review remain readable and usable without clipped controls. — a634d14
+- [x] 4.6 The author confirms ordinary, 0 g and exceeded-estimate settlement, result review after refresh/login, and completed deletion without a stock refund. — a634d14
