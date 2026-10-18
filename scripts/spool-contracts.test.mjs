@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createClient } from "@supabase/supabase-js";
+import { runWithControlledTime } from "./test-support/controlled-time.mjs";
 import {
   MAX_RECORDED_GRAMS,
   hasSupportedSpoolFormContentType,
@@ -166,29 +167,41 @@ function stockOperations() {
   ];
 }
 
-test("installed SDK connection failures retain transport status and produce private retryable responses", async () => {
-  for (const [operation, run] of stockOperations()) {
-    const client = makeSdkClient(async () => {
-      const cause = Object.assign(new Error("Connection refused"), { code: "ECONNREFUSED" });
-      throw new TypeError("fetch failed", { cause });
-    });
-    const result = await run(client);
-    assert.equal(result.ok, false, operation);
-    assert.equal(result.reason, "database_error", operation);
-    assert.equal(result.status, 0, operation);
-    assert.equal(result.error.code, "", operation);
-    assert.equal(Object.hasOwn(result.error, "status"), false, operation);
+test(
+  "installed SDK connection failures retain transport status and produce private retryable responses",
+  { timeout: 45_000 },
+  async (t) => {
+    for (const [operation, run] of stockOperations()) {
+      let fetchAttempts = 0;
+      const client = makeSdkClient(async () => {
+        fetchAttempts += 1;
+        const cause = Object.assign(new Error("Connection refused"), { code: "ECONNREFUSED" });
+        throw new TypeError("fetch failed", { cause });
+      });
+      const result =
+        operation === "list"
+          ? await runWithControlledTime(t, () => run(client), { label: "Spool GET" })
+          : await run(client);
+      if (operation === "list") {
+        assert.ok(fetchAttempts > 1, "The installed SDK should retry a failed GET before reporting the outage");
+      }
+      assert.equal(result.ok, false, operation);
+      assert.equal(result.reason, "database_error", operation);
+      assert.equal(result.status, 0, operation);
+      assert.equal(result.error.code, "", operation);
+      assert.equal(Object.hasOwn(result.error, "status"), false, operation);
 
-    const response = createSpoolDatabaseErrorResponse(result.error, result.status);
-    assert.equal(response.status, 503, operation);
-    assert.equal(response.headers.get("Retry-After"), "30", operation);
-    cacheHeaders(response);
-    const body = await response.json();
-    assert.equal(body.error.code, "temporarily_unavailable", operation);
-    assert.equal(body.error.retryAfter, 30, operation);
-    assert.doesNotMatch(JSON.stringify(body), /ECONNREFUSED|fetch failed|Connection refused/, operation);
-  }
-});
+      const response = createSpoolDatabaseErrorResponse(result.error, result.status);
+      assert.equal(response.status, 503, operation);
+      assert.equal(response.headers.get("Retry-After"), "30", operation);
+      cacheHeaders(response);
+      const body = await response.json();
+      assert.equal(body.error.code, "temporarily_unavailable", operation);
+      assert.equal(body.error.retryAfter, 30, operation);
+      assert.doesNotMatch(JSON.stringify(body), /ECONNREFUSED|fetch failed|Connection refused/, operation);
+    }
+  },
+);
 
 test("installed SDK gateway statuses survive every operation without hiding permanent failures", async (t) => {
   const log = t.mock.method(console, "error", () => undefined);
