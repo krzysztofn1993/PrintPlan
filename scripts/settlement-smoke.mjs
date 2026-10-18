@@ -135,6 +135,11 @@ export async function runSettlementSmoke({
   };
 
   const reserve = async (print, spoolId, jar = activeJarA) => {
+    const { payload: preview } = await appJson(`/api/prints/${print.id}/reservation`, {}, 200, jar);
+    ensure(
+      Number.isInteger(preview.reservationGrams) && preview.reservationGrams > 0,
+      "Reservation preview did not return a whole-gram confirmation amount.",
+    );
     const { payload } = await appJson(
       `/api/prints/${print.id}/reservation/reserve`,
       {
@@ -142,6 +147,7 @@ export async function runSettlementSmoke({
         formEntries: [
           ["requestId", randomUUID()],
           ["expectedVersion", String(print.version)],
+          ["expectedReservationGrams", String(preview.reservationGrams)],
           ["spoolId", spoolId],
           ["selectionMode", "best_fit"],
         ],
