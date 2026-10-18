@@ -12,7 +12,7 @@ const KNOWN_MIGRATIONS = [
   "20261010000000_create_spools.sql",
   "20261012000000_create_prints.sql",
   "20261016000000_reserve_and_release_material.sql",
-  "20261017000000_settle_print_consumption.sql",
+  "20261018000000_settle_print_consumption.sql",
 ];
 const COMMAND_TIMEOUT_MS = 45_000;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
