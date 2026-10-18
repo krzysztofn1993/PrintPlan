@@ -232,6 +232,10 @@ async function main() {
     const printIds = f.prints.map((print) => quote(print.id)).join(",");
     return json(
       "SELECT jsonb_build_object(" +
+        "'settings',COALESCE((SELECT jsonb_build_object('marginPercent',setting.margin_percent,'version',setting.version)" +
+        " FROM public.account_settings setting WHERE setting.user_id=" +
+        quote(f.owner) +
+        "),jsonb_build_object('marginPercent',10,'version',0))," +
         "'spool',(SELECT to_jsonb(s) FROM public.spool_inventory s WHERE s.id=" +
         quote(f.spool.id) +
         " AND s.user_id=" +
@@ -278,9 +282,19 @@ async function main() {
   function reserve(f, print = f.prints[0], requestId = f.requestId, version = print.version) {
     return (
       "SELECT public.reserve_print_material(" +
-      [quote(requestId), quote(print.id), version, quote(f.spool.id), "'best_fit'"].join(",") +
+      [quote(requestId), quote(print.id), version, quote(f.spool.id), "'best_fit'", "88"].join(",") +
       ");"
     );
+  }
+
+  async function saveMargin(userId, marginPercent, expectedVersion) {
+    return execute(userId, "SELECT public.save_account_safety_margin(" + marginPercent + "," + expectedVersion + ");");
+  }
+
+  async function resetMargin(f) {
+    const current = await execute(f.owner, "SELECT public.get_account_settings();");
+    const saved = await saveMargin(f.owner, 10, current.version);
+    f.settingsVersion = saved.version;
   }
 
   function settle(
@@ -344,6 +358,7 @@ async function main() {
 
   async function runRace(name, spec) {
     const f = await fixture(owner, name, spec.recordedGrams ?? 150);
+    await resetMargin(f);
     if (spec.prepare) await spec.prepare(f);
     const before = await state(f);
     const holder = mutation(owner, spec.holder(f));
@@ -422,10 +437,16 @@ async function main() {
       async blocked(f, holder, waiter, holderBackend) {
         independentReceipt = await execute(otherOwner, reserve(independent, independent.prints[0], f.requestId));
         assert.equal(independentReceipt.disposition, "active");
+        const independentSettings = await saveMargin(otherOwner, 0, 0);
+        assert.deepEqual(independentSettings, { marginPercent: 0, version: 1 });
         assert.equal((await observe(holder)).state, "idle in transaction");
         await waitForBlocked(waiter, holderBackend.pid);
         stock(await state(independent), 150, 88);
-        console.log("PASS  another owner commits with the same request UUID while the first owner remains locked");
+        const independentState = await state(independent);
+        assert.deepEqual(independentState.settings, { marginPercent: 0, version: 1 });
+        assert.equal(independentState.reservations[0].reserved_grams, 88);
+        assert.equal(independentState.reservations[0].margin_percent, 10);
+        console.log("PASS  another owner reserves and saves settings while the first owner remains locked");
       },
       verify(f, { final, holderReceipt }) {
         stock(final, 150, 88);
@@ -434,6 +455,59 @@ async function main() {
         assert.equal(printState(final, f.prints[1].id).reservation_id, null);
         assert.equal(final.requests.length, 1);
         assert.notEqual(holderReceipt.reservationId, independentReceipt.reservationId);
+      },
+    });
+
+    await runRace("save then stale reservation", {
+      holder: (f) => "SELECT public.save_account_safety_margin(5," + f.settingsVersion + ");",
+      waiter: (f) => reserve(f),
+      error: ["P0001", "reservation_amount_stale"],
+      verify(f, { final }) {
+        stock(final, 150, 0);
+        assert.deepEqual(final.settings, { marginPercent: 5, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations.length, 0);
+        assert.equal(final.requests.length, 0);
+        assert.equal(printState(final, f.prints[0].id).version, 1);
+      },
+    });
+
+    await runRace("reservation then settings save", {
+      holder: (f) => reserve(f),
+      waiter: (f) => "SELECT public.save_account_safety_margin(5," + f.settingsVersion + ");",
+      verify(f, { final, holderReceipt }) {
+        stock(final, 150, 88);
+        assert.deepEqual(final.settings, { marginPercent: 5, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations.length, 1);
+        assert.equal(final.reservations[0].id, holderReceipt.reservationId);
+        assert.equal(final.reservations[0].reserved_grams, 88);
+        assert.equal(final.reservations[0].margin_percent, 10);
+        assert.equal(printState(final, f.prints[0].id).version, 2);
+      },
+    });
+
+    await runRace("same grams after settings save", {
+      holder: (f) => "SELECT public.save_account_safety_margin(9," + f.settingsVersion + ");",
+      waiter: (f) => reserve(f),
+      verify(f, { final, waiterReceipt }) {
+        stock(final, 150, 88);
+        assert.deepEqual(final.settings, { marginPercent: 9, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations.length, 1);
+        assert.equal(final.reservations[0].id, waiterReceipt.reservationId);
+        assert.equal(final.reservations[0].reserved_grams, 88);
+        assert.equal(final.reservations[0].margin_percent, 9);
+        assert.equal(final.requests[0].expected_reservation_grams, 88);
+      },
+    });
+
+    await runRace("competing saves with one expected version", {
+      holder: (f) => "SELECT public.save_account_safety_margin(5," + f.settingsVersion + ");",
+      waiter: (f) => "SELECT public.save_account_safety_margin(9," + f.settingsVersion + ");",
+      error: ["P0001", "settings_conflict"],
+      verify(f, { final }) {
+        stock(final, 150, 0);
+        assert.deepEqual(final.settings, { marginPercent: 5, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations.length, 0);
+        assert.equal(final.requests.length, 0);
       },
     });
 
@@ -869,7 +943,7 @@ async function main() {
       },
     });
 
-    assert.equal(cases, 26);
+    assert.equal(cases, 30);
   } catch (error) {
     failure = error;
   }

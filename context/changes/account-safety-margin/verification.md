@@ -29,6 +29,26 @@ The browser suite covers saved-value display, invalid and boundary input, pendin
 
 Use the repository-pinned Node version from `.nvmrc`. Start local Supabase with the repository migrations applied and Mailpit available at `http://127.0.0.1:54324`. Configure `SUPABASE_URL` and the local anon or publishable `SUPABASE_KEY` in the environment, `.dev.vars`, or `.env`. `npm run test:e2e` owns its Chromium preview; `npm run smoke` targets the production preview at `BASE_URL` (default `http://localhost:4321`). Confirmation links may use the configured local Supabase `auth.site_url` origin; the smoke validates their callback and replays only the path and query through `BASE_URL`. The smoke restores the generated Account A setting with a fresh settings version and deletes only its own tracked prints and spools.
 
+## Integration verification on `origin/master`
+
+The branch was rebased onto `261fc502fae1cccf5c8548f05ed414335024dadd`, which adds print settlement migrations and flows. Migration `20261019000000_preserve_margin_with_settlements.sql` restores the saved account margin in settlement-aware preview and reservation RPCs, and removes the obsolete five-argument overload while keeping the witnessed reservation contract. The overload drop uses `IF EXISTS` so the migration also applies when a local database has recorded settlement before account settings.
+
+The populated migration check now applies the complete sequence in a disposable database. It verifies that settlement preserves earlier product rows and active reservation snapshots, that legacy reservation requests retain their original fields with a `NULL` witness, and that settings changes, fresh witnessed reservations, legacy replay, and settled-print guards continue to work.
+
+The local Supabase database already contained the settlement migration but not the earlier account-settings migration. `npx supabase migration up --local` correctly refused to insert that earlier migration; `npx supabase migration up --local --include-all` applied the additive account-settings and compatibility migrations without resetting the database. A first attempt exposed that the compatibility migration assumed the old reservation overload existed. After making that drop conditional, the migration applied and the test suite passed. No local product rows were reset.
+
+Final integration gates passed:
+
+- `npm run verify:deploy`: PASS. Hooks and native contracts passed; lint passed; Astro check reported 0 errors, 0 warnings and five unused-parameter hints; build passed.
+- `npx supabase test db`: PASS. Five pgTAP files and 452 tests passed against local Supabase.
+- `npm run test:reservations:concurrency`: PASS. All 30 observed-lock interleavings passed and cleaned their fixtures.
+- `npm run test:migrations`: PASS. Fresh and populated database scenarios passed, including the saved-margin/settlement upgrade, and the scratch database was removed.
+- `npm run test:e2e`: PASS on the complete rerun, 44 tests passed. The first complete run had one failure at the manual fallback test's immediate collection read; the same test passed in isolation and the full suite then passed without changing its assertions.
+- `BASE_URL=http://127.0.0.1:4322 npm run smoke`: PASS. The first run reached settlement smoke and exposed its old witness-less reserve payload. Settlement smoke now reads a fresh preview and sends `expectedReservationGrams`; the full smoke then passed, including account settings, settlement, token expiry, refresh, and revocation checks.
+- `git diff --check`: PASS.
+
+The final repository-wide lint gate passed, including `scripts/account-settings-smoke.mjs`. Local preview and Supabase were stopped after verification; the Supabase volume was retained.
+
 ## Outstanding manual checks
 
 - [ ] 4.4 Settings and reservation flows are usable with keyboard navigation in current Chrome and Firefox and on a phone, with readable feedback and no horizontal overflow.
