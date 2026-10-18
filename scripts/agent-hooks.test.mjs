@@ -93,12 +93,67 @@ function repository(t) {
     "scripts/unrelated.test.mjs",
     'import test from "node:test";\nimport assert from "node:assert/strict";\ntest("unrelated behavior", () => assert.equal(1, 1));\n',
   );
+  put(
+    root,
+    "scripts/failing.test.mjs",
+    'import test from "node:test";\nimport assert from "node:assert/strict";\nimport { appendFileSync } from "node:fs";\ntest("native fixture must not run at Stop", () => { appendFileSync(process.env.HOOK_NATIVE_TEST_MARKER, "ran\\n"); assert.fail("native fixture executed"); });\n',
+  );
   installHooks(root);
   installFakeTools(root);
   git(root, "add", ".");
   git(root, "commit", "--quiet", "-m", "Proof baseline");
   const log = path.join(directory, "commands.jsonl");
-  return { directory, root, log };
+  return { directory, root, log, marker: path.join(directory, "native-tests-ran") };
+}
+
+function pushRepository(t) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), "printplan-push-proof-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const root = path.join(directory, "repo");
+  mkdirSync(root);
+  git(root, "init", "--quiet");
+  git(root, "config", "user.email", "hooks-proof@example.invalid");
+  git(root, "config", "user.name", "Hook proof");
+  put(root, ".gitignore", "node_modules/\n");
+  put(
+    root,
+    "package.json",
+    JSON.stringify({
+      type: "module",
+      scripts: { prepare: "husky", "verify:deploy": "node scripts/gate-fixture.mjs" },
+    }) + "\n",
+  );
+  cpSync(path.join(project, ".husky"), path.join(root, ".husky"), { recursive: true });
+  symlinkSync(path.join(project, "node_modules"), path.join(root, "node_modules"), "dir");
+  put(
+    root,
+    "scripts/gate-fixture.mjs",
+    'import { appendFileSync, readFileSync } from "node:fs";\n' +
+      'appendFileSync(process.env.HOOK_GATE_LOG, "npm run verify:deploy\\n");\n' +
+      'if (readFileSync(process.env.HOOK_GATE_RESULT, "utf8").trim() !== "pass") process.exitCode = 1;\n',
+  );
+  git(root, "add", ".");
+  git(root, "-c", "core.hooksPath=/dev/null", "commit", "--quiet", "-m", "Proof baseline");
+  const remote = path.join(directory, "destination.git");
+  const branch = git(root, "symbolic-ref", "--short", "HEAD");
+  const clone = execute("git", ["clone", "--quiet", "--bare", root, remote]);
+  assert.equal(clone.status, 0, clone.stderr);
+  git(root, "remote", "add", "proof", remote);
+  const originalPreCommit = readFileSync(path.join(root, ".husky/pre-commit"), "utf8");
+  const prepare = execute("npm", ["run", "prepare"], { cwd: root, encoding: "utf8" });
+  assert.equal(prepare.status, 0, prepare.stderr);
+  assert.equal(git(root, "config", "core.hooksPath"), ".husky/_");
+  assert.equal(readFileSync(path.join(root, ".husky/pre-commit"), "utf8"), originalPreCommit);
+  assert.ok(existsSync(path.join(root, ".husky/_/pre-push")));
+  return {
+    directory,
+    root,
+    remote,
+    branch,
+    originalPreCommit,
+    gateLog: path.join(directory, "gate.log"),
+    gateResult: path.join(directory, "gate-result"),
+  };
 }
 
 function patch(root, files, extra = {}) {
@@ -116,7 +171,12 @@ function invoke(fixture, script, payload, options = {}) {
   return execute(process.execPath, [path.join(fixture.root, `.codex/hooks/${script}.mjs`)], {
     cwd: fixture.root,
     input: typeof payload === "string" ? payload : JSON.stringify(payload),
-    env: { ...process.env, HOOK_PROOF_LOG: fixture.log, CLAUDE_PROJECT_DIR: "/nonexistent/stale-checkout" },
+    env: {
+      ...process.env,
+      HOOK_PROOF_LOG: fixture.log,
+      HOOK_NATIVE_TEST_MARKER: fixture.marker,
+      CLAUDE_PROJECT_DIR: "/nonexistent/stale-checkout",
+    },
     ...options,
   });
 }
@@ -147,6 +207,11 @@ test("per-edit: checks only named files, reports lint on stderr, and runs direct
   const fixture = repository(t);
   put(fixture.root, "src/check.ts", "export const value = 1; // LINT_ERROR\n");
   put(fixture.root, "src/other.ts", "// LINT_ERROR\n");
+  put(
+    fixture.root,
+    "scripts/unrelated.test.mjs",
+    'import test from "node:test";\nimport assert from "node:assert/strict";\ntest("unrelated behavior", () => assert.equal(1, 2));\n',
+  );
   blocked(invoke(fixture, "check-edits", patch(fixture.root, ["src/check.ts"])), /src\/check\.ts[\s\S]*no-unused-vars/);
   assert.deepEqual(logEntries(fixture)[0].args, ["--quiet", "--no-warn-ignored", "--", "src/check.ts"]);
   put(fixture.root, "src/check.ts", "export const value = 2;\n");
@@ -239,39 +304,45 @@ test("stop: shell-written tracked and untracked lint errors are caught; retry gu
   assert.equal(logEntries(fixture).length, previous);
 });
 
-test("stop: sweeps all native tests, including an unrelated failing assertion", (t) => {
+test("stop: documentation-only and deleted-only changes launch no tools", (t) => {
   const fixture = repository(t);
-  put(fixture.root, "src/other.ts", "export const other = 3;\n");
-  put(
-    fixture.root,
-    "scripts/unrelated.test.mjs",
-    'import test from "node:test";\nimport assert from "node:assert/strict";\ntest("unrelated behavior", () => assert.equal(1, 2));\n',
-  );
-  blocked(invoke(fixture, "check-turn", { cwd: fixture.root }), /Native tests[\s\S]*unrelated behavior/);
-});
-
-test("stop: type errors reach stderr and clean changes return valid JSON", (t) => {
-  const fixture = repository(t);
-  put(fixture.root, "src/check.ts", "export const value = 1; // TYPE_ERROR\n");
-  blocked(
-    invoke(fixture, "check-turn", { cwd: path.join(fixture.root, "src") }),
-    /Astro typecheck[\s\S]*src\/check\.ts[\s\S]*TS2322/,
-  );
-  put(fixture.root, "src/check.ts", "export const value = 1; // clean changed file\n");
+  put(fixture.root, "README.md", "Documentation changed.\n");
   clean(invoke(fixture, "check-turn", { cwd: fixture.root }), true);
+  assert.deepEqual(logEntries(fixture), []);
+  rmSync(path.join(fixture.root, "README.md"));
+  rmSync(path.join(fixture.root, "src/other.ts"));
+  clean(invoke(fixture, "check-turn", { cwd: fixture.root }), true);
+  assert.deepEqual(logEntries(fixture), []);
 });
 
-test("stop: missing typechecker, missing tests and failed sync do not silently pass", (t) => {
+test("stop: lint-clean code skips Astro and native tests even when their fixtures would fail", (t) => {
+  const fixture = repository(t);
+  rmSync(path.join(fixture.root, "node_modules/.bin/astro"));
+  put(fixture.root, "src/other.ts", "export const other = 3;\n");
+  clean(invoke(fixture, "check-turn", { cwd: fixture.root }), true);
+  assert.deepEqual(
+    logEntries(fixture).map(({ tool }) => tool),
+    ["eslint"],
+  );
+  assert.equal(existsSync(fixture.marker), false);
+  rmSync(path.join(fixture.root, "scripts"), { recursive: true });
+  put(fixture.root, "src/check.ts", "export const value = 2;\n");
+  clean(invoke(fixture, "check-turn", { cwd: fixture.root }), true);
+  assert.deepEqual(
+    logEntries(fixture).map(({ tool }) => tool),
+    ["eslint", "eslint"],
+  );
+});
+
+test("stop: missing linter and unavailable Git fail visibly", (t) => {
   const fixture = repository(t);
   put(fixture.root, "src/other.ts", "export const other = 3;\n");
-  rmSync(path.join(fixture.root, "node_modules/.bin/astro"));
-  blocked(invoke(fixture, "check-turn", { cwd: fixture.root }), /Missing local astro[\s\S]*could not run/);
-  installFakeTools(fixture.root);
-  put(fixture.root, "SYNC_ERROR", "1\n");
-  blocked(invoke(fixture, "check-turn", { cwd: fixture.root }), /sync prerequisite failed/);
-  rmSync(path.join(fixture.root, "SYNC_ERROR"));
-  rmSync(path.join(fixture.root, "scripts"), { recursive: true });
-  blocked(invoke(fixture, "check-turn", { cwd: fixture.root }), /No native test files found/);
+  rmSync(path.join(fixture.root, "node_modules/.bin/eslint"));
+  blocked(invoke(fixture, "check-turn", { cwd: fixture.root }), /Missing local eslint/);
+  blocked(
+    invoke(fixture, "check-turn", { cwd: fixture.root }, { env: { ...process.env, PATH: "" } }),
+    /Git is unavailable/,
+  );
 });
 
 test("checkout: stale project-dir variables cannot redirect the checks", (t) => {
@@ -336,8 +407,54 @@ test("config: missing script and Node runtime fail on the model-visible channel"
   );
 });
 
+test("pre-push: prepare installs Husky in checkouts and a failed full gate blocks refs", (t) => {
+  const fixture = pushRepository(t);
+  const linked = path.join(fixture.directory, "linked-worktree");
+  git(fixture.root, "worktree", "add", "--quiet", "--detach", linked, "HEAD");
+  if (!existsSync(path.join(linked, "node_modules")))
+    symlinkSync(path.join(project, "node_modules"), path.join(linked, "node_modules"), "dir");
+  const linkedPreCommit = readFileSync(path.join(linked, ".husky/pre-commit"), "utf8");
+  const linkedPrepare = execute("npm", ["run", "prepare"], { cwd: linked, encoding: "utf8" });
+  assert.equal(linkedPrepare.status, 0, linkedPrepare.stderr);
+  assert.equal(git(linked, "config", "core.hooksPath"), ".husky/_");
+  assert.ok(existsSync(path.join(linked, ".husky/_/pre-push")));
+  assert.equal(readFileSync(path.join(linked, ".husky/pre-commit"), "utf8"), linkedPreCommit);
+
+  put(fixture.root, "src/next.txt", "next revision\n");
+  git(fixture.root, "add", "src/next.txt");
+  const commit = execute("git", ["-c", "core.hooksPath=/dev/null", "commit", "--quiet", "-m", "Push candidate"], {
+    cwd: fixture.root,
+    encoding: "utf8",
+  });
+  assert.equal(commit.status, 0, commit.stderr);
+  const destinationRef = `refs/heads/${fixture.branch}`;
+  const pushRef = `HEAD:${destinationRef}`;
+  const before = git(fixture.remote, "rev-parse", destinationRef);
+  writeFileSync(fixture.gateResult, "fail\n");
+  const rejected = execute("git", ["push", "proof", pushRef], {
+    cwd: fixture.root,
+    encoding: "utf8",
+    env: { ...process.env, HOOK_GATE_LOG: fixture.gateLog, HOOK_GATE_RESULT: fixture.gateResult },
+  });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr + rejected.stdout, /verify:deploy|failed/i);
+  assert.equal(git(fixture.remote, "rev-parse", destinationRef), before);
+  assert.equal(readFileSync(fixture.gateLog, "utf8"), "npm run verify:deploy\n");
+
+  writeFileSync(fixture.gateResult, "pass\n");
+  const accepted = execute("git", ["push", "proof", pushRef], {
+    cwd: fixture.root,
+    encoding: "utf8",
+    env: { ...process.env, HOOK_GATE_LOG: fixture.gateLog, HOOK_GATE_RESULT: fixture.gateResult },
+  });
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.equal(git(fixture.remote, "rev-parse", destinationRef), git(fixture.root, "rev-parse", "HEAD"));
+  assert.equal(readFileSync(fixture.gateLog, "utf8"), "npm run verify:deploy\nnpm run verify:deploy\n");
+  assert.equal(readFileSync(path.join(fixture.root, ".husky/pre-commit"), "utf8"), fixture.originalPreCommit);
+});
+
 test(
-  "real tools: deliberate lint and type errors fail, then clean fixtures pass",
+  "real tools: deliberate lint errors fail, then repairs pass through both hooks",
   { skip: process.env.PRINTPLAN_HOOKS_REAL_TOOLS !== "1", timeout: 120000 },
   (t) => {
     const directory = mkdtempSync(path.join(os.tmpdir(), "printplan-hooks-real-"));
@@ -358,12 +475,12 @@ test(
     );
     put(root, "scripts/hook-proof.mjs", "export const hookProof = 1;\n");
     clean(invoke(fixture, "check-edits", patch(root, ["scripts/hook-proof.mjs"]), { timeout: 30000 }));
-    put(root, "src/lib/hook-proof.ts", "export const hookProof: string = 123;\n");
+    put(root, "scripts/stop-hook-proof.mjs", "const unusedStopHookProof = 1;\n");
     blocked(
       invoke(fixture, "check-turn", { cwd: root }, { timeout: 60000 }),
-      /hook-proof\.ts[\s\S]*(?:2322|assignable)/,
+      /stop-hook-proof\.mjs[\s\S]*no-unused-vars/,
     );
-    put(root, "src/lib/hook-proof.ts", 'export const hookProof = "verified";\n');
+    put(root, "scripts/stop-hook-proof.mjs", "export const stopHookProof = 1;\n");
     clean(invoke(fixture, "check-turn", { cwd: root }, { timeout: 60000 }), true);
   },
 );
