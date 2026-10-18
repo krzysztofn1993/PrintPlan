@@ -61,6 +61,9 @@ function printRow(overrides = {}) {
     reservation_id: RESERVATION_ID,
     reservation_spool_id: SPOOL_ID,
     reserved_grams: 88,
+    settlement_id: null,
+    settled_at: null,
+    actual_grams: null,
     ...overrides,
   };
 }
@@ -157,6 +160,26 @@ test("shared DTO mappers retain real stock totals and strict nullable reservatio
     toPrintDto(printRow({ reservation_id: null, reservation_spool_id: null, reserved_grams: null })).reservation,
     null,
   );
+  const completed = toPrintDto(
+    printRow({
+      reservation_id: null,
+      reservation_spool_id: null,
+      reserved_grams: null,
+      settlement_id: REQUEST_ID,
+      settled_at: "2026-10-17T10:00:00.000Z",
+      actual_grams: 0,
+    }),
+  );
+  assert.deepEqual(completed.settlement, {
+    id: REQUEST_ID,
+    settledAt: "2026-10-17T10:00:00.000Z",
+    actualGrams: 0,
+  });
+  assert.throws(
+    () => toPrintDto(printRow({ settlement_id: REQUEST_ID, settled_at: "2026-10-17T10:00:00.000Z", actual_grams: 10 })),
+    /cannot have an active reservation/,
+  );
+  assert.throws(() => toPrintDto(printRow({ actual_grams: 0 })), /incomplete settlement state/);
   assert.throws(() => toPrintDto(printRow({ reservation_spool_id: null })), /incomplete reservation state/);
 });
 
@@ -275,6 +298,7 @@ test("reservation responses are private and business failures keep precise statu
     "insufficient_material",
     "idempotency_conflict",
     "reservation_request_completed",
+    "print_settled",
   ]) {
     const conflict = mapReservationFailure({ reason: code });
     assert.equal(conflict.status, 409);

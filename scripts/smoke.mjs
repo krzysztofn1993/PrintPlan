@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { runPrintSmoke } from "./print-smoke.mjs";
 import { runReservationSmoke } from "./reservation-smoke.mjs";
+import { runSettlementSmoke } from "./settlement-smoke.mjs";
 import { runSpoolSmoke } from "./spool-smoke.mjs";
 import { readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
 
@@ -793,6 +794,18 @@ async function runSmoke() {
   await runReservationSmoke({
     config: localSupabase,
     appRequest,
+    accountA,
+    accountB,
+    activeJarA,
+    activeJarB,
+    requestSignal,
+    cleanupRequestSignal,
+  });
+
+  await runSettlementSmoke({
+    config: localSupabase,
+    appRequest,
+    CookieJar,
     accountA,
     accountB,
     activeJarA,
