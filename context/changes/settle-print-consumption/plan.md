@@ -332,8 +332,8 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Manual
 
-- [ ] 3.2 Keyboard use supports entering 0 g or positive whole grams, confirming once, reading result feedback and returning focus to an existing review control.
-- [ ] 3.3 Completed rows remain visible after refresh, show actual consumption and offer only review/delete; deleting one leaves consumed stock unchanged.
+- [x] 3.2 Keyboard use supports entering 0 g or positive whole grams, confirming once, reading result feedback and returning focus to an existing review control.
+- [x] 3.3 Completed rows remain visible after refresh, show actual consumption and offer only review/delete; deleting one leaves consumed stock unchanged.
 
 ### Phase 4: End-to-end recovery and release verification
 
