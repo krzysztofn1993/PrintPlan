@@ -1,0 +1,12 @@
+---
+change_id: settle-print-consumption
+title: Settle print consumption
+status: archived
+created: 2026-10-17
+updated: 2026-10-18
+archived_at: 2026-10-18T18:25:18Z
+---
+
+## Notes
+
+Research requested as `/10x-research s-07`. Roadmap S-07 maps to this change ID: [Settle actual consumption once](../../foundation/roadmap.md#s-07-settle-actual-consumption-once).

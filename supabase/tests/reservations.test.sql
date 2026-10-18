@@ -169,6 +169,27 @@ SELECT is(
   'unreserved print deletion returns an empty cancellation summary and null release fields'
 );
 
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','a released print can be reserved again before settlement');
+SELECT set_config('test.settlement_reservation', (SELECT reservation_id::text FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000001'), true);
+SELECT is((public.settle_print_consumption('50000000-0000-0000-0000-000000000009','40000000-0000-0000-0000-000000000001',7,current_setting('test.settlement_reservation')::uuid,0)->'settlement'->>'actualGrams'),'0','zero actual consumption settles through the reservation contract');
+SELECT throws_ok(
+  $$SELECT public.preview_print_reservation('40000000-0000-0000-0000-000000000001')$$,
+  'P0001','print_settled','a completed print cannot be previewed for another reservation'
+);
+SELECT throws_ok(
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000010','40000000-0000-0000-0000-000000000001',8,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  'P0001','print_settled','a new reservation is rejected for a completed print'
+);
+SELECT throws_ok(
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  'P0001','reservation_request_completed','terminal reserve replay precedence is preserved after settlement'
+);
+SELECT throws_ok(
+  $$SELECT public.update_print('40000000-0000-0000-0000-000000000001',8,'Completed edit','PLA','Black',80)$$,
+  'P0001','print_settled','a completed print cannot be edited'
+);
+SELECT is((public.release_print_material(current_setting('test.settlement_reservation')::uuid,'40000000-0000-0000-0000-000000000001')->>'disposition'),'already_released','exact release remains a no-op after settlement');
+
 RESET ROLE;
 SELECT * FROM finish();
 ROLLBACK;

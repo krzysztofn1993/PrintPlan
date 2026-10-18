@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { expect, test as base } from "@playwright/test";
 import type { APIResponse, BrowserContext, Response as BrowserResponse } from "@playwright/test";
+import type { SettlementReceipt } from "../../src/lib/settlement-dto";
 import { FIXTURE_LEDGER_FILE, readCredentials, type LocalTestAccount } from "./helpers/local-account";
 
 export interface SpoolRecord {
@@ -21,6 +22,19 @@ export interface PrintRecord {
   requiredGrams: number;
   version: number;
   reservation?: { id: string; spoolId: string; reservedGrams: number } | null;
+  settlement: { id: string; settledAt: string; actualGrams: number } | null;
+}
+
+export interface SettlementCommand {
+  requestId: string;
+  expectedVersion: number;
+  reservationId: string;
+  actualGrams: number;
+}
+
+export interface SettlementCommandResult {
+  settlement: SettlementReceipt;
+  replayed: boolean;
 }
 
 export interface ReservationPreviewRecord {
@@ -66,6 +80,8 @@ export interface RecoveryApi {
   previewReservation(printId: string): Promise<ReservationPreviewRecord>;
   reserveMaterial(print: PrintRecord, spoolId: string, selectionMode: "best_fit" | "manual"): Promise<string>;
   releaseMaterial(printId: string, reservationId: string): Promise<void>;
+  settlePrint(printId: string, command: SettlementCommand): Promise<SettlementCommandResult>;
+  readPrintSettlement(printId: string): Promise<SettlementReceipt | null>;
 }
 
 interface E2EFixtures {
@@ -301,6 +317,32 @@ export const test = base.extend<E2EFixtures>({
           }),
           200,
         );
+      },
+
+      async settlePrint(printId, command) {
+        const payload = await readJson<SettlementCommandResult>(
+          await context.request.post(endpoint(`/api/prints/${printId}/settlement`), {
+            form: {
+              requestId: command.requestId,
+              expectedVersion: String(command.expectedVersion),
+              reservationId: command.reservationId,
+              actualGrams: String(command.actualGrams),
+            },
+            headers: { Origin: new URL(baseURL).origin },
+          }),
+          200,
+        );
+        expect(payload.settlement.printId).toBe(printId);
+        expect(payload.settlement.requestId).toBe(command.requestId);
+        return payload;
+      },
+
+      async readPrintSettlement(printId) {
+        const payload = await readJson<{ settlement: SettlementReceipt | null }>(
+          await context.request.get(endpoint(`/api/prints/${printId}/settlement`)),
+          200,
+        );
+        return payload.settlement;
       },
     };
 

@@ -18,7 +18,7 @@ export async function openSpools(page: Page): Promise<void> {
 
 export async function openPrints(page: Page): Promise<void> {
   await page.goto("/dashboard/prints");
-  await page.getByRole("heading", { name: "Planned prints", level: 1 }).waitFor();
+  await page.getByRole("heading", { name: "Prints", level: 1 }).waitFor();
 }
 
 export async function openSpoolCreate(page: Page): Promise<void> {

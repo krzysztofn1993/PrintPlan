@@ -3,7 +3,7 @@ project: PrintPlan
 version: 3
 status: draft
 created: 2026-10-09
-updated: 2026-10-16
+updated: 2026-10-18
 prd_version: 3
 main_goal: speed
 top_blocker: decisions
@@ -51,7 +51,7 @@ The sequencing goal is `speed`, confirmed by the author. The author has resolved
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | proposed  |
 | S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | proposed  |
 | S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | proposed  |
-| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | proposed  |
+| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done |
 
 ## Streams
 
@@ -191,7 +191,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Retries and concurrent stock changes must preserve a single settlement; consumption above recorded stock sets the estimate to 0 g, cancels other reservations, and explains that the estimate was exceeded.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -241,3 +241,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 - **S-02: user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.** — Archived 2026-10-14 → `context/archive/2026-10-12-personal-planned-prints/`. Lesson: —.
 
 - **S-03: user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.** — Archived 2026-10-16 → `context/archive/2026-10-16-reserve-and-release-material/`. Lesson: —.
+
+- **S-07: user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock.** — Archived 2026-10-18 → `context/archive/2026-10-17-settle-print-consumption/`. Lesson: —.
