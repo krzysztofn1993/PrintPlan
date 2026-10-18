@@ -332,19 +332,19 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Manual
 
-- [x] 3.2 Keyboard use supports entering 0 g or positive whole grams, confirming once, reading result feedback and returning focus to an existing review control.
-- [x] 3.3 Completed rows remain visible after refresh, show actual consumption and offer only review/delete; deleting one leaves consumed stock unchanged.
+- [x] 3.2 Keyboard use supports entering 0 g or positive whole grams, confirming once, reading result feedback and returning focus to an existing review control. — d2eddd9
+- [x] 3.3 Completed rows remain visible after refresh, show actual consumption and offer only review/delete; deleting one leaves consumed stock unchanged. — d2eddd9
 
 ### Phase 4: End-to-end recovery and release verification
 
 #### Automated
 
-- [ ] 4.1 The complete native gate passes with settlement contracts wired in: `npm run verify:deploy`.
-- [ ] 4.2 SQL behavior, observed-lock concurrency and populated upgrades pass: `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
-- [ ] 4.3 Chromium settlement and existing recovery suites pass with persisted-state assertions: `npm run test:e2e`.
-- [ ] 4.4 Authenticated settlement and existing smoke scenarios pass against a separate built preview with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
+- [x] 4.1 The complete native gate passes with settlement contracts wired in: `npm run verify:deploy`.
+- [x] 4.2 SQL behavior, observed-lock concurrency and populated upgrades pass: `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
+- [x] 4.3 Chromium settlement and existing recovery suites pass with persisted-state assertions: `npm run test:e2e`.
+- [x] 4.4 Authenticated settlement and existing smoke scenarios pass against a separate built preview with local Supabase/Mailpit: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
 
 #### Manual
 
-- [ ] 4.5 In current Chrome and Firefox and on a phone, the form, completed rows, cancellation feedback and stock review remain readable and usable without clipped controls.
-- [ ] 4.6 The author confirms ordinary, 0 g and exceeded-estimate settlement, result review after refresh/login, and completed deletion without a stock refund.
+- [x] 4.5 In current Chrome and Firefox and on a phone, the form, completed rows, cancellation feedback and stock review remain readable and usable without clipped controls.
+- [x] 4.6 The author confirms ordinary, 0 g and exceeded-estimate settlement, result review after refresh/login, and completed deletion without a stock refund.

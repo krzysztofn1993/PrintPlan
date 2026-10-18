@@ -50,7 +50,7 @@ jobs:
             echo "::error::Local Supabase failed to start. Its output is withheld because it can contain generated credentials."
             exit 1
           fi
-      - name: Run database contract tests
+      - name: Run database and settlement contract tests
         run: supabase test db
       - name: Run reservation concurrency contracts
         run: npm run test:reservations:concurrency
@@ -88,7 +88,7 @@ jobs:
           cp .env .dev.vars
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run browser recovery suite
+      - name: Run browser mutation and settlement recovery suites
         run: npm run test:e2e
         env:
           E2E_PORT: 4321
@@ -104,7 +104,7 @@ jobs:
           done
           echo "::error::Production preview did not become ready within the bounded wait."
           exit 1
-      - name: Run smoke test against production preview
+      - name: Run authenticated smoke scenarios against production preview
         run: BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke
       - if: always()
         run: supabase stop --no-backup

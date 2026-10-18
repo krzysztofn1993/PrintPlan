@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-PrintPlan manages personal filament stock and planned prints, with reservations still planned; the app uses Astro SSR, React, Tailwind, Supabase, and Cloudflare Workers. Start with `npm run dev`; verify changes with `npm run lint` and `npm run build`.
+PrintPlan manages personal filament stock, planned and completed prints, reservations, and one-time consumption settlement; the app uses Astro SSR, React, Tailwind, Supabase, and Cloudflare Workers. Start with `npm run dev`; verify changes with `npm run lint` and `npm run build`.
 
 ## Project language
 
@@ -28,7 +28,7 @@ For domain distillation, read @.agents/skills/10x-domain-distillation/SKILL.md. 
 
 Use the Node version from @.nvmrc and install dependencies with `npm ci`. Scripts live in @package.json.
 
-Run `npm run verify:deploy` for the complete native gate and `npm run smoke` against `npm run preview` with local Supabase and Mailpit configured; `BASE_URL` defaults to `http://localhost:4321`. See @package.json for gate commands, @.github/workflows/ci.yml for CI jobs, and @scripts/smoke.mjs for smoke coverage. No browser test runner is configured.
+Run `npm run verify:deploy` for the native, lint, type, and build gate. Run `npm run test:e2e` for the Chromium recovery suite against its built preview, with local Supabase configured. Run `npm run smoke` against `npm run preview` with local Supabase and Mailpit configured; `BASE_URL` defaults to `http://localhost:4321`. See @package.json for gate commands, @.github/workflows/ci.yml for CI jobs, and @scripts/smoke.mjs for smoke coverage, including settlement acceptance.
 
 ## Structure and conventions
 
@@ -38,7 +38,7 @@ Use `@/` imports (@tsconfig.json) and `cn()` from @src/lib/utils.ts for merged c
 
 Dashboard views use the design contract in [src/styles/global.css](src/styles/global.css), [src/layouts/DashboardShell.astro](src/layouts/DashboardShell.astro) and [src/components/ui/](src/components/ui/). Check those components before creating another presentation component. Keep literal colours and arbitrary sizing out of dashboard views. During dashboard presentation refactors, preserve the existing DTO bindings for `recordedGrams`, `reservedGrams`, `availableGrams`, and `requiredGrams`. Keep collection state, handlers and API mutations in the owning collection under `src/components/spools/` or `src/components/prints/`. See the retained [Carbon Terminal review evidence](context/archive/2026-10-12-carbon-terminal-spools/verification.md) and [screenshots](context/archive/2026-10-12-carbon-terminal-spools/reviews/phase-3/).
 
-Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool and planned-print tables are implemented, while reservation logic is still planned. Change artifacts belong in `context/changes/<change-id>/`.
+Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool, print, reservation, and settlement flows are implemented. Change artifacts belong in `context/changes/<change-id>/`.
 
 ## Configuration
 
