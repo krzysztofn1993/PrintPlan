@@ -28,21 +28,24 @@ if (authUnavailable || !supabase) {
     pageError =
       status === 503
         ? "Prints are temporarily unavailable. Please try again."
-        : "We couldn't load your planned prints. Please try again.";
+        : "We couldn't load your prints. Please try again.";
   }
 }
 ---
 
-<DashboardShell title="Planned prints" heading="Planned prints">
-  <p slot="eyebrow">Print requirements</p>
+<DashboardShell title="Prints" heading="Prints">
+  <p slot="eyebrow">Planned and completed prints</p>
   <p slot="description">
-    Keep each print's material, colour, and required grams. Preview the default 10% safety margin before reserving a
-    matching spool; releasing a reservation returns those grams to availability without consuming recorded stock.
+    Keep planned prints and completed prints together. Required grams are an estimate; reserved grams are held for a
+    planned print and are not consumed. When a print is complete, enter actual grams to release its exact reservation
+    and deduct that amount from recorded stock. Settlement may cancel newer reservations on the same spool when the
+    remaining stock cannot cover them. Completed prints stay here for review and can be deleted without refunding
+    consumed stock.
   </p>
 
   {pageError ? (
     <section role="alert" aria-labelledby="prints-error-heading" class="carbon-page-error">
-      <h2 id="prints-error-heading">Planned prints could not be loaded</h2>
+      <h2 id="prints-error-heading">Prints could not be loaded</h2>
       <p>{pageError}</p>
       <a href="/dashboard/prints" class="carbon-feedback-link">
         Try again
