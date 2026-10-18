@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "dev:reset": "node scripts/reset-local-dev.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "worker:dev": "npm run build && wrangler dev",
