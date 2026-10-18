@@ -66,7 +66,7 @@ The verdicts reflect completed triage: F1 and F2 are FIXED; F3 was withdrawn as 
 
 - Reviewed checkout: `d5cce2b`; comparison: `f9be5d3..d5cce2b` (41 changed files, 6,014 additions and 145 deletions).
 - The plan filename has no date. Scope was resolved from the feature commit sequence beginning at `0dcc343`, whose parent is `f9be5d3`, through the current feature epilogue; ancillary commits in that interval were included.
-- Canonical Progress: 16/16 checkboxes complete, phases 1–4. The previous change status was `implemented`, updated 2026-10-18.
+- Canonical Progress: 15/15 checkboxes complete, phases 1–4. The previous change status was `implemented`, updated 2026-10-18.
 - Two independent reviews covered plan drift and safety/quality/pattern compliance. No actionable authorization, double-deduction, destructive migration or substantive architecture/pattern violation was found.
 - Expected implementation groups match: atomic owner-serialized SQL and durable evidence; additive populated upgrade; completion projections; strict form/receipt/API boundaries; direct receipt success without projection reads; frozen exact-command recovery; completed-row controls; HTTP/browser/native/CI wiring. F1 and F2 qualify that assessment.
 - Button focus styling fits Phase 3's allowance for genuinely missing shared UI semantics. The helper heading update supports Phase 4's affected browser helpers. Neither is an extra finding.
