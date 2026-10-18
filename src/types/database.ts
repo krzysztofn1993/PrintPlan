@@ -12,6 +12,9 @@ export type Database = {
           material: string;
           name: string | null;
           required_grams: number;
+          settlement_id: string | null;
+          settled_at: string | null;
+          actual_grams: number | null;
           updated_at: string;
           user_id: string;
           version: number;
@@ -24,6 +27,9 @@ export type Database = {
           material: string;
           name?: string | null;
           required_grams: number;
+          settlement_id?: string | null;
+          settled_at?: string | null;
+          actual_grams?: number | null;
           updated_at?: string;
           user_id: string;
           version?: number;
@@ -36,6 +42,9 @@ export type Database = {
           material?: string;
           name?: string | null;
           required_grams?: number;
+          settlement_id?: string | null;
+          settled_at?: string | null;
+          actual_grams?: number | null;
           updated_at?: string;
           user_id?: string;
           version?: number;
@@ -89,6 +98,9 @@ export type Database = {
           reservation_id: string | null;
           reservation_spool_id: string | null;
           reserved_grams: number | null;
+          settlement_id: string | null;
+          settled_at: string | null;
+          actual_grams: number | null;
           updated_at: string;
           user_id: string;
           version: number;
@@ -131,6 +143,17 @@ export type Database = {
           p_request_id: string;
           p_selection_mode: string;
           p_spool_id: string;
+        };
+        Returns: Json;
+      };
+      read_print_settlement: { Args: { p_print_id: string }; Returns: Json };
+      settle_print_consumption: {
+        Args: {
+          p_actual_grams: number;
+          p_expected_version: number;
+          p_print_id: string;
+          p_request_id: string;
+          p_reservation_id: string;
         };
         Returns: Json;
       };

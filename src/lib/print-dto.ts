@@ -1,5 +1,6 @@
-import type { PrintDto } from "@/lib/prints";
-import { MAX_REQUIRED_GRAMS, isValidPrintId } from "@/lib/print-validation";
+import type { PrintDto } from "./prints.ts";
+import { readPrintSettlementDto } from "./settlement-dto.ts";
+import { MAX_REQUIRED_GRAMS, isValidPrintId } from "./print-validation.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -7,7 +8,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function readPrintDto(value: unknown): PrintDto | undefined {
   if (!isRecord(value)) return undefined;
-  const { id, name, material, colour, requiredGrams, version, createdAt, updatedAt, reservation } = value;
+  const { id, name, material, colour, requiredGrams, version, createdAt, updatedAt, reservation, settlement } = value;
   if (
     typeof id !== "string" ||
     !isValidPrintId(id) ||
@@ -23,12 +24,27 @@ export function readPrintDto(value: unknown): PrintDto | undefined {
     version < 1 ||
     version > MAX_REQUIRED_GRAMS ||
     typeof createdAt !== "string" ||
-    typeof updatedAt !== "string"
+    typeof updatedAt !== "string" ||
+    !Object.hasOwn(value, "settlement")
   )
     return undefined;
 
+  const parsedSettlement = readPrintSettlementDto(settlement);
+  if (parsedSettlement === undefined || (parsedSettlement !== null && reservation !== null)) return undefined;
+
   if (reservation === null)
-    return { id, name, material, colour, requiredGrams, version, createdAt, updatedAt, reservation: null };
+    return {
+      id,
+      name,
+      material,
+      colour,
+      requiredGrams,
+      version,
+      createdAt,
+      updatedAt,
+      reservation: null,
+      settlement: parsedSettlement,
+    };
   if (
     !isRecord(reservation) ||
     typeof reservation.id !== "string" ||
@@ -51,5 +67,6 @@ export function readPrintDto(value: unknown): PrintDto | undefined {
     createdAt,
     updatedAt,
     reservation: { id: reservation.id, spoolId: reservation.spoolId, reservedGrams: reservation.reservedGrams },
+    settlement: parsedSettlement,
   };
 }

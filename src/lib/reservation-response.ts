@@ -42,6 +42,7 @@ export function mapReservationFailure(
       status: 409,
       message: "This request was already completed. Refresh the current print and stock state.",
     },
+    print_settled: { status: 409, message: "Completed prints cannot be reserved or edited." },
   };
   const result = messages[failure.reason];
   if (result) return createReservationErrorResponse(failure.reason, result.status, result.message);
