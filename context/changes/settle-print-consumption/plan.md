@@ -328,7 +328,7 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Automated
 
-- [x] 3.1 The settlement UI integrates with strict DTOs and the existing native/type/build gates: `npm run verify:deploy`.
+- [x] 3.1 The settlement UI integrates with strict DTOs and the existing native/type/build gates: `npm run verify:deploy` — a2d7737
 
 #### Manual
 
