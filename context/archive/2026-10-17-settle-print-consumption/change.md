@@ -1,10 +1,10 @@
 ---
 change_id: settle-print-consumption
 title: Settle print consumption
-status: impl_reviewed
+status: archived
 created: 2026-10-17
 updated: 2026-10-18
-archived_at: null
+archived_at: 2026-10-18T18:25:18Z
 ---
 
 ## Notes
