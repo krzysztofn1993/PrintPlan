@@ -1,4 +1,5 @@
-// Authenticated HTTP acceptance for persisted reservation behavior.
+// Authenticated HTTP acceptance for persisted reservation behavior. The separate safety-margin smoke runs after
+// this default-margin scenario has cleaned up its own fixtures.
 
 import { randomUUID } from "node:crypto";
 import {

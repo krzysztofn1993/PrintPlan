@@ -50,6 +50,7 @@ interface FixtureLedger {
   accountId: string;
   spools: string[];
   prints: string[];
+  settingsRestore?: { marginPercent: number };
 }
 
 export interface SpoolInput {
@@ -78,6 +79,9 @@ export interface RecoveryApi {
   updatePrint(id: string, expectedVersion: number, input: PrintInput): Promise<PrintRecord>;
   deletePrint(id: string): Promise<void>;
   previewReservation(printId: string): Promise<ReservationPreviewRecord>;
+  getAccountSettings(): Promise<{ marginPercent: number; version: number }>;
+  prepareSettingsMutation(): Promise<void>;
+  saveAccountSettings(marginPercent: number): Promise<{ marginPercent: number; version: number }>;
   reserveMaterial(print: PrintRecord, spoolId: string, selectionMode: "best_fit" | "manual"): Promise<string>;
   releaseMaterial(printId: string, reservationId: string): Promise<void>;
   settlePrint(printId: string, command: SettlementCommand): Promise<SettlementCommandResult>;
@@ -113,6 +117,10 @@ async function readJson<T>(response: APIResponse, status: number): Promise<T> {
   return (await response.json()) as T;
 }
 
+function asError(error: unknown, message: string): Error {
+  return error instanceof Error ? error : new Error(message, { cause: error });
+}
+
 async function authenticateFreshContext(
   context: BrowserContext,
   baseURL: string,
@@ -143,8 +151,68 @@ export const test = base.extend<E2EFixtures>({
   recoveryApi: async ({ context, page, baseURL }, provide) => {
     if (!baseURL) throw new Error("The E2E base URL is missing.");
     const account = await readCredentials();
-    let ledger = await readLedger(account.userId);
+    const ledger = await readLedger(account.userId);
     const endpoint = (path: string) => `${baseURL}${path}`;
+
+    const getAccountSettings = async () => {
+      const payload = await readJson<{ settings: { marginPercent: number; version: number } }>(
+        await context.request.get(endpoint("/api/account/settings")),
+        200,
+      );
+      expect(Number.isInteger(payload.settings.marginPercent)).toBe(true);
+      expect(Number.isInteger(payload.settings.version)).toBe(true);
+      return payload.settings;
+    };
+
+    const prepareSettingsMutation = async () => {
+      if (!ledger.settingsRestore) {
+        const original = await getAccountSettings();
+        ledger.settingsRestore = { marginPercent: original.marginPercent };
+        await writeLedger(ledger);
+      }
+    };
+
+    const saveAccountSettings = async (marginPercent: number) => {
+      await prepareSettingsMutation();
+      const current = await getAccountSettings();
+      const payload = await readJson<{ settings: { marginPercent: number; version: number } }>(
+        await context.request.post(endpoint("/api/account/settings"), {
+          form: { marginPercent: String(marginPercent), expectedVersion: String(current.version) },
+          headers: { Origin: new URL(baseURL).origin },
+        }),
+        200,
+      );
+      expect(payload.settings).toMatchObject({ marginPercent, version: current.version + 1 });
+      return payload.settings;
+    };
+
+    const restoreMarkedSettings = async () => {
+      if (!ledger.settingsRestore) return;
+      const originalMarginPercent = ledger.settingsRestore.marginPercent;
+      let current = await getAccountSettings();
+      if (current.marginPercent !== originalMarginPercent) {
+        await readJson<{ settings: { marginPercent: number; version: number } }>(
+          await context.request.post(endpoint("/api/account/settings"), {
+            form: {
+              marginPercent: String(originalMarginPercent),
+              expectedVersion: String(current.version),
+            },
+            headers: { Origin: new URL(baseURL).origin },
+          }),
+          200,
+        );
+        current = await getAccountSettings();
+      }
+      expect(current.marginPercent).toBe(originalMarginPercent);
+      delete ledger.settingsRestore;
+      await writeLedger(ledger);
+    };
+
+    await restoreMarkedSettings();
+    await context.route("**/api/account/settings", async (route) => {
+      if (route.request().method() === "POST") await prepareSettingsMutation();
+      await route.continue();
+    });
 
     const listSpools = async (): Promise<SpoolRecord[]> => {
       const payload = await readJson<{ spools: SpoolRecord[] }>(
@@ -293,6 +361,10 @@ export const test = base.extend<E2EFixtures>({
         );
       },
 
+      getAccountSettings,
+      prepareSettingsMutation,
+      saveAccountSettings,
+
       async reserveMaterial(print, spoolId, selectionMode) {
         const preview = await api.previewReservation(print.id);
         const payload = await readJson<{ reservationId: string }>(
@@ -348,9 +420,15 @@ export const test = base.extend<E2EFixtures>({
       },
     };
 
+    let testFailure: Error | undefined;
     try {
       await provide(api);
-    } finally {
+    } catch (error) {
+      testFailure = asError(error, "The browser test failed.");
+    }
+
+    const cleanupErrors: Error[] = [];
+    try {
       await Promise.all(browserRecordTracking);
       for (const id of ledger.spools) {
         const exists = (await listSpools()).some((spool) => spool.id === id);
@@ -364,8 +442,24 @@ export const test = base.extend<E2EFixtures>({
       const [spools, prints] = await Promise.all([listSpools(), listPrints()]);
       expect(spools.some((spool) => ledger.spools.includes(spool.id))).toBe(false);
       expect(prints.some((print) => ledger.prints.includes(print.id))).toBe(false);
-      ledger = { accountId: account.userId, spools: [], prints: [] };
+      ledger.spools = [];
+      ledger.prints = [];
       await writeLedger(ledger);
+    } catch (error) {
+      cleanupErrors.push(asError(error, "Product fixture cleanup failed."));
+    }
+    try {
+      await restoreMarkedSettings();
+    } catch (error) {
+      cleanupErrors.push(asError(error, "Settings fixture cleanup failed."));
+    }
+    if (testFailure && cleanupErrors.length > 0) {
+      throw new AggregateError([testFailure, ...cleanupErrors], "Browser test and fixture cleanup failed.");
+    }
+    if (testFailure) throw testFailure;
+    if (cleanupErrors.length === 1) throw cleanupErrors[0];
+    if (cleanupErrors.length > 1) {
+      throw new AggregateError(cleanupErrors, "Browser fixture product and settings cleanup both failed.");
     }
   },
 });

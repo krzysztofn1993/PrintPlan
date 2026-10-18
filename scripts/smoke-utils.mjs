@@ -100,6 +100,48 @@ export async function readLocalSupabaseConfig() {
   return { url: url.origin, key: keys[0] };
 }
 
+export async function readLocalSupabaseAuthSiteOrigin() {
+  let config;
+  try {
+    config = await readFile("supabase/config.toml", "utf8");
+  } catch (error) {
+    throw new Error("Could not read local Supabase Auth configuration.", { cause: error });
+  }
+
+  let inAuthSection = false;
+  let siteUrlValue;
+  for (const line of config.split(/\r?\n/)) {
+    const section = line.match(/^\s*\[([^\]]+)\]\s*(?:#.*)?$/);
+    if (section) {
+      inAuthSection = section[1] === "auth";
+      continue;
+    }
+    if (!inAuthSection) continue;
+    const setting = line.match(/^\s*site_url\s*=\s*(["'])(.*?)\1\s*(?:#.*)?$/);
+    if (setting) {
+      siteUrlValue = setting[2];
+      break;
+    }
+  }
+
+  ensure(typeof siteUrlValue === "string", "Local Supabase Auth config must define auth.site_url.");
+  let siteUrl;
+  try {
+    siteUrl = new URL(siteUrlValue);
+  } catch {
+    throw new Error("Local Supabase auth.site_url is not a valid URL.");
+  }
+  ensure(
+    siteUrl.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(siteUrl.hostname),
+    "Local Supabase auth.site_url must use a local HTTP origin.",
+  );
+  ensure(
+    !siteUrl.username && !siteUrl.password && siteUrl.pathname === "/" && !siteUrl.search && !siteUrl.hash,
+    "Local Supabase auth.site_url must be an origin without credentials, path, query, or fragment.",
+  );
+  return siteUrl.origin;
+}
+
 export function assertPrivateHeaders(result, expectedType, subject = "Application") {
   const directives = new Set(
     (result.headers.get("cache-control") ?? "")

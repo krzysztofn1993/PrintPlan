@@ -52,7 +52,7 @@ for (const lateResponse of ["success", "network failure", "already reserved"] as
       await previewReady.promise;
       const row = printRow(page, second.id);
       await row.getByRole("button", { name: "Reserve material" }).click();
-      await expect(row.getByText(/Reserve 110 g/)).toBeVisible();
+      await expect(row.getByText(/estimates 110 g/)).toBeVisible();
 
       releasePreview.resolve();
       await previewDelivered.promise;
@@ -67,7 +67,7 @@ for (const lateResponse of ["success", "network failure", "already reserved"] as
           }),
       );
 
-      await expect(row.getByText(/Reserve 110 g/)).toBeVisible();
+      await expect(row.getByText(/estimates 110 g/)).toBeVisible();
       await expect(row.getByRole("alert")).toHaveCount(0);
       await row.getByRole("button", { name: "Confirm reservation" }).click();
       await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
@@ -169,7 +169,7 @@ test("best-fit reservation and release preserve recorded spool stock", async ({ 
   await openPrints(page);
   const row = printRow(page, print.id);
   await row.getByRole("button", { name: "Reserve material" }).click();
-  await expect(row.getByText(/Reserve 88 g/)).toBeVisible();
+  await expect(row.getByText(/estimates 88 g/)).toBeVisible();
   await expect(row.getByText(/Choices include only spools with matching material and colour/)).toBeVisible();
   await expect(row.getByRole("radio")).toHaveCount(1);
   await row.getByRole("button", { name: "Confirm reservation" }).click();
@@ -215,7 +215,9 @@ test("a changed best fit needs a new confirmation, manual choice works, and spoo
   await row.getByRole("button", { name: "Reserve material" }).click();
   await recoveryApi.updateSpool(second.id, { material: "PETG", colour, recordedGrams: 100 });
   await row.getByRole("button", { name: "Confirm reservation" }).click();
-  await expect(row.getByRole("alert")).toContainText("suggested best fit changed");
+  await expect(row.getByRole("alert")).toContainText(
+    "The available selection changed. Review this fresh preview and confirm again.",
+  );
   await expect(row.getByRole("radio")).toHaveCount(2);
 
   await row.locator(`input[type="radio"][value="${first.id}"]`).check();
@@ -514,4 +516,56 @@ test("reservation selection, confirmation, and release are reachable with the ke
   await expect(release).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(row.getByRole("button", { name: "Reserve material" })).toBeFocused();
+});
+
+test("saving a lower margin leaves an existing 88 g reservation unchanged", async ({ page, context, recoveryApi }) => {
+  const currentSettings = await recoveryApi.getAccountSettings();
+  if (currentSettings.marginPercent !== 10) await recoveryApi.saveAccountSettings(10);
+  const spool = await recoveryApi.createSpool({
+    material: "PETG",
+    colour: recoveryApi.label("reservation-margin-preserved"),
+    recordedGrams: 160,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("reservation-margin-preserved-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  const settingsPage = await context.newPage();
+
+  try {
+    await openPrints(page);
+    const row = printRow(page, print.id);
+    await row.getByRole("button", { name: "Reserve material" }).click();
+    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    await row.getByRole("button", { name: "Confirm reservation" }).click();
+    await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
+    await row.getByRole("button", { name: "Manage reservation" }).click();
+    await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+    await expect(row.getByText(/88 g reserved from/)).toBeVisible();
+
+    await settingsPage.goto("/dashboard/settings");
+    await settingsPage.getByRole("heading", { name: "Settings", level: 1 }).waitFor();
+    await settingsPage.locator('astro-island[component-export="AccountSafetyMarginForm"]:not([ssr])').waitFor();
+    const settingsPanel = settingsPage.locator('section[aria-labelledby="account-safety-margin-heading"]');
+    await settingsPage.getByLabel("New safety margin (%)").fill("5");
+    await settingsPanel.getByRole("button", { name: "Save safety margin" }).click();
+    await expect(settingsPanel.getByRole("status")).toContainText("Safety margin saved at 5%");
+    expect((await recoveryApi.getAccountSettings()).marginPercent).toBe(5);
+
+    await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+    await expect(row.getByText(/88 g reserved from/)).toBeVisible();
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+      spoolId: spool.id,
+      reservedGrams: 88,
+    });
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      recordedGrams: 160,
+      reservedGrams: 88,
+      availableGrams: 72,
+    });
+  } finally {
+    await settingsPage.close();
+  }
 });
