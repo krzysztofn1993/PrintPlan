@@ -101,7 +101,7 @@ Establish the once-per-print database contract and prove correctness against exi
 
 #### 1. Additive settlement migration
 
-**File**: `supabase/migrations/20261017000000_settle_print_consumption.sql` (new)
+**File**: `supabase/migrations/20261018000000_settle_print_consumption.sql` (new)
 
 **Intent**: Add terminal state and durable feedback without rewriting historical migrations or breaking existing reservation workflows. Perform settlement as one owner-serialized operation and protect settled prints through every supported mutation entry point.
 
