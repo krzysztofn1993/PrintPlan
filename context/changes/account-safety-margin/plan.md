@@ -326,31 +326,31 @@ Rollback must preserve saved preferences, request identity and reservation snaps
 
 #### Automated
 
-- [x] 1.1 Database contracts pass against the S-04 schema: `npx supabase test db`. — abf0bf1
-- [x] 1.2 Observed-lock concurrency scenarios pass, including save/reserve in both orders and competing settings versions: `npm run test:reservations:concurrency`. — abf0bf1
-- [x] 1.3 Fresh and populated upgrades preserve committed product rows, reservation snapshots and legacy replay: `npm run test:migrations`. — abf0bf1
+- [x] 1.1 Database contracts pass against the S-04 schema: `npx supabase test db`. — 8ebd1e5
+- [x] 1.2 Observed-lock concurrency scenarios pass, including save/reserve in both orders and competing settings versions: `npm run test:reservations:concurrency`. — 8ebd1e5
+- [x] 1.3 Fresh and populated upgrades preserve committed product rows, reservation snapshots and legacy replay: `npm run test:migrations`. — 8ebd1e5
 
 ### Phase 2: Settings API and reservation contracts
 
 #### Automated
 
-- [x] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`. — 9c6fec4
-- [x] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`. — 9c6fec4
-- [x] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`. — 9c6fec4
+- [x] 2.1 Settings validation, DTO, service and response contracts pass: `npm run test:settings`. — ec6e342
+- [x] 2.2 Updated reservation validation, witness forwarding, replay and conflict mappings pass: `npm run test:reservations`. — ec6e342
+- [x] 2.3 The native deployment gate includes settings coverage and passes: `npm run verify:deploy`. — ec6e342
 
 ### Phase 3: Settings editor and reservation recovery
 
 #### Automated
 
-- [x] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`. — 1bf9a73
+- [x] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`. — db58f2e
 
 ### Phase 4: Browser recovery and complete acceptance
 
 #### Automated
 
-- [x] 4.1 The browser suite passes with restored account settings and no regressions in existing recovery scenarios: `npm run test:e2e`.
-- [x] 4.2 Production-preview smoke proves account isolation, fresh-login persistence and the 88 g / 84 g acceptance flow: `npm run smoke`.
-- [x] 4.3 Final native, database, concurrency and populated-upgrade gates pass: `npm run verify:deploy`, `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
+- [x] 4.1 The browser suite passes with restored account settings and no regressions in existing recovery scenarios: `npm run test:e2e`. — d715228
+- [x] 4.2 Production-preview smoke proves account isolation, fresh-login persistence and the 88 g / 84 g acceptance flow: `npm run smoke`. — d715228
+- [x] 4.3 Final native, database, concurrency and populated-upgrade gates pass: `npm run verify:deploy`, `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`. — d715228
 
 #### Manual
 
