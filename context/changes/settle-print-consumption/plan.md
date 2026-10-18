@@ -320,15 +320,15 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Automated
 
-- [x] 2.1 Settlement input, DTO, service and response contracts pass: `npm run test:settlements`.
-- [x] 2.2 Existing print and reservation contracts pass with completion-aware fixtures and terminal conflict mapping: `npm run test:prints` and `npm run test:reservations`.
-- [x] 2.3 Native contracts, lint, type checks and build pass with settlement contracts included: `npm run verify:deploy`.
+- [x] 2.1 Settlement input, DTO, service and response contracts pass: `npm run test:settlements`. — 0a6abc7
+- [x] 2.2 Existing print and reservation contracts pass with completion-aware fixtures and terminal conflict mapping: `npm run test:prints` and `npm run test:reservations`. — 0a6abc7
+- [x] 2.3 Native contracts, lint, type checks and build pass with settlement contracts included: `npm run verify:deploy`. — 0a6abc7
 
 ### Phase 3: Settlement form and completed rows
 
 #### Automated
 
-- [ ] 3.1 The settlement UI integrates with strict DTOs and the existing native/type/build gates: `npm run verify:deploy`.
+- [x] 3.1 The settlement UI integrates with strict DTOs and the existing native/type/build gates: `npm run verify:deploy`.
 
 #### Manual
 
