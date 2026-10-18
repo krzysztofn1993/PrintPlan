@@ -312,17 +312,17 @@ After any real settlement, preserve the ledger and completion evidence during ap
 
 #### Automated
 
-- [x] 1.1 Database settlement and existing contracts pass with restricted-role ownership, arithmetic, replay and lifecycle assertions: `npx supabase test db`.
-- [x] 1.2 Observed-lock concurrency cases pass with one deduction, valid surviving reservations and independent-owner progress: `npm run test:reservations:concurrency`.
-- [x] 1.3 The populated upgrade preserves committed product, reservation and request evidence and supports settlement afterward: `npm run test:migrations`.
+- [x] 1.1 Database settlement and existing contracts pass with restricted-role ownership, arithmetic, replay and lifecycle assertions: `npx supabase test db`. — 74b878c
+- [x] 1.2 Observed-lock concurrency cases pass with one deduction, valid surviving reservations and independent-owner progress: `npm run test:reservations:concurrency`. — 74b878c
+- [x] 1.3 The populated upgrade preserves committed product, reservation and request evidence and supports settlement afterward: `npm run test:migrations`. — 74b878c
 
 ### Phase 2: API and durable result contracts
 
 #### Automated
 
-- [ ] 2.1 Settlement input, DTO, service and response contracts pass: `npm run test:settlements`.
-- [ ] 2.2 Existing print and reservation contracts pass with completion-aware fixtures and terminal conflict mapping: `npm run test:prints` and `npm run test:reservations`.
-- [ ] 2.3 Native contracts, lint, type checks and build pass with settlement contracts included: `npm run verify:deploy`.
+- [x] 2.1 Settlement input, DTO, service and response contracts pass: `npm run test:settlements`.
+- [x] 2.2 Existing print and reservation contracts pass with completion-aware fixtures and terminal conflict mapping: `npm run test:prints` and `npm run test:reservations`.
+- [x] 2.3 Native contracts, lint, type checks and build pass with settlement contracts included: `npm run verify:deploy`.
 
 ### Phase 3: Settlement form and completed rows
 

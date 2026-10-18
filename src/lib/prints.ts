@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/types/database";
 import type { PrintWriteInput } from "@/lib/print-validation";
+import { readPrintSettlementDto, type PrintSettlementDto } from "./settlement-dto.ts";
 import { listSpools, type SpoolDto } from "./spools.ts";
 
 export const PRINT_QUERY_BATCH_SIZE = 1_000;
@@ -17,10 +18,13 @@ type PrintRow = Pick<
   | "reservation_id"
   | "reservation_spool_id"
   | "reserved_grams"
+  | "settlement_id"
+  | "settled_at"
+  | "actual_grams"
 >;
 type PrintClient = SupabaseClient<Database>;
 const PRINT_READ_COLUMNS =
-  "id, name, material, colour, required_grams, version, created_at, updated_at, reservation_id, reservation_spool_id, reserved_grams";
+  "id, name, material, colour, required_grams, version, created_at, updated_at, reservation_id, reservation_spool_id, reserved_grams, settlement_id, settled_at, actual_grams";
 
 export interface PrintDto {
   id: string;
@@ -32,6 +36,7 @@ export interface PrintDto {
   createdAt: string;
   updatedAt: string;
   reservation: null | { id: string; spoolId: string; reservedGrams: number };
+  settlement: null | PrintSettlementDto;
 }
 
 export interface PrintDatabaseFailure {
@@ -44,9 +49,10 @@ export type PrintMutationFailure =
   | PrintDatabaseFailure
   | { ok: false; reason: "not_found" }
   | { ok: false; reason: "conflict" }
+  | { ok: false; reason: "print_settled" }
   | { ok: false; reason: "reserved_print_edit_requires_cancellation" };
 export type PrintDatabaseResult<T> = { ok: true; value: T } | PrintDatabaseFailure;
-export type PrintBusinessConflict = "conflict" | "reserved_print_edit_requires_cancellation";
+export type PrintBusinessConflict = "conflict" | "print_settled" | "reserved_print_edit_requires_cancellation";
 export type PrintMutationResult<T> = { ok: true; value: T } | PrintMutationFailure;
 export type PrintDeleteResult<T> = PrintDatabaseResult<T> | { ok: false; reason: "not_found" };
 
@@ -64,6 +70,22 @@ export function toPrintDto(row: PrintRow): PrintDto {
   if (hasReservation && (!row.reservation_spool_id || row.reserved_grams === null)) {
     throw new Error("The planned print view returned incomplete reservation state.");
   }
+  const completionColumns = [row.settlement_id, row.settled_at, row.actual_grams];
+  const presentCompletionColumns = completionColumns.filter((value) => value !== null).length;
+  if (presentCompletionColumns !== 0 && presentCompletionColumns !== completionColumns.length) {
+    throw new Error("The planned print view returned incomplete settlement state.");
+  }
+  let settlement: PrintSettlementDto | null = null;
+  if (presentCompletionColumns === completionColumns.length) {
+    const parsed = readPrintSettlementDto({
+      id: row.settlement_id,
+      settledAt: row.settled_at,
+      actualGrams: row.actual_grams,
+    });
+    if (!parsed) throw new Error("The planned print view returned invalid settlement state.");
+    if (hasReservation) throw new Error("A completed print cannot have an active reservation.");
+    settlement = parsed;
+  }
   return {
     id: row.id,
     name: row.name,
@@ -77,6 +99,7 @@ export function toPrintDto(row: PrintRow): PrintDto {
       hasReservation && row.reservation_id && row.reservation_spool_id && row.reserved_grams !== null
         ? { id: row.reservation_id, spoolId: row.reservation_spool_id, reservedGrams: row.reserved_grams }
         : null,
+    settlement,
   };
 }
 
@@ -84,6 +107,7 @@ function rpcFailure(error: unknown, status?: number): PrintMutationFailure {
   const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
   if (message.includes("not_found")) return { ok: false, reason: "not_found" };
   if (message.includes("edit_conflict")) return { ok: false, reason: "conflict" };
+  if (message.includes("print_settled")) return { ok: false, reason: "print_settled" };
   if (message.includes("reserved_print_edit_requires_cancellation"))
     return { ok: false, reason: "reserved_print_edit_requires_cancellation" };
   return { ok: false, reason: "database_error", error, status };

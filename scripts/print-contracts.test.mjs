@@ -37,6 +37,7 @@ import {
   toPrintDto,
   updatePrint,
 } from "../src/lib/prints.ts";
+import { readPrintDto } from "../src/lib/print-dto.ts";
 
 const OWNER_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_OWNER_ID = "22222222-2222-4222-8222-222222222222";
@@ -79,6 +80,9 @@ function row(index, values = {}) {
     reservation_id: null,
     reservation_spool_id: null,
     reserved_grams: null,
+    settlement_id: null,
+    settled_at: null,
+    actual_grams: null,
     ...values,
   };
 }
@@ -123,7 +127,7 @@ function makePrintClient({ rows = [], mutationResponses = [], pageErrors = {} } 
           assert.equal(to - from + 1, PRINT_QUERY_BATCH_SIZE);
           assert.equal(
             state.selection,
-            "id, name, material, colour, required_grams, version, created_at, updated_at, reservation_id, reservation_spool_id, reserved_grams",
+            "id, name, material, colour, required_grams, version, created_at, updated_at, reservation_id, reservation_spool_id, reserved_grams, settlement_id, settled_at, actual_grams",
           );
           assert.deepEqual(state.filters, [{ field: "user_id", value: OWNER_ID }]);
           assert.deepEqual(state.orders, [
@@ -196,6 +200,48 @@ test("print forms normalize optional names, preserve Unicode, and enforce code-p
       "edit",
     ).fieldErrors.name.code,
     "too_long",
+  );
+});
+
+test("browser print DTO requires explicit completion state and rejects settled reservations", () => {
+  const planned = {
+    id: PRINT_ID,
+    name: null,
+    material: "PLA",
+    colour: "Blue",
+    requiredGrams: 125,
+    version: 2,
+    createdAt: "2026-10-10T10:00:00.000Z",
+    updatedAt: "2026-10-10T10:00:00.000Z",
+    reservation: null,
+    settlement: null,
+  };
+  assert.equal(readPrintDto(planned)?.settlement, null);
+  assert.equal(readPrintDto({ ...planned, settlement: undefined }), undefined);
+
+  const completed = {
+    ...planned,
+    settlement: {
+      id: "77777777-7777-4777-8777-777777777777",
+      settledAt: "2026-10-17T10:00:00.000Z",
+      actualGrams: 0,
+    },
+  };
+  assert.deepEqual(readPrintDto(completed)?.settlement, completed.settlement);
+  assert.equal(
+    readPrintDto({
+      ...completed,
+      reservation: {
+        id: "55555555-5555-4555-8555-555555555555",
+        spoolId: "44444444-4444-4444-8444-444444444444",
+        reservedGrams: 88,
+      },
+    }),
+    undefined,
+  );
+  assert.equal(
+    readPrintDto({ ...completed, settlement: { ...completed.settlement, actualGrams: MAX_REQUIRED_GRAMS + 1 } }),
+    undefined,
   );
 });
 
@@ -401,6 +447,7 @@ test("create returns the reservation-aware committed row through RPC and the sha
     createdAt: canonicalRow.created_at,
     updatedAt: canonicalRow.updated_at,
     reservation: null,
+    settlement: null,
   });
   assert.deepEqual(fixture.calls[0], {
     operation: "rpc",
@@ -452,6 +499,14 @@ test("database RPC distinguishes stale print version from missing print", async 
     mutationResponses: [{ data: null, error: { message: "not_found" }, status: 404 }],
   });
   assert.deepEqual(await updatePrint(missing.client, OWNER_ID, PRINT_ID, 1, input), { ok: false, reason: "not_found" });
+
+  const completed = makePrintClient({
+    mutationResponses: [{ data: null, error: { message: "print_settled" }, status: 409 }],
+  });
+  assert.deepEqual(await updatePrint(completed.client, OWNER_ID, PRINT_ID, 1, input), {
+    ok: false,
+    reason: "print_settled",
+  });
 });
 
 test("RPC update transport failures remain database errors", async () => {
@@ -769,6 +824,7 @@ test("print list reads all ordered bounded pages and hides owner and matching-ke
     "name",
     "requiredGrams",
     "reservation",
+    "settlement",
     "updatedAt",
     "version",
   ]);

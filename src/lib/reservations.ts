@@ -23,7 +23,8 @@ export type ReservationConflictCode =
   | "selection_stale"
   | "insufficient_material"
   | "idempotency_conflict"
-  | "reservation_request_completed";
+  | "reservation_request_completed"
+  | "print_settled";
 export type ReservationCommandResult<T> =
   | ReservationResult<T>
   | { ok: false; reason: ReservationConflictCode; current?: { print: PrintDto | null; spool: SpoolDto | null } };
@@ -42,6 +43,7 @@ function rpcError(error: unknown, status?: number): ReservationCommandFailure {
     "insufficient_material",
     "idempotency_conflict",
     "reservation_request_completed",
+    "print_settled",
   ];
   const code = codes.find((value) => message.includes(value));
   if (code) return { ok: false, reason: code };

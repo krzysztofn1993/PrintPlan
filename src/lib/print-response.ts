@@ -276,7 +276,7 @@ export function reportPrintFailure(failure: MappedPrintFailure, boundary: "api" 
             .slice(1, 13)
             .flatMap((frame) => {
               const match =
-                /[/\\]((?:print-response|print-validation|prints|reservation-response|reservations|PostgrestBuilder|fetchWithRetry|index|update|delete|reserve|cancel|middleware|entry|worker)\.(?:[cm]?[jt]s)):(\d+):(\d+)\)?$/.exec(
+                /[/\\]((?:print-response|print-validation|prints|reservation-response|reservations|settlement-response|settlement-validation|settlement-dto|settlements|settlement|PostgrestBuilder|fetchWithRetry|index|update|delete|reserve|cancel|middleware|entry|worker)\.(?:[cm]?[jt]s)):(\d+):(\d+)\)?$/.exec(
                   frame,
                 );
               return match ? [`${match[1]}:${match[2]}:${match[3]}`] : [];
