@@ -18,8 +18,7 @@ const environment = { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" };
 // A hook invoked by its proof suite must launch an independent test runner.
 // Inheriting this internal flag makes `node --test` skip files with exit 0.
 delete environment.NODE_TEST_CONTEXT;
-// A real-tool proof runs the normal fast suite inside its disposable checkout.
-// Do not recursively start another real-tool worktree from that child suite.
+// The opt-in real-tool hook proof must not recursively start another real-tool proof.
 delete environment.PRINTPLAN_HOOKS_REAL_TOOLS;
 const codeExtension = /\.(?:[cm]?js|jsx|ts|tsx|astro)$/;
 
