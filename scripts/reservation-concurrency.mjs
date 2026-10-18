@@ -544,6 +544,74 @@ async function main() {
       },
     });
 
+    await runRace("release then replacement then stale settlement", {
+      async prepare(f) {
+        f.originalReservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => release(f.originalReservationId, f.prints[0].id),
+      waiter: (f) => reserve(f, f.prints[0], f.replacementRequestId, 3),
+      async beforeWaiterCommit(f, waiterBackend, participants) {
+        const stale = mutation(
+          owner,
+          settle(f, f.prints[0], f.originalReservationId, f.settlementRequestId, 75, 2),
+          true,
+        );
+        participants.push(stale);
+        await waitForBlocked(stale, waiterBackend.pid);
+        return async () => {
+          expectedFailure(await stale.done, "P0001", "edit_conflict");
+        };
+      },
+      async verify(f, { final, holderState, waiterReceipt }) {
+        stock(holderState, 150, 0);
+        stock(final, 150, 88);
+        assert.equal(printState(final, f.prints[0].id).version, 4);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, waiterReceipt.reservationId);
+        assert.notEqual(waiterReceipt.reservationId, f.originalReservationId);
+        assert.equal(final.settlements.length, 0);
+        assert.equal(final.requests.length, 2);
+        assert.equal(
+          final.requests.find((request) => request.reservation_id === f.originalReservationId).state,
+          "released",
+        );
+        assert.equal(
+          final.requests.find((request) => request.reservation_id === waiterReceipt.reservationId).state,
+          "active",
+        );
+        const wrongIdentity = mutation(
+          owner,
+          settle(f, f.prints[0], f.originalReservationId, f.settlementRequestId, 75, 4),
+          true,
+        );
+        expectedFailure(await wrongIdentity.done, "P0001", "reservation_changed");
+        assert.deepEqual(await state(f), final, "A stale settlement must not consume or release its replacement.");
+      },
+    });
+
+    await runRace("settlement then release and replacement attempt", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, 2),
+      waiter: (f) =>
+        "DO $$ BEGIN PERFORM public.release_print_material(" +
+        quote(f.reservationId) +
+        "," +
+        quote(f.prints[0].id) +
+        "); END $$;\n" +
+        reserve(f, f.prints[0], f.replacementRequestId, 3),
+      error: ["P0001", "print_settled"],
+      verify(f, { final, holderState, holderReceipt }) {
+        stock(final, 75, 0);
+        assert.deepEqual(final, holderState, "A rejected replacement must preserve the completed settlement exactly.");
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+        assert.equal(final.settlements.length, 1);
+        assert.equal(final.settlements[0].receipt.id, holderReceipt.settlement.id);
+        assert.equal(final.requests.length, 1);
+        assert.equal(final.requests[0].state, "released");
+      },
+    });
+
     let independentSettlement;
     await runRace("same-key settlement replay with independent-owner progress", {
       async prepare(f) {
@@ -801,7 +869,7 @@ async function main() {
       },
     });
 
-    assert.equal(cases, 24);
+    assert.equal(cases, 26);
   } catch (error) {
     failure = error;
   }
@@ -836,7 +904,7 @@ async function main() {
     );
   }
   if (failure) throw failure;
-  console.log("PASS  all 24 interleavings verified; sessions and account fixtures cleaned up");
+  console.log("PASS  all " + cases + " interleavings verified; sessions and account fixtures cleaned up");
 }
 
 main().catch((error) => {

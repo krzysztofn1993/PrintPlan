@@ -648,7 +648,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     setSettlementPanelPrintId(print.id);
     settlementPanelPrintIdRef.current = print.id;
     focusTarget.current = `settlement-heading-${print.id}`;
-    if (print.settlement) {
+    if (print.settlement || settlementWorkflowsRef.current[print.id].receipt) {
       void checkSettlementStatus(print.id);
     } else if (print.reservation && !settlementWorkflowsRef.current[print.id].receipt) {
       void loadReservedSpool(print.id, print.reservation.spoolId);
@@ -672,7 +672,13 @@ export function PrintList({ initialPrints }: PrintListProps) {
     settlementPanelPrintIdRef.current = null;
     setSettlementPanelPrintId(null);
     const currentPrint = prints.find((print) => print.id === printId);
-    focusTarget.current = currentPrint?.settlement ? `review-settlement-${printId}` : "prints-list-heading";
+    const hasReviewControl =
+      !settlementGuardRef.current &&
+      !uncertaintyGuard &&
+      !refreshingRef.current &&
+      (Boolean(currentPrint?.settlement) ||
+        (!currentPrint && Boolean(settlementWorkflowsRef.current[printId].receipt)));
+    focusTarget.current = hasReviewControl ? `review-settlement-${printId}` : "prints-list-heading";
   }
 
   function openCreate() {
@@ -1152,6 +1158,17 @@ export function PrintList({ initialPrints }: PrintListProps) {
     }
 
     if (response.status === 200 && response.ok && isRecord(body) && body.id === print.id) {
+      if (print.settlement) {
+        const workflow = Object.hasOwn(settlementWorkflowsRef.current, print.id)
+          ? settlementWorkflowsRef.current[print.id]
+          : createSettlementWorkflow(print);
+        const next = {
+          ...settlementWorkflowsRef.current,
+          [print.id]: { ...workflow, print, printAvailable: false },
+        };
+        settlementWorkflowsRef.current = next;
+        setSettlementWorkflows(next);
+      }
       setPrints((previous) => previous.filter((item) => item.id !== print.id));
       setDeletePrintId(null);
       setDeleteError(null);
@@ -1203,10 +1220,11 @@ export function PrintList({ initialPrints }: PrintListProps) {
   }
 
   const blockingSettlement = Object.values(settlementWorkflows).find(settlementWorkflowIsBlocking);
-  const detachedSettlementWorkflow =
-    settlementPanelPrintId && !prints.some((print) => print.id === settlementPanelPrintId)
-      ? settlementWorkflows[settlementPanelPrintId]
-      : undefined;
+  const detachedSettlementWorkflows = Object.values(settlementWorkflows).filter(
+    (workflow) =>
+      !prints.some((print) => print.id === workflow.print.id) &&
+      (Boolean(workflow.receipt) || Boolean(workflow.print.settlement) || settlementPanelPrintId === workflow.print.id),
+  );
 
   function renderSettlementPanel(print: PrintDto, workflow: SettlementWorkflow) {
     return (
@@ -1654,17 +1672,46 @@ export function PrintList({ initialPrints }: PrintListProps) {
         </ul>
       )}
 
-      {detachedSettlementWorkflow && settlementPanelPrintId && (
-        <article className="carbon-collection-row">
+      {detachedSettlementWorkflows.map((workflow) => (
+        <article key={workflow.print.id} className="carbon-collection-row">
           <div className="carbon-row-main">
             <p className="carbon-label">Settlement recovery</p>
-            <h3 className="carbon-row-title text-lg font-semibold">
-              {describePrint(detachedSettlementWorkflow.print)}
-            </h3>
+            <h3 className="carbon-row-title text-lg font-semibold">{describePrint(workflow.print)}</h3>
+            {(workflow.receipt ?? workflow.print.settlement) && (
+              <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm">
+                This print was deleted. Its saved settlement result remains available while this page is open.
+              </p>
+            )}
           </div>
-          {renderSettlementPanel(detachedSettlementWorkflow.print, detachedSettlementWorkflow)}
+          {settlementPanelPrintId === workflow.print.id ? (
+            renderSettlementPanel(workflow.print, workflow)
+          ) : (
+            <div className="carbon-row-actions">
+              <Button
+                id={`review-settlement-${workflow.print.id}`}
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={
+                  mutationPending ||
+                  refreshing ||
+                  uncertaintyGuard ||
+                  settlementGuard ||
+                  settlementPanelPrintId !== null ||
+                  createOpen ||
+                  editingPrintId !== null ||
+                  deletePrintId !== null
+                }
+                onClick={() => {
+                  openSettlement(workflow.print);
+                }}
+              >
+                Review settlement
+              </Button>
+            </div>
+          )}
         </article>
-      )}
+      ))}
     </section>
   );
 }

@@ -21,3 +21,14 @@ Confirmed by the author on 2026-10-18:
 - In current Chrome and Firefox and on a phone, the settlement form, completed rows, cancellation feedback and stock review remain readable and usable without clipped controls.
 - Ordinary, 0 g and exceeded-estimate settlement work; results remain reviewable after refresh and a fresh login; deleting a completed print does not refund stock.
 - Keyboard input and submission work, settlement confirms once, result feedback is readable, and focus returns to the row's review control.
+
+## Implementation review follow-up — F2
+
+Verified locally on 2026-10-18 after completing the missing recovery and database cases:
+
+- `npm run verify:deploy` passed with native contracts, lint, type checks and build; Astro reported 0 errors, 0 warnings and the same 5 hints.
+- `npx supabase test db` passed all 376 assertions, including retained-key identity/version/reservation conflicts with unchanged complete fixture state, positive exact-fit cancellation and direct-RPC null/nonfinite/maximum numeric boundaries.
+- `npm run test:reservations:concurrency` passed all 26 observed-lock interleavings, including settlement against a replacement reservation and a replacement attempt after settlement. Fixture and database-session cleanup passed.
+- `E2E_PORT=4322 npm run test:e2e` passed all 32 Chromium tests (44.6s), including F1 deletion/review regressions and F2 null-result recovery. The existing development server on port 4321 remained running.
+
+The corrected F2 scenario separates a simulated failed acknowledgement from forwarding the captured original request. While that command remains queued, real receipt GETs return null to the browser twice, including after closing the panel and refreshing the list. The test checks that the draft remains frozen and collection changes remain blocked; then it forwards the original request using the browser context's authenticated API client, observes the real commit, and verifies that an identical retry returns the same receipt without another deduction. This models a proxy/acknowledgement fault; it does not claim to reproduce a hosted incident.
