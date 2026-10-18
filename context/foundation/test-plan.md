@@ -2,7 +2,7 @@
 
 > PrintPlan test coverage and rollout evidence. Update the strategy when product risks change.
 >
-> Last updated: 2026-10-15
+> Last updated: 2026-10-18
 
 ## 1. Strategy
 
@@ -10,17 +10,17 @@
 2. **User concerns are first-class evidence.** Data loss and cross-account access are the author's priorities, with the same weight as document and churn evidence.
 3. **Verify the scenario in the implementation.** The risk list guides investigation; inspect the current behavior and existing coverage before choosing a test boundary.
 
-Approved 2026-10-14 against master `778a01e`. Accounts, stock, planned prints and S-03 reservations are implemented; settlement remains planned ([roadmap](roadmap.md)). No incidents reported. Likelihood uses churn as a proxy, not a claim of defects.
+Approved 2026-10-14 against master `778a01e`. Accounts, stock, planned prints and S-03 reservations were implemented; settlement was initially deferred and added through the S-07 rollout ([roadmap](roadmap.md)). No incidents reported. Likelihood uses churn as a proxy, not a claim of defects.
 
 **Interview evidence (English paraphrases):**
 
-| Question                   | Answer                                                                       |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| Q1: Main worries           | Losing filament/print data; access from another user's account.              |
-| Q2: Prior incidents        | None.                                                                        |
-| Q3: Low-confidence changes | Too early to identify an area.                                               |
-| Q4: Other test gaps        | None beyond Q1.                                                              |
-| Q5: Exclusions             | Exact UI appearance, generated code, and settlement until its roadmap slice. |
+| Question                   | Answer                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| Q1: Main worries           | Losing filament/print data; access from another user's account.               |
+| Q2: Prior incidents        | None.                                                                         |
+| Q3: Low-confidence changes | Too early to identify an area.                                                |
+| Q4: Other test gaps        | None beyond Q1.                                                               |
+| Q5: Exclusions             | Exact UI appearance, generated code, and settlement before its roadmap slice. |
 
 **Hot-spot scope:** `src/`, `supabase/`, `scripts/`; 25 commits over 2026-09-14–2026-10-14. Exclude generated database types, fixtures, snapshots and locks; docs/archive/build output are outside scope. Directory counts are distinct commits; nested counts overlap.
 
@@ -80,19 +80,19 @@ App manifest ranges: Astro ^7.3.2, React ^19.2.6, Supabase SSR ^0.12.7/js ^2.99.
 
 - Docs: Context7 MCP not available in current session; CLI checked official [Node runner](https://nodejs.org/docs/latest-v24.x/api/test.json), [Supabase database testing](https://github.com/supabase/cli/blob/develop/apps/cli/docs/supabase/test/db.md), and [Playwright request interception](https://github.com/microsoft/playwright/blob/main/docs/src/api/class-page.md). Research checks installed-version compatibility; checked: 2026-10-14.
 - Search: Exa/web available; unused because official docs resolved through Context7; checked: 2026-10-14.
-- Runtime/browser: Browser/Playwright MCP not available in current session; candidate local runner for Phase 3 only; checked: 2026-10-14.
+- Runtime/browser: Browser MCP is not available; the repository's local Playwright Chromium runner is configured. Local and author verification status is recorded in the relevant change verification artifact.
 - Provider/platform: Repository-specific GitHub/Cloudflare/Supabase MCP not available in current session; local git/config evidence used; checked: 2026-10-14.
 
 ## 5. Quality Gates
 
 Existing gates come from [package scripts](../../package.json) and [CI](../../.github/workflows/ci.yml). New tests join the existing appropriate gate.
 
-| Gate                                  | Where                       | Required?                       | Catches                                                                      |
-| ------------------------------------- | --------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
-| `npm run verify:deploy`               | local + CI-equivalent steps | existing                        | Node contracts, lint, types, build; expanded in Phases 1–2 as needed         |
-| `supabase test db`                    | local + CI smoke job        | existing                        | Ownership, reservation invariants and database constraints; expanded in S-03 |
-| `npm run smoke` against built preview | local + CI                  | existing                        | Real authentication, reservation lifecycle and persistence through HTTP      |
-| Focused browser recovery suite        | local + CI                  | planned, required after Phase 3 | Hydrated form input retention, discard consent and uncertainty recovery      |
+| Gate                                  | Where                       | Required? | Catches                                                                      |
+| ------------------------------------- | --------------------------- | --------- | ---------------------------------------------------------------------------- |
+| `npm run verify:deploy`               | local + CI-equivalent steps | existing  | Node contracts, lint, types and build, including settlement contracts        |
+| `supabase test db`                    | local + CI smoke job        | existing  | Ownership, reservation and settlement invariants and database constraints    |
+| `npm run smoke` against built preview | local + CI                  | existing  | Authentication, reservation and settlement lifecycle and persisted HTTP data |
+| Focused browser recovery suite        | local + CI                  | required  | Hydrated form input retention, settlement recovery and reconciliation        |
 
 ## 6. Cookbook Patterns
 
@@ -104,7 +104,7 @@ Use both pgTAP and the built-preview smoke because they cover separate boundarie
 - `scripts/spool-smoke.mjs`, `scripts/print-smoke.mjs` and `scripts/reservation-smoke.mjs` run through `npm run smoke` against a production preview, local Supabase and Mailpit. Use the confirmed A/B accounts and separate cookie jars. Verify owner-scoped direct REST reads, deny anonymous requests, and assert authenticated direct table writes fail with `42501`; supported application RPC routes retain positive CRUD and reservation controls.
 - After a denied foreign or anonymous write, reread the complete victim record as its owner before making any permitted edit. Retain positive controls for both owners. Use returned IDs for guessed-ID attempts and verify the original owner cannot see, change or delete the foreign record.
 
-Keep service-role or administrator access out of protection assertions. The existing two-owner, guessed-ID, print version/concurrency and field-validation cases remain useful and should be extended rather than replaced. S-03 now covers reservation ownership; settlement remains outside this rollout.
+Keep service-role or administrator access out of protection assertions. The existing two-owner, guessed-ID, print version/concurrency and field-validation cases remain useful and should be extended rather than replaced. S-03 and S-07 cover reservation ownership and settlement lifecycle respectively.
 
 ### 6.2 Persistence and targeted mutation tests
 
@@ -166,16 +166,24 @@ Run `npm run test:e2e` for the focused Chromium suite in `tests/e2e/`. Playwrigh
 - **Commands and CI:** `npm run test:e2e` owns its build and preview; `E2E_PORT` defaults to 4321. CI installs Chromium and runs this suite in the local Supabase/Mailpit job before the existing smoke preview. `verify:deploy` remains independent of Supabase.
 - **Evidence and limits:** [Phase 3 verification](../changes/testing-browser-mutation-recovery/verification.md) must distinguish real local persistence, simulated acknowledgement failures, deliberate production breaks and unobserved remote CI. Remote CI is not claimed until a workflow run is inspected.
 
+#### Phase 4 — Settlement recovery and release verification
+
+- **Status:** implementation and local gates are recorded in [settlement verification](../changes/settle-print-consumption/verification.md); manual author checks and remote CI are reported separately.
+- **Canonical tests:** `scripts/settlement-contracts.test.mjs`, `supabase/tests/settlements.test.sql`, `scripts/reservation-concurrency.mjs`, `scripts/migration-persistence.mjs`, `scripts/settlement-smoke.mjs` and `tests/e2e/settlement-recovery.spec.ts`.
+- **Database and HTTP evidence:** settlement SQL runs with restricted database roles; concurrency and populated-upgrade commands observe committed state. HTTP smoke uses two confirmed accounts, checks anonymous/foreign denials, retries, fresh login, direct restricted REST reads, completed-print edit rejection and receipt retention after deletion. Generated fixtures are cleaned up.
+- **Browser recovery pattern:** Playwright routes hold or forward real settlement requests and can mask only the acknowledgement. Independent authenticated application reads verify the committed receipt, stock and completion state. A null receipt before the held POST reaches the server is not treated as rollback; exact replay uses the original command. Once a receipt is known, failed print/spool reconciliation retries reads without another settlement POST.
+- **Commands and CI:** run `npm run verify:deploy`, `npx supabase test db`, `npm run test:reservations:concurrency`, `npm run test:migrations`, `npm run test:e2e`, and `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` against a separate preview. CI's local Supabase job runs the same database, concurrency, migration, Chromium and authenticated smoke gates.
+- **Evidence and limits:** verification distinguishes actual local persistence from simulated response faults. Chromium is the automated browser; Firefox, phone layout, author acceptance and remote CI require separate evidence and must not be inferred from local automation.
+
 ## 7. What We Deliberately Don't Test
 
 - **Exact UI appearance/colours** — no visual snapshot/diff or AI vision budget. Behavioral browser tests remain in scope. Revisit if visual regressions become a priority. Source: interview Q5.
 - **Generated source code** — no implementation-mirroring tests for generated artifacts. Existing type checks remain. Revisit if custom generator behavior becomes a product risk. Source: interview Q5.
-- **Settlement** — no tests against the future actual-consumption workflow. Revisit when S-07 is implemented. Source: interview Q5.
 - **Previously skipped print refresh/write overlap F1** — retain the author's accepted decision; Phase 3 must not silently reopen it. Source: [archived review](../archive/2026-10-12-personal-planned-prints/reviews/impl-review.md), F1 triage.
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-10-16 after S-03 reservation implementation.
+- Strategy (§1–§5) last reviewed: 2026-10-18 after S-07 settlement implementation.
 - Stack versions last verified: 2026-10-14 against manifest/`.nvmrc`; installed versions not reverified.
 - AI-native tool references last verified: 2026-10-14; none selected.
 
