@@ -342,15 +342,15 @@ Rollback must preserve saved preferences, request identity and reservation snaps
 
 #### Automated
 
-- [x] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`.
+- [x] 3.1 The Settings page, editor and reservation changes pass native contracts, lint, Astro checks and build: `npm run verify:deploy`. — 1bf9a73
 
 ### Phase 4: Browser recovery and complete acceptance
 
 #### Automated
 
-- [ ] 4.1 The browser suite passes with restored account settings and no regressions in existing recovery scenarios: `npm run test:e2e`.
-- [ ] 4.2 Production-preview smoke proves account isolation, fresh-login persistence and the 88 g / 84 g acceptance flow: `npm run smoke`.
-- [ ] 4.3 Final native, database, concurrency and populated-upgrade gates pass: `npm run verify:deploy`, `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
+- [x] 4.1 The browser suite passes with restored account settings and no regressions in existing recovery scenarios: `npm run test:e2e`.
+- [x] 4.2 Production-preview smoke proves account isolation, fresh-login persistence and the 88 g / 84 g acceptance flow: `npm run smoke`.
+- [x] 4.3 Final native, database, concurrency and populated-upgrade gates pass: `npm run verify:deploy`, `npx supabase test db`, `npm run test:reservations:concurrency`, and `npm run test:migrations`.
 
 #### Manual
 
