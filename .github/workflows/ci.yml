@@ -16,6 +16,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm run test:hooks
       - run: npm run test:auth
       - run: npm run test:spools
       - run: npm run test:prints

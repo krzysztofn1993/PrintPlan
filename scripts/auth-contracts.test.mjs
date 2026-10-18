@@ -2,6 +2,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
+import { runWithControlledTime } from "./test-support/controlled-time.mjs";
 import {
   AuthApiError,
   AuthInvalidCredentialsError,
@@ -444,7 +445,10 @@ for (const boundary of ["lookup", "refresh"]) {
         t.mock.method(console, "warn", () => undefined);
         const fixture = makeAuthFixture({ [boundary]: failure, expired: boundary === "refresh" });
         const request = middlewareRequest(fixture);
-        const response = await request.run();
+        const response =
+          boundary === "refresh"
+            ? await runWithControlledTime(t, () => request.run(), { label: "Auth refresh" })
+            : await request.run();
         assert.equal(response.status, 503);
         assert.equal(response.headers.get("Location"), null);
         assert.equal(response.headers.get("Retry-After"), "30");
@@ -464,6 +468,12 @@ for (const boundary of ["lookup", "refresh"]) {
             path.startsWith(boundary === "refresh" ? "/auth/v1/token?grant_type=refresh_token" : "/auth/v1/user"),
           ),
         );
+        if (boundary === "refresh") {
+          assert.ok(
+            fixture.calls.filter((path) => path.startsWith("/auth/v1/token?grant_type=refresh_token")).length > 1,
+            "The installed SDK should retry the provider refresh before reporting the outage",
+          );
+        }
 
         const recovery = makeAuthFixture({ incomingCookies: request.context.locals.authCookies.getAll() });
         const nextRequest = middlewareRequest(recovery);
