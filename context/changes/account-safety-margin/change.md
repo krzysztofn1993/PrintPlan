@@ -1,9 +1,9 @@
 ---
 change_id: account-safety-margin
 title: Configure the account safety margin
-status: implementing
+status: implemented
 created: 2026-10-17
-updated: 2026-10-17
+updated: 2026-10-18
 archived_at: null
 ---
 
