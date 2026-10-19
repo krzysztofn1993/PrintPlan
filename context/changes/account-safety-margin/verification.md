@@ -53,9 +53,9 @@ The final repository-wide lint gate passed, including `scripts/account-settings-
 
 On 2026-10-18, the author confirmed that the Settings and reservation flows work on a phone and with keyboard navigation, and that the remaining manual acceptance behavior matches expectations: saving 5% leaves an existing reservation unchanged, while a new 80 g print reserves 84 g when eligible stock is available. The author also confirmed the previously described feedback and layout behavior.
 
-Progress rows 4.4 and 4.5 remain unchecked in accordance with the requested final manual checklist.
+Progress rows 4.4 and 4.5 were marked complete in commit `9b068ba`, recording the author's confirmation. The author reaffirmed this acceptance on 2026-10-19 during implementation-review triage.
 
-## Outstanding manual checks
+## Completed manual checks
 
-- [ ] 4.4 Settings and reservation flows are usable with keyboard navigation in current Chrome and Firefox and on a phone, with readable feedback and no horizontal overflow.
-- [ ] 4.5 The author verifies that saving 5% preserves an existing 88 g reservation and that a new 80 g reservation uses 84 g when enough eligible material is available.
+- [x] 4.4 Settings and reservation flows are usable with keyboard navigation in current Chrome and Firefox and on a phone, with readable feedback and no horizontal overflow. — `9b068ba`
+- [x] 4.5 The author verifies that saving 5% preserves an existing 88 g reservation and that a new 80 g reservation uses 84 g when enough eligible material is available. — `9b068ba`
