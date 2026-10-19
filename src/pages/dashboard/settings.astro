@@ -1,0 +1,52 @@
+---
+import { AccountSafetyMarginForm } from "@/components/account/AccountSafetyMarginForm";
+import DashboardShell from "@/layouts/DashboardShell.astro";
+import { applyAccountSettingsPrivateHeaders, mapAccountSettingsFailure } from "@/lib/account-settings-response";
+import { getAccountSettings, type AccountSettingsDto } from "@/lib/account-settings";
+
+const { authUnavailable, supabase, user } = Astro.locals;
+applyAccountSettingsPrivateHeaders(Astro.response.headers);
+
+let settings: AccountSettingsDto | undefined;
+let pageError: string | undefined;
+
+if (authUnavailable || !supabase) {
+  Astro.response.status = 503;
+  pageError = "Account settings are temporarily unavailable. Please try again.";
+} else if (!user) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", "/auth/signin");
+} else {
+  const result = await getAccountSettings(supabase);
+  if (result.ok) {
+    settings = result.value;
+  } else {
+    const failure = mapAccountSettingsFailure(result, "read", "page");
+    Astro.response.status = failure.status;
+    pageError =
+      failure.status === 503
+        ? "Account settings are temporarily unavailable. Please try again."
+        : "We couldn't load your account settings. Please try again.";
+  }
+}
+---
+
+<DashboardShell title="Settings" heading="Settings">
+  <p slot="eyebrow">Account preferences</p>
+  <p slot="description">
+    Choose the safety margin for new material reservations. Changing this setting does not alter grams already reserved
+    for planned prints.
+  </p>
+
+  {pageError ? (
+    <section role="alert" aria-labelledby="settings-error-heading" class="carbon-page-error">
+      <h2 id="settings-error-heading">Settings could not be loaded</h2>
+      <p>{pageError}</p>
+      <a href="/dashboard/settings" class="carbon-feedback-link">
+        Try again
+      </a>
+    </section>
+  ) : settings ? (
+    <AccountSafetyMarginForm client:load initialSettings={settings} />
+  ) : null}
+</DashboardShell>

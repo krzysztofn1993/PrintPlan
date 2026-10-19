@@ -22,6 +22,7 @@ jobs:
       - run: npm run test:prints
       - run: npm run test:reservations
       - run: npm run test:settlements
+      - run: npm run test:settings
       - run: npx astro sync
       - run: npm run lint
       - run: npx astro check

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json, Tables } from "@/types/database";
 import { listPrints, type PrintDto } from "./prints.ts";
+import { MAX_EXPECTED_RESERVATION_GRAMS } from "./reservation-validation.ts";
 import { listSpools, toSpoolDto, type SpoolDto } from "./spools.ts";
 
 type Client = SupabaseClient<Database>;
@@ -15,12 +16,17 @@ export interface ReservationPreview {
   eligibleSpools: SpoolDto[];
 }
 
+const MAX_RESERVATION_MARGIN_PERCENT = 100;
+const MAX_DATABASE_INTEGER = 2_147_483_647;
+
 export type ReservationResult<T> =
   { ok: true; value: T } | { ok: false; reason: "not_found" | "database_error"; error?: unknown; status?: number };
 export type ReservationConflictCode =
   | "already_reserved"
   | "edit_conflict"
   | "selection_stale"
+  | "reservation_amount_stale"
+  | "reservation_preview_required"
   | "insufficient_material"
   | "idempotency_conflict"
   | "reservation_request_completed"
@@ -40,6 +46,8 @@ function rpcError(error: unknown, status?: number): ReservationCommandFailure {
     "already_reserved",
     "edit_conflict",
     "selection_stale",
+    "reservation_amount_stale",
+    "reservation_preview_required",
     "insufficient_material",
     "idempotency_conflict",
     "reservation_request_completed",
@@ -76,9 +84,19 @@ export async function previewPrintReservation(
     if (
       !result ||
       typeof result.printId !== "string" ||
+      result.printId !== printId ||
       typeof result.expectedVersion !== "number" ||
+      !Number.isSafeInteger(result.expectedVersion) ||
+      result.expectedVersion < 1 ||
+      result.expectedVersion > MAX_DATABASE_INTEGER ||
       typeof result.marginPercent !== "number" ||
+      !Number.isInteger(result.marginPercent) ||
+      result.marginPercent < 0 ||
+      result.marginPercent > MAX_RESERVATION_MARGIN_PERCENT ||
       typeof result.reservationGrams !== "number" ||
+      !Number.isSafeInteger(result.reservationGrams) ||
+      result.reservationGrams < 1 ||
+      result.reservationGrams > MAX_EXPECTED_RESERVATION_GRAMS ||
       !(typeof result.suggestedSpoolId === "string" || result.suggestedSpoolId === null) ||
       !Array.isArray(result.eligibleSpools)
     ) {
@@ -136,6 +154,7 @@ export async function reservePrintMaterial(
     printId: string;
     requestId: string;
     expectedVersion: number;
+    expectedReservationGrams?: number;
     spoolId: string;
     selectionMode: "best_fit" | "manual";
   },
@@ -145,6 +164,7 @@ export async function reservePrintMaterial(
       p_request_id: input.requestId,
       p_print_id: input.printId,
       p_expected_version: input.expectedVersion,
+      p_expected_reservation_grams: input.expectedReservationGrams ?? null,
       p_spool_id: input.spoolId,
       p_selection_mode: input.selectionMode,
     });

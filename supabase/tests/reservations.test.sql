@@ -23,6 +23,16 @@ SELECT ok(NOT has_table_privilege('authenticated','public.spools','UPDATE'), 'au
 SELECT ok(NOT has_table_privilege('authenticated','public.spools','DELETE'), 'authenticated cannot directly delete spools');
 SELECT ok(NOT has_column_privilege('authenticated','public.prints','required_grams','UPDATE'), 'authenticated has no inherited print column write privilege');
 SELECT ok(NOT has_table_privilege('authenticated','public.print_reservations','INSERT'), 'authenticated cannot directly insert reservations');
+SELECT ok(to_regprocedure('public.reserve_print_material(uuid,uuid,integer,uuid,text)') IS NULL,
+  'the historical five-argument reservation implementation is removed');
+SELECT ok(to_regprocedure('public.reserve_print_material(uuid,uuid,integer,uuid,text,numeric)') IS NOT NULL,
+  'the six-argument reservation RPC is installed');
+SELECT ok(NOT has_function_privilege('anon',
+  'public.reserve_print_material(uuid,uuid,integer,uuid,text,numeric)','EXECUTE'),
+  'anonymous users cannot execute the reservation RPC');
+SELECT ok(has_function_privilege('authenticated',
+  'public.reserve_print_material(uuid,uuid,integer,uuid,text,numeric)','EXECUTE'),
+  'authenticated users can execute the reservation RPC');
 SELECT throws_ok(
   $$INSERT INTO public.spools (user_id,material,colour,recorded_grams) VALUES (auth.uid(),'PLA','Denied',1)$$,
   '42501', 'permission denied for table spools', 'direct spool writes are denied'
@@ -36,29 +46,33 @@ SELECT throws_ok(
 SELECT is((SELECT version FROM public.prints WHERE id='40000000-0000-0000-0000-000000000004'),2,'a rejected NULL-version edit does not advance the version');
 SELECT is((SELECT required_grams FROM public.prints WHERE id='40000000-0000-0000-0000-000000000004'),90::numeric,'a rejected NULL-version edit preserves the newer requirements');
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000005','40000000-0000-0000-0000-000000000004',NULL,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000005','40000000-0000-0000-0000-000000000004',NULL,'30000000-0000-0000-0000-000000000001','best_fit',99)$$,
   'P0001','edit_conflict','a NULL reservation version is rejected before writing'
 );
 SELECT is((SELECT reservation_id FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000004'),NULL::uuid,'a NULL-version reservation leaves the print unreserved');
 
 SELECT is((public.preview_print_reservation('40000000-0000-0000-0000-000000000001')->>'reservationGrams')::numeric,88::numeric,'80 grams previews as 88 with the default margin');
 SELECT is(public.preview_print_reservation('40000000-0000-0000-0000-000000000001')->>'suggestedSpoolId','30000000-0000-0000-0000-000000000001','preview selects the matching spool');
-SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','first reservation is created');
+SELECT throws_ok(
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000099','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  'P0001','reservation_preview_required','a fresh five-argument request cannot bypass preview confirmation'
+);
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001','best_fit',88)->>'disposition'),'active','first reservation is created');
 SELECT set_config('test.reservation_a',(SELECT reservation_id::text FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000001'),true);
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',NULL,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',NULL,'30000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','idempotency_conflict','replay cannot replace the original expected version with NULL'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001',NULL,1,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001',NULL,1,'30000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','idempotency_conflict','replay cannot replace the original print with NULL'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,NULL,'best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,NULL,'best_fit',88)$$,
   'P0001','idempotency_conflict','replay cannot replace the original spool with NULL'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001',NULL)$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001',NULL,88)$$,
   'P0001','idempotency_conflict','replay cannot replace the original selection mode with NULL'
 );
 SELECT is((SELECT reserved_grams FROM public.spool_inventory WHERE id='30000000-0000-0000-0000-000000000001'),88::numeric,'reservation total is 88 grams');
@@ -89,10 +103,10 @@ SELECT lives_ok(
   'recorded stock can be restored after a valid correction'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002',1,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002',1,'30000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','insufficient_material','a second print cannot overbook the spool'
 );
-SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001','best_fit')->>'replayed')::boolean,true,'same successful request is replayed without another write');
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',1,'30000000-0000-0000-0000-000000000001','best_fit',88)->>'replayed')::boolean,true,'same successful request is replayed without another write');
 SELECT throws_ok(
   $$SELECT public.release_print_material(current_setting('test.reservation_a')::uuid,'40000000-0000-0000-0000-000000000002')$$,
   'P0002','not_found','release cannot use another owned print as its parent'
@@ -114,17 +128,17 @@ SELECT is((SELECT version FROM public.prints WHERE id='40000000-0000-0000-0000-0
 SELECT is((public.release_print_material(current_setting('test.reservation_a')::uuid,'40000000-0000-0000-0000-000000000001')->>'disposition'),'released','release removes the exact reservation');
 SELECT is((public.release_print_material(current_setting('test.reservation_a')::uuid,'40000000-0000-0000-0000-000000000001')->>'disposition'),'already_released','repeated release succeeds with the same parent print');
 SELECT is((SELECT reserved_grams FROM public.spool_inventory WHERE id='30000000-0000-0000-0000-000000000001'),0::numeric,'released grams become available');
-SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000001',4,'30000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','a new request may reserve the released print again');
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000001',4,'30000000-0000-0000-0000-000000000001','best_fit',88)->>'disposition'),'active','a new request may reserve the released print again');
 SELECT is((public.release_print_material(current_setting('test.reservation_a')::uuid,'40000000-0000-0000-0000-000000000001')->>'disposition'),'already_released','a stale release does not target the replacement reservation');
 SELECT is((SELECT count(*)::integer FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000001' AND reservation_id IS NOT NULL),1,'stale release leaves the replacement reservation active');
 SELECT is((public.release_print_material((SELECT reservation_id FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000001'),'40000000-0000-0000-0000-000000000001')->>'disposition'),'released','replacement reservation is released by its own identity');
 SELECT public.create_spool('PLA','Black',150);
 SELECT set_config('test.manual_spool',(SELECT id::text FROM public.spools WHERE user_id=auth.uid() AND id<>'30000000-0000-0000-0000-000000000001' ORDER BY id LIMIT 1),true);
-SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000002',1,(SELECT id FROM public.spools WHERE user_id=auth.uid() AND id<>'30000000-0000-0000-0000-000000000001' ORDER BY id LIMIT 1),'manual')->>'disposition'),'active','eligible manual spool choice is accepted');
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000002',1,(SELECT id FROM public.spools WHERE user_id=auth.uid() AND id<>'30000000-0000-0000-0000-000000000001' ORDER BY id LIMIT 1),'manual',88)->>'disposition'),'active','eligible manual spool choice is accepted');
 SELECT is((public.delete_spool((SELECT reservation_spool_id FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000002'))->'cancelledReservations'->0->>'releasedGrams')::numeric,88::numeric,'spool deletion reports the released reservation');
 SELECT is((SELECT reservation_id FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000002'),NULL::uuid,'spool deletion leaves its print unreserved');
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000002',1,current_setting('test.manual_spool')::uuid,'manual')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000002',1,current_setting('test.manual_spool')::uuid,'manual',88)$$,
   'P0001','reservation_request_completed','a request released by deletion cannot resurrect a reservation'
 );
 SELECT throws_ok(
@@ -132,7 +146,7 @@ SELECT throws_ok(
   'P0002','not_found','another owner cannot preview a guessed print ID'
 );
 
-SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000006','40000000-0000-0000-0000-000000000004',2,'30000000-0000-0000-0000-000000000001','best_fit');
+SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000006','40000000-0000-0000-0000-000000000004',2,'30000000-0000-0000-0000-000000000001','best_fit',99);
 SELECT set_config('test.deleted_print_reservation',(SELECT reservation_id::text FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000004'),true);
 SELECT set_config('test.print_delete_receipt',public.delete_print('40000000-0000-0000-0000-000000000004')::text,true);
 SELECT is(
@@ -169,7 +183,7 @@ SELECT is(
   'unreserved print deletion returns an empty cancellation summary and null release fields'
 );
 
-SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','a released print can be reserved again before settlement');
+SELECT is((public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit',88)->>'disposition'),'active','a released print can be reserved again before settlement');
 SELECT set_config('test.settlement_reservation', (SELECT reservation_id::text FROM public.planned_prints WHERE id='40000000-0000-0000-0000-000000000001'), true);
 SELECT is((public.settle_print_consumption('50000000-0000-0000-0000-000000000009','40000000-0000-0000-0000-000000000001',7,current_setting('test.settlement_reservation')::uuid,0)->'settlement'->>'actualGrams'),'0','zero actual consumption settles through the reservation contract');
 SELECT throws_ok(
@@ -177,11 +191,11 @@ SELECT throws_ok(
   'P0001','print_settled','a completed print cannot be previewed for another reservation'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000010','40000000-0000-0000-0000-000000000001',8,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000010','40000000-0000-0000-0000-000000000001',8,'30000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','print_settled','a new reservation is rejected for a completed print'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('50000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001',6,'30000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','reservation_request_completed','terminal reserve replay precedence is preserved after settlement'
 );
 SELECT throws_ok(

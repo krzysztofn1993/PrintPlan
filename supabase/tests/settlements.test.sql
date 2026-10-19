@@ -58,10 +58,10 @@ SELECT ok(has_function_privilege('authenticated','public.settle_print_consumptio
 
 SET LOCAL ROLE authenticated;
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000001',1,'31000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','the completed print starts with an active reservation');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000002','41000000-0000-0000-0000-000000000002',1,'31000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','the oldest competing print is reserved');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000003','41000000-0000-0000-0000-000000000003',1,'31000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','the middle competing print is reserved');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000004','41000000-0000-0000-0000-000000000004',1,'31000000-0000-0000-0000-000000000001','best_fit')->>'disposition'),'active','the newest competing print is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000001',1,'31000000-0000-0000-0000-000000000001','best_fit',88)->>'disposition'),'active','the completed print starts with an active reservation');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000002','41000000-0000-0000-0000-000000000002',1,'31000000-0000-0000-0000-000000000001','best_fit',66)->>'disposition'),'active','the oldest competing print is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000003','41000000-0000-0000-0000-000000000003',1,'31000000-0000-0000-0000-000000000001','best_fit',55)->>'disposition'),'active','the middle competing print is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000004','41000000-0000-0000-0000-000000000004',1,'31000000-0000-0000-0000-000000000001','best_fit',44)->>'disposition'),'active','the newest competing print is reserved');
 SELECT set_config('test.reservation_1',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000001'),true);
 SELECT set_config('test.reservation_2',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000002'),true);
 SELECT set_config('test.reservation_3',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000003'),true);
@@ -194,11 +194,11 @@ SELECT throws_ok(
 );
 SELECT is((public.release_print_material(current_setting('test.reservation_1')::uuid,'41000000-0000-0000-0000-000000000001')->>'disposition'),'already_released','exact release remains idempotent after settlement');
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('51000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000001',1,'31000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('51000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000001',1,'31000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','reservation_request_completed','terminal reserve replay keeps its prior outcome'
 );
 SELECT throws_ok(
-  $$SELECT public.reserve_print_material('51000000-0000-0000-0000-000000000099','41000000-0000-0000-0000-000000000001',3,'31000000-0000-0000-0000-000000000001','best_fit')$$,
+  $$SELECT public.reserve_print_material('51000000-0000-0000-0000-000000000099','41000000-0000-0000-0000-000000000001',3,'31000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','print_settled','new reservations are rejected for completed prints'
 );
 SELECT throws_ok(
@@ -219,25 +219,25 @@ SELECT throws_ok(
   'P0002','not_found','a missing print receipt lookup is hidden as not found'
 );
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000005','41000000-0000-0000-0000-000000000005',1,'31000000-0000-0000-0000-000000000002','best_fit')->>'disposition'),'active','zero consumption fixture is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000005','41000000-0000-0000-0000-000000000005',1,'31000000-0000-0000-0000-000000000002','best_fit',88)->>'disposition'),'active','zero consumption fixture is reserved');
 SELECT set_config('test.reservation_5',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000005'),true);
 SELECT is((public.settle_print_consumption('52000000-0000-0000-0000-000000000005','41000000-0000-0000-0000-000000000005',2,current_setting('test.reservation_5')::uuid,0)->'settlement'->>'exceededEstimate'),'false','zero consumption completes without exceeding the estimate');
 SELECT is((SELECT recorded_grams FROM public.spools WHERE id='31000000-0000-0000-0000-000000000002'),150::numeric,'zero consumption preserves recorded stock');
 SELECT is((SELECT available_grams FROM public.spool_inventory WHERE id='31000000-0000-0000-0000-000000000002'),150::numeric,'zero consumption releases the reservation');
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000006','41000000-0000-0000-0000-000000000006',1,'31000000-0000-0000-0000-000000000003','best_fit')->>'disposition'),'active','exact-estimate fixture is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000006','41000000-0000-0000-0000-000000000006',1,'31000000-0000-0000-0000-000000000003','best_fit',88)->>'disposition'),'active','exact-estimate fixture is reserved');
 SELECT set_config('test.reservation_6',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000006'),true);
 SELECT is((public.settle_print_consumption('52000000-0000-0000-0000-000000000006','41000000-0000-0000-0000-000000000006',2,current_setting('test.reservation_6')::uuid,150)->'settlement'->>'exceededEstimate'),'false','consumption equal to recorded stock does not exceed the estimate');
 SELECT is((SELECT recorded_grams FROM public.spools WHERE id='31000000-0000-0000-0000-000000000003'),0::numeric,'exact estimate reduces recorded stock to zero');
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000007','41000000-0000-0000-0000-000000000007',1,'31000000-0000-0000-0000-000000000004','best_fit')->>'disposition'),'active','exceeded-estimate fixture is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000007','41000000-0000-0000-0000-000000000007',1,'31000000-0000-0000-0000-000000000004','best_fit',88)->>'disposition'),'active','exceeded-estimate fixture is reserved');
 SELECT set_config('test.reservation_7',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000007'),true);
 SELECT is((public.settle_print_consumption('52000000-0000-0000-0000-000000000007','41000000-0000-0000-0000-000000000007',2,current_setting('test.reservation_7')::uuid,151)->'settlement'->>'exceededEstimate'),'true','consumption strictly above recorded stock records an exceeded-estimate warning');
 SELECT is((SELECT recorded_grams FROM public.spools WHERE id='31000000-0000-0000-0000-000000000004'),0::numeric,'exceeded estimate clamps recorded stock to zero');
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000010','41000000-0000-0000-0000-000000000010',1,'31000000-0000-0000-0000-000000000007','best_fit')->>'disposition'),'active','settlement tie fixture is reserved');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000011','41000000-0000-0000-0000-000000000011',1,'31000000-0000-0000-0000-000000000007','best_fit')->>'disposition'),'active','lower-ID tie reservation is active');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000012','41000000-0000-0000-0000-000000000012',1,'31000000-0000-0000-0000-000000000007','best_fit')->>'disposition'),'active','higher-ID tie reservation is active');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000010','41000000-0000-0000-0000-000000000010',1,'31000000-0000-0000-0000-000000000007','best_fit',88)->>'disposition'),'active','settlement tie fixture is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000011','41000000-0000-0000-0000-000000000011',1,'31000000-0000-0000-0000-000000000007','best_fit',55)->>'disposition'),'active','lower-ID tie reservation is active');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000012','41000000-0000-0000-0000-000000000012',1,'31000000-0000-0000-0000-000000000007','best_fit',66)->>'disposition'),'active','higher-ID tie reservation is active');
 SELECT set_config('test.reservation_10',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000010'),true);
 SELECT set_config('test.reservation_11',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000011'),true);
 SELECT set_config('test.reservation_12',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000012'),true);
@@ -255,9 +255,9 @@ SELECT is((SELECT available_grams FROM public.spool_inventory WHERE id='31000000
 SELECT is((SELECT reservation_id FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000011'),'52000000-0000-0000-0000-000000000011'::uuid,'lower reservation ID survives the tie');
 SELECT is((SELECT reservation_id FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000012'),NULL::uuid,'higher reservation ID is cancelled first');
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000013','41000000-0000-0000-0000-000000000013',1,'31000000-0000-0000-0000-000000000008','best_fit')->>'disposition'),'active','exact-fit settlement is reserved');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000014','41000000-0000-0000-0000-000000000014',1,'31000000-0000-0000-0000-000000000008','best_fit')->>'disposition'),'active','exact-fit oldest reservation is active');
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000015','41000000-0000-0000-0000-000000000015',1,'31000000-0000-0000-0000-000000000008','best_fit')->>'disposition'),'active','exact-fit newest reservation is active');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000013','41000000-0000-0000-0000-000000000013',1,'31000000-0000-0000-0000-000000000008','best_fit',88)->>'disposition'),'active','exact-fit settlement is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000014','41000000-0000-0000-0000-000000000014',1,'31000000-0000-0000-0000-000000000008','best_fit',66)->>'disposition'),'active','exact-fit oldest reservation is active');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000015','41000000-0000-0000-0000-000000000015',1,'31000000-0000-0000-0000-000000000008','best_fit',44)->>'disposition'),'active','exact-fit newest reservation is active');
 SELECT set_config('test.reservation_13',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000013'),true);
 SELECT set_config('test.reservation_14',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000014'),true);
 SELECT set_config('test.reservation_15',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000015'),true);
@@ -276,7 +276,7 @@ SELECT is((SELECT reservation_id FROM public.planned_prints WHERE id='41000000-0
 SELECT is((SELECT version FROM public.prints WHERE id='41000000-0000-0000-0000-000000000014'),2,'the exact-fit survivor version remains unchanged');
 SELECT is((SELECT version FROM public.prints WHERE id='41000000-0000-0000-0000-000000000015'),3,'the exact-fit cancelled print version advances once');
 
-SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000016','41000000-0000-0000-0000-000000000016',1,'31000000-0000-0000-0000-000000000005','best_fit')->>'disposition'),'active','maximum consumption fixture is reserved');
+SELECT is((public.reserve_print_material('51000000-0000-0000-0000-000000000016','41000000-0000-0000-0000-000000000016',1,'31000000-0000-0000-0000-000000000005','best_fit',88)->>'disposition'),'active','maximum consumption fixture is reserved');
 SELECT set_config('test.reservation_16',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000016'),true);
 SELECT set_config('test.maximum_result',public.settle_print_consumption('52000000-0000-0000-0000-000000000016','41000000-0000-0000-0000-000000000016',2,current_setting('test.reservation_16')::uuid,2147483647)::text,true);
 SELECT is(current_setting('test.maximum_result')::jsonb->'settlement'->>'actualGrams','2147483647','the direct RPC accepts the inclusive maximum without rounding or overflow');
