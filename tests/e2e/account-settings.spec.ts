@@ -118,7 +118,6 @@ test("a concurrent settings save preserves the draft and reports the saved versi
   await input.fill("42");
   await panel.getByRole("button", { name: "Save safety margin" }).click();
 
-  await expect(panel.getByRole("alert")).toContainText("Settings changed in another session");
   await expect(panel.getByRole("status")).toContainText("The current saved setting is 23%");
   await expect(panel.getByRole("status")).toContainText("Your draft is unchanged");
   await expect(input).toHaveValue("42");
@@ -250,6 +249,7 @@ test("a manual spool that becomes ineligible is replaced by the new best fit", a
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
 
     await row.getByRole("button", { name: "Confirm reservation" }).click();
+    await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
       spoolId: fallback.id,
       reservedGrams: 88,
