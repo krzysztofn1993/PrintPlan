@@ -40,6 +40,13 @@ const linkClass = terminalPresentation
         >
           Planned prints
         </a>
+        <a
+          href="/dashboard/settings"
+          aria-current={currentPath.startsWith("/dashboard/settings") ? "page" : undefined}
+          class:list={linkClass}
+        >
+          Settings
+        </a>
         <form method="POST" action="/api/auth/signout" class="flex">
           <button type="submit" class:list={linkClass}>
             Sign out

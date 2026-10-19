@@ -33,6 +33,14 @@ export function mapReservationFailure(
     already_reserved: { status: 409, message: "This print already has an active reservation." },
     edit_conflict: { status: 409, message: "This print changed. Refresh the preview before reserving material." },
     selection_stale: { status: 409, message: "The best-fit spool changed. Review a fresh preview before confirming." },
+    reservation_amount_stale: {
+      status: 409,
+      message: "The required amount changed. Review a fresh preview before confirming the reservation.",
+    },
+    reservation_preview_required: {
+      status: 409,
+      message: "Load a fresh reservation preview before confirming this request.",
+    },
     insufficient_material: { status: 409, message: "No eligible spool has enough available material." },
     idempotency_conflict: {
       status: 409,
@@ -45,6 +53,12 @@ export function mapReservationFailure(
     print_settled: { status: 409, message: "Completed prints cannot be reserved or edited." },
   };
   const result = messages[failure.reason];
-  if (result) return createReservationErrorResponse(failure.reason, result.status, result.message);
+  if (result) {
+    const extra =
+      failure.reason === "reservation_amount_stale" || failure.reason === "reservation_preview_required"
+        ? { refreshRequired: true }
+        : {};
+    return createReservationErrorResponse(failure.reason, result.status, result.message, extra);
+  }
   return createPrintDatabaseErrorResponse(failure.error, failure.status, operation);
 }

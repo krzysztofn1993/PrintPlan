@@ -4,11 +4,12 @@
 /* global AbortSignal, Blob, Buffer, FormData, Headers, URL, setTimeout */
 
 import { randomUUID } from "node:crypto";
+import { runAccountSettingsSmoke } from "./account-settings-smoke.mjs";
 import { runPrintSmoke } from "./print-smoke.mjs";
 import { runReservationSmoke } from "./reservation-smoke.mjs";
 import { runSettlementSmoke } from "./settlement-smoke.mjs";
 import { runSpoolSmoke } from "./spool-smoke.mjs";
-import { readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
+import { readLocalSupabaseAuthSiteOrigin, readLocalSupabaseConfig, safeSmokeError } from "./smoke-utils.mjs";
 
 const APP_URL = new URL(process.env.BASE_URL ?? "http://localhost:4321");
 const MAILPIT_URL = new URL(process.env.MAILPIT_URL ?? "http://127.0.0.1:54324");
@@ -380,7 +381,7 @@ function decodeHtmlEntities(value) {
   });
 }
 
-function confirmationUrlFromHtml(html) {
+function confirmationUrlFromHtml(html, allowedOrigins) {
   const anchors = [...html.matchAll(/<a\b[^>]*\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))[^>]*>/gi)];
   for (const match of anchors) {
     const href = decodeHtmlEntities(match[1] ?? match[2] ?? match[3] ?? "");
@@ -390,13 +391,14 @@ function confirmationUrlFromHtml(html) {
     } catch {
       continue;
     }
-    if (url.origin === APP_ORIGIN && url.pathname === "/auth/confirm") return url;
+    if (allowedOrigins.has(url.origin) && url.pathname === "/auth/confirm") return url;
   }
   throw new Error("The delivered email did not contain an app confirmation link");
 }
 
-function validateConfirmationUrl(url) {
-  ensure(url.origin === APP_ORIGIN, "The confirmation link did not target the app origin");
+function validateConfirmationUrl(url, allowedOrigins) {
+  ensure(allowedOrigins.has(url.origin), "The confirmation link did not target a configured local callback origin");
+  ensure(!url.username && !url.password, "The confirmation link contained URL credentials");
   ensure(url.pathname === "/auth/confirm", "The confirmation link did not target the confirmation endpoint");
   ensure(
     url.searchParams.getAll("type").length === 1 && url.searchParams.get("type") === "email",
@@ -410,7 +412,8 @@ function validateConfirmationUrl(url) {
   return url;
 }
 
-async function waitForConfirmation(recipient) {
+async function waitForConfirmation(recipient, authSiteOrigin) {
+  const allowedOrigins = new Set([APP_ORIGIN, authSiteOrigin]);
   const deadline = Math.min(Date.now() + MAIL_WAIT_LIMIT_MS, scenarioDeadlineAt);
   let lastCount = 0;
 
@@ -421,7 +424,7 @@ async function waitForConfirmation(recipient) {
       const message = matches[0];
       const html = message?.HTML ?? message?.Html ?? message?.html;
       ensure(typeof html === "string" && html.length > 0, "The delivered Mailpit message did not include HTML");
-      return validateConfirmationUrl(confirmationUrlFromHtml(html));
+      return validateConfirmationUrl(confirmationUrlFromHtml(html, allowedOrigins), allowedOrigins);
     }
 
     const wait = Math.min(500, deadline - Date.now(), remainingMs());
@@ -476,6 +479,7 @@ async function runSmoke() {
     "Use Node 24.21.0 from .nvmrc to preserve separate Set-Cookie headers",
   );
   const localSupabase = await readLocalSupabaseConfig();
+  const authSiteOrigin = await readLocalSupabaseAuthSiteOrigin();
   const cleanupProbe = process.env.PRINTPLAN_SMOKE_CLEANUP_PROBE;
   ensure(
     cleanupProbe === undefined ||
@@ -651,7 +655,7 @@ async function runSmoke() {
   });
 
   const deliveredLinkA = await step("Mailpit receives account A confirmation", () =>
-    waitForConfirmation(accountA.email),
+    waitForConfirmation(accountA.email, authSiteOrigin),
   );
   const callbackJarA = new CookieJar();
   await step("account A confirmation callback establishes a fresh session", async () => {
@@ -714,7 +718,7 @@ async function runSmoke() {
   });
 
   const deliveredLinkB = await step("Mailpit receives account B confirmation", () =>
-    waitForConfirmation(accountB.email),
+    waitForConfirmation(accountB.email, authSiteOrigin),
   );
   const callbackJarB = new CookieJar();
   await step("account B confirmation callback establishes a fresh session", async () => {
@@ -794,6 +798,18 @@ async function runSmoke() {
   await runReservationSmoke({
     config: localSupabase,
     appRequest,
+    accountA,
+    accountB,
+    activeJarA,
+    activeJarB,
+    requestSignal,
+    cleanupRequestSignal,
+  });
+
+  await runAccountSettingsSmoke({
+    config: localSupabase,
+    appRequest,
+    CookieJar,
     accountA,
     accountB,
     activeJarA,

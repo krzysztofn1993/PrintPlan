@@ -1,4 +1,4 @@
-// Prove additive product and reservation migrations preserve committed rows in a disposable local database.
+// Prove product, reservation, settings, and settlement migrations preserve committed rows in a disposable local database.
 
 /* global Buffer, setTimeout, clearTimeout */
 
@@ -12,7 +12,9 @@ const KNOWN_MIGRATIONS = [
   "20261010000000_create_spools.sql",
   "20261012000000_create_prints.sql",
   "20261016000000_reserve_and_release_material.sql",
+  "20261017000000_account_safety_margin.sql",
   "20261018000000_settle_print_consumption.sql",
+  "20261019000000_preserve_margin_with_settlements.sql",
 ];
 const COMMAND_TIMEOUT_MS = 45_000;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
@@ -236,6 +238,17 @@ async function restrictedReservationRows(container, database, ownerId, label) {
   return parseJsonRows(await queryValue(container, database, sql, { label }), label);
 }
 
+async function ownerQuery(container, database, ownerId, command, label) {
+  const sql = [
+    "BEGIN;",
+    "SET LOCAL ROLE authenticated;",
+    "SET LOCAL request.jwt.claim.sub = '" + ownerId + "';",
+    command,
+    "COMMIT;",
+  ].join("\n");
+  return queryValue(container, database, sql, { label });
+}
+
 async function restrictedPlannedPrintRows(container, database, ownerId, label) {
   const sql = [
     "BEGIN;",
@@ -255,6 +268,36 @@ async function ownerRequestRows(container, database, ownerId, label) {
     ownerId +
     "';";
   return parseJsonRows(await queryValue(container, database, sql, { label }), label);
+}
+
+async function expectReservationError(container, database, ownerId, call, message, label) {
+  const command = [
+    "DO $block$",
+    "BEGIN",
+    "  PERFORM " + call + ";",
+    "  RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'expected_error_not_raised';",
+    "EXCEPTION WHEN SQLSTATE 'P0001' THEN",
+    "  IF SQLERRM <> '" + message + "' THEN RAISE; END IF;",
+    "END",
+    "$block$;",
+  ].join("\n");
+  await ownerQuery(container, database, ownerId, command, label);
+}
+
+async function expectUnchangedReservationError(container, database, ownerId, call, message, label) {
+  async function snapshot() {
+    const [spools, prints, reservations, requests] = await Promise.all([
+      restrictedRows(container, database, ownerId, label + " spool snapshot"),
+      restrictedPrintRows(container, database, ownerId, label + " print snapshot"),
+      restrictedReservationRows(container, database, ownerId, label + " reservation snapshot"),
+      ownerRequestRows(container, database, ownerId, label + " request snapshot"),
+    ]);
+    return JSON.stringify(stable({ spools, prints, reservations, requests }));
+  }
+
+  const before = await snapshot();
+  await expectReservationError(container, database, ownerId, call, message, label);
+  ensure((await snapshot()) === before, label + " changed product rows, reservations, or request evidence.");
 }
 
 async function main() {
@@ -392,14 +435,16 @@ async function main() {
       "SET LOCAL request.jwt.claim.sub = '" + ownerA + "';",
       "INSERT INTO public.prints (user_id,name,material,colour,required_grams) VALUES",
       "  ('" + ownerA + "','Upgrade print A','pla','Black / Red / Gold',80),",
-      "  ('" + ownerA + "','Upgrade print B','pla','Black / Red / Gold',50);",
+      "  ('" + ownerA + "','Upgrade print B','pla','Black / Red / Gold',50),",
+      "  ('" + ownerA + "','Upgrade print C','pla','Black / Red / Gold',80),",
+      "  ('" + ownerA + "','Upgrade print D','pla','Black / Red / Gold',1);",
       "COMMIT;",
     ].join("\n");
     await psql(container, scratch, printSeed, { label: "Committed print rows before reservation migration" });
     const printBaselineA = await restrictedPrintRows(container, scratch, ownerA, "Owner A committed print baseline");
     const printBaselineB = await restrictedPrintRows(container, scratch, ownerB, "Owner B committed print baseline");
     const printBaseline = [...printBaselineA, ...printBaselineB].sort((left, right) => left.id.localeCompare(right.id));
-    ensure(printBaseline.length === 2, "Committed print baseline did not contain both seeded prints.");
+    ensure(printBaseline.length === 4, "Committed print baseline did not contain all seeded prints.");
 
     const reservationMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[2], "utf8");
     await psql(container, scratch, "BEGIN;\n" + reservationMigration + "\nCOMMIT;\n", {
@@ -414,9 +459,15 @@ async function main() {
     );
     const upgradePrintA = printBaselineA.find((row) => row.name === "Upgrade print A");
     const upgradePrintB = printBaselineA.find((row) => row.name === "Upgrade print B");
-    ensure(upgradePrintA && upgradePrintB, "The populated reservation fixtures could not be identified by name.");
+    const upgradePrintC = printBaselineA.find((row) => row.name === "Upgrade print C");
+    const upgradePrintD = printBaselineA.find((row) => row.name === "Upgrade print D");
+    ensure(
+      upgradePrintA && upgradePrintB && upgradePrintC && upgradePrintD,
+      "The populated reservation fixtures could not be identified by name.",
+    );
     const requestA = randomUUID();
     const requestB = randomUUID();
+    const requestD = randomUUID();
     const reserveBeforeSettlementMigration = [
       "BEGIN;",
       "SET LOCAL ROLE authenticated;",
@@ -432,6 +483,13 @@ async function main() {
         requestB +
         "','" +
         upgradePrintB.id +
+        "',1,'" +
+        ids.duplicate +
+        "','manual');",
+      "SELECT public.reserve_print_material('" +
+        requestD +
+        "','" +
+        upgradePrintD.id +
         "',1,'" +
         ids.duplicate +
         "','manual');",
@@ -459,13 +517,18 @@ async function main() {
       "Pre-settlement request evidence snapshot",
     );
     ensure(
-      settlementReservationBaseline.length === 2 &&
-        settlementRequestBaseline.length === 2 &&
+      settlementReservationBaseline.length === 3 &&
+        settlementRequestBaseline.length === 3 &&
         settlementRequestBaseline.every((request) => request.state === "active"),
-      "The pre-settlement snapshot did not contain both committed active reservations and their request evidence.",
+      "The pre-settlement snapshot did not contain all committed active reservations and their request evidence.",
     );
 
-    const settlementMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[3], "utf8");
+    const accountSettingsMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[3], "utf8");
+    await psql(container, scratch, "BEGIN;\n" + accountSettingsMigration + "\nCOMMIT;\n", {
+      label: "Transactional populated account settings migration",
+    });
+
+    const settlementMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[4], "utf8");
     await psql(container, scratch, "BEGIN;\n" + settlementMigration + "\nCOMMIT;\n", {
       label: "Transactional populated settlement migration",
     });
@@ -511,9 +574,13 @@ async function main() {
       ownerA,
       "Post-settlement migration request evidence read",
     );
+    const legacyRequestFieldsAfter = settlementRequestsAfter.map(
+      ({ expected_reservation_grams, ...request }) => request,
+    );
     ensure(
-      JSON.stringify(stable(settlementRequestsAfter)) === JSON.stringify(stable(settlementRequestBaseline)),
-      "The settlement migration altered committed reservation request evidence.",
+      JSON.stringify(stable(legacyRequestFieldsAfter)) === JSON.stringify(stable(settlementRequestBaseline)) &&
+        settlementRequestsAfter.every((request) => request.expected_reservation_grams === null),
+      "The settlement migration altered committed request evidence or failed to preserve legacy requests without a witness.",
     );
     const plannedAfter = await restrictedPlannedPrintRows(
       container,
@@ -529,6 +596,19 @@ async function main() {
     console.log(
       "PASS  additive settlement migration preserves stock, print timestamps, active reservations, and request evidence",
     );
+
+    const compatibilityMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[5], "utf8");
+    await psql(container, scratch, "BEGIN;\n" + compatibilityMigration + "\nCOMMIT;\n", {
+      label: "Transactional margin and settlement compatibility migration",
+    });
+    const obsoleteReservationRpc = await queryValue(
+      container,
+      scratch,
+      "SELECT to_regprocedure('public.reserve_print_material(uuid,uuid,integer,uuid,text)') IS NULL;",
+      { label: "Single reservation RPC signature after compatibility migration" },
+    );
+    ensure(obsoleteReservationRpc === "t", "The historical five-argument RPC overload remained executable.");
+    console.log("PASS  compatibility migration keeps one witnessed reservation RPC and settlement-aware preview");
 
     const settlementReservationId = settlementReservationBaseline.find((row) => row.print_id === upgradePrintA.id)?.id;
     ensure(settlementReservationId, "The upgraded settlement fixture did not retain its active reservation identity.");
@@ -553,7 +633,7 @@ async function main() {
         settlementResult.settlement.actualGrams === 75 &&
         settlementResult.settlement.spool.recordedGramsBefore === 250 &&
         settlementResult.settlement.spool.recordedGramsAfter === 175 &&
-        settlementResult.settlement.spool.reservedGramsAfter === 55,
+        settlementResult.settlement.spool.reservedGramsAfter === 57,
       "Settlement did not complete with the expected receipt on the upgraded reservation.",
     );
     const postSettlementRequests = await ownerRequestRows(
@@ -564,10 +644,284 @@ async function main() {
     );
     ensure(
       postSettlementRequests.find((request) => request.request_id === requestA)?.state === "released" &&
-        postSettlementRequests.find((request) => request.request_id === requestB)?.state === "active",
+        postSettlementRequests.find((request) => request.request_id === requestB)?.state === "active" &&
+        postSettlementRequests.find((request) => request.request_id === requestD)?.state === "active",
       "Settlement did not terminalize only the consumed reservation request.",
     );
     console.log("PASS  settlement succeeds against an active reservation preserved through the populated upgrade");
+
+    const settingsBeforeSave = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.get_account_settings()::text;",
+        "Absent settings default after compatibility migration",
+      ),
+    );
+    ensure(
+      settingsBeforeSave.marginPercent === 10 && settingsBeforeSave.version === 0,
+      "An account without a settings row did not retain the effective 10 percent default.",
+    );
+    const reservationsBeforeSettingsSave = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Active reservation before settings save",
+    );
+    const requestsBeforeSettingsSave = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Active request evidence before settings save",
+    );
+    const settingsSave = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.save_account_safety_margin(5,0)::text;",
+        "Save the populated-upgrade account margin",
+      ),
+    );
+    ensure(
+      settingsSave.marginPercent === 5 && settingsSave.version === 1,
+      "The populated-upgrade account could not save its first 5 percent setting.",
+    );
+    ensure(
+      JSON.stringify(
+        stable(await restrictedReservationRows(container, scratch, ownerA, "Reservation after settings save")),
+      ) === JSON.stringify(stable(reservationsBeforeSettingsSave)) &&
+        JSON.stringify(
+          stable(await ownerRequestRows(container, scratch, ownerA, "Request evidence after settings save")),
+        ) === JSON.stringify(stable(requestsBeforeSettingsSave)),
+      "Saving a margin changed an existing reservation or its request evidence.",
+    );
+    const ownerBSettings = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerB,
+        "SELECT public.get_account_settings()::text;",
+        "Other owner's absent settings default",
+      ),
+    );
+    ensure(
+      ownerBSettings.marginPercent === 10 && ownerBSettings.version === 0,
+      "Saving owner A's margin changed owner B's effective setting.",
+    );
+
+    const legacyReplay = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.reserve_print_material('" +
+          requestB +
+          "','" +
+          upgradePrintB.id +
+          "',1,'" +
+          ids.duplicate +
+          "','manual')::text;",
+        "Replay active legacy request after changing settings",
+      ),
+    );
+    ensure(
+      legacyReplay.replayed === true &&
+        legacyReplay.reservationId ===
+          settlementReservationBaseline.find((row) => row.print_id === upgradePrintB.id)?.id,
+      "An exact active legacy request did not replay after the settings change.",
+    );
+    const legacyReserveArgs = [
+      "'" + requestB + "'",
+      "'" + upgradePrintB.id + "'",
+      "1",
+      "'" + ids.duplicate + "'",
+      "'manual'",
+    ];
+    for (const [label, index, value] of [
+      ["changed print", 1, "'" + upgradePrintC.id + "'"],
+      ["changed expected version", 2, "2"],
+      ["changed spool", 3, "'" + ids.corrected + "'"],
+      ["changed selection mode", 4, "'best_fit'"],
+      ["added amount witness", 5, "55"],
+    ]) {
+      const changedArgs = [...legacyReserveArgs];
+      changedArgs[index] = value;
+      await expectUnchangedReservationError(
+        container,
+        scratch,
+        ownerA,
+        "public.reserve_print_material(" + changedArgs.join(",") + ")",
+        "idempotency_conflict",
+        "Legacy replay with " + label,
+      );
+    }
+    console.log(
+      "PASS  changed legacy payloads and a non-NULL witness conflict without changing product or request state",
+    );
+    await expectReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.reserve_print_material('70000000-0000-0000-0000-000000000003','" +
+        upgradePrintC.id +
+        "',1,'" +
+        ids.duplicate +
+        "','best_fit')",
+      "reservation_preview_required",
+      "Fresh witness-less reservation rejection after settlement migration",
+    );
+
+    const freshPreview = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.preview_print_reservation('" + upgradePrintC.id + "')::text;",
+        "Current margin preview after settlement migration",
+      ),
+    );
+    ensure(
+      freshPreview.marginPercent === 5 && freshPreview.reservationGrams === 84,
+      "The post-settlement preview did not preserve the saved 5 percent margin and 84 gram demand.",
+    );
+    const freshWitnessedReservation = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.reserve_print_material('70000000-0000-0000-0000-000000000004','" +
+          upgradePrintC.id +
+          "',1,'" +
+          ids.duplicate +
+          "','best_fit',84)::text;",
+        "Fresh witnessed reservation after settlement migration",
+      ),
+    );
+    const freshReservation = JSON.parse(
+      await queryValue(
+        container,
+        scratch,
+        "SELECT to_jsonb(reservation)::text FROM public.print_reservations AS reservation WHERE reservation.print_id = '" +
+          upgradePrintC.id +
+          "';",
+        { label: "Fresh post-settlement reservation snapshot" },
+      ),
+    );
+    ensure(
+      freshWitnessedReservation.replayed === false &&
+        freshReservation.reserved_grams === 84 &&
+        freshReservation.margin_percent === 5,
+      "A fresh post-settlement 80 gram reservation did not use the saved 5 percent margin and 84 gram demand.",
+    );
+    await expectReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.preview_print_reservation('" + upgradePrintA.id + "')",
+      "print_settled",
+      "Settled print preview remains unavailable",
+    );
+    await expectReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.reserve_print_material('70000000-0000-0000-0000-000000000005','" +
+        upgradePrintA.id +
+        "',2,'" +
+        ids.duplicate +
+        "','best_fit',84)",
+      "print_settled",
+      "Settled print cannot be reserved after settings migration",
+    );
+    console.log(
+      "PASS  saved margins, legacy replay, witness enforcement, and settled-print guards survive both migrations",
+    );
+
+    const releasedLegacy = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.release_print_material('" + legacyReplay.reservationId + "','" + upgradePrintB.id + "')::text;",
+        "Release the migrated legacy reservation",
+      ),
+    );
+    ensure(releasedLegacy.disposition === "released", "The active legacy reservation was not released.");
+    await expectUnchangedReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.reserve_print_material(" + legacyReserveArgs.join(",") + ")",
+      "reservation_request_completed",
+      "Legacy replay after explicit release",
+    );
+
+    const deletedLegacy = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.delete_print('" + upgradePrintD.id + "')::text;",
+        "Delete a print with an active migrated legacy reservation",
+      ),
+    );
+    ensure(
+      deletedLegacy.releasedReservationId ===
+        settlementReservationBaseline.find((row) => row.print_id === upgradePrintD.id)?.id &&
+        deletedLegacy.releasedGrams === 2,
+      "Deleting the legacy print did not release its original active reservation.",
+    );
+    await expectUnchangedReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.reserve_print_material('" + requestD + "','" + upgradePrintD.id + "',1,'" + ids.duplicate + "','manual')",
+      "reservation_request_completed",
+      "Legacy replay after deleting its reserved print",
+    );
+    const terminalLegacyRequests = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Terminal legacy request evidence",
+    );
+    ensure(
+      [
+        [requestB, "released"],
+        [requestD, "deleted"],
+      ].every(([requestId, state]) =>
+        terminalLegacyRequests.some(
+          (request) =>
+            request.request_id === requestId &&
+            request.state === state &&
+            request.expected_reservation_grams === null &&
+            Number.isFinite(Date.parse(request.completed_at)),
+        ),
+      ),
+      "Release and deletion did not retain completed legacy request identities with NULL witnesses.",
+    );
+    const remainingReservations = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Reservations after terminal legacy replay attempts",
+    );
+    const remainingPrints = await restrictedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Prints after terminal legacy replay attempts",
+    );
+    ensure(
+      remainingReservations.every(
+        (reservation) => ![upgradePrintB.id, upgradePrintD.id].includes(reservation.print_id),
+      ) && remainingPrints.every((print) => print.id !== upgradePrintD.id),
+      "A terminal legacy replay recreated a reservation or its deleted print.",
+    );
+    console.log("PASS  released and deleted legacy requests cannot recreate reservations or change committed state");
+
     const hasPrints = await queryValue(container, scratch, "SELECT to_regclass('public.prints') IS NOT NULL;", {
       label: "Print table upgrade check",
     });

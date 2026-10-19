@@ -5,6 +5,7 @@ import { ReservationPanel } from "@/components/prints/ReservationPanel";
 import { SettlementPanel } from "@/components/prints/SettlementPanel";
 import { readPrintDto } from "@/lib/print-dto";
 import type { PrintDto } from "@/lib/prints";
+import { MAX_EXPECTED_RESERVATION_GRAMS } from "@/lib/reservation-validation";
 import type { ReservationPreview } from "@/lib/reservations";
 import { MAX_ACTUAL_GRAMS } from "@/lib/settlement-validation";
 import { readSettlementReceipt, type SettlementReceipt } from "@/lib/settlement-dto";
@@ -128,6 +129,8 @@ function receiptMatchesCommand(receipt: SettlementReceipt, command: SettlementCo
     receipt.actualGrams === command.actualGrams
   );
 }
+type PreviewSelection = "manual-retained" | "manual-replaced" | "best-fit" | "none";
+type PreviewLoadResult = { ok: true; selection: PreviewSelection } | { ok: false };
 
 export function PrintList({ initialPrints }: PrintListProps) {
   const [prints, setPrints] = useState(() => orderedPrints(initialPrints));
@@ -880,8 +883,11 @@ export function PrintList({ initialPrints }: PrintListProps) {
     return true;
   }
 
-  async function loadReservationPreview(printId: string) {
-    if (reservationPrintIdRef.current !== printId || refreshingRef.current) return;
+  async function loadReservationPreview(
+    printId: string,
+    options: { preserveManualSpoolId?: string } = {},
+  ): Promise<PreviewLoadResult> {
+    if (reservationPrintIdRef.current !== printId || refreshingRef.current) return { ok: false };
     const requestId = ++reservationPreviewRequestRef.current;
     const isCurrentPreview = () =>
       reservationPreviewRequestRef.current === requestId && reservationPrintIdRef.current === printId;
@@ -892,10 +898,10 @@ export function PrintList({ initialPrints }: PrintListProps) {
     try {
       response = await fetch(`/api/prints/${printId}/reservation`, { method: "GET", cache: "no-store" });
     } catch {
-      if (!isCurrentPreview()) return;
+      if (!isCurrentPreview()) return { ok: false };
       setReservationError("The preview could not be reached. Try loading it again.");
       setReservationPreviewLoading(false);
-      return;
+      return { ok: false };
     }
     let body: unknown;
     try {
@@ -903,7 +909,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     } catch {
       body = undefined;
     }
-    if (!isCurrentPreview()) return;
+    if (!isCurrentPreview()) return { ok: false };
     if (response.ok && isRecord(body) && Array.isArray(body.eligibleSpools)) {
       const eligibleSpools = body.eligibleSpools.map(readSpoolDto);
       if (
@@ -913,11 +919,13 @@ export function PrintList({ initialPrints }: PrintListProps) {
         Number.isSafeInteger(body.expectedVersion) &&
         body.expectedVersion > 0 &&
         typeof body.marginPercent === "number" &&
+        Number.isInteger(body.marginPercent) &&
         body.marginPercent >= 0 &&
         body.marginPercent <= 100 &&
         typeof body.reservationGrams === "number" &&
         Number.isSafeInteger(body.reservationGrams) &&
         body.reservationGrams > 0 &&
+        body.reservationGrams <= MAX_EXPECTED_RESERVATION_GRAMS &&
         (typeof body.suggestedSpoolId === "string" || body.suggestedSpoolId === null) &&
         eligibleSpools.every((spool): spool is SpoolDto => spool !== undefined)
       ) {
@@ -929,18 +937,31 @@ export function PrintList({ initialPrints }: PrintListProps) {
           suggestedSpoolId: body.suggestedSpoolId,
           eligibleSpools,
         };
+        const manualSelectionRetained =
+          options.preserveManualSpoolId !== undefined &&
+          preview.eligibleSpools.some((spool) => spool.id === options.preserveManualSpoolId);
+        const selection: PreviewSelection =
+          preview.eligibleSpools.length === 0
+            ? "none"
+            : manualSelectionRetained
+              ? "manual-retained"
+              : options.preserveManualSpoolId
+                ? "manual-replaced"
+                : "best-fit";
         setReservationPreview(preview);
-        setReservationSelectionMode("best_fit");
+        setReservationSelectionMode(manualSelectionRetained ? "manual" : "best_fit");
         setSelectedSpoolId(
-          preview.suggestedSpoolId ?? (preview.eligibleSpools.length ? preview.eligibleSpools[0].id : ""),
+          manualSelectionRetained
+            ? (options.preserveManualSpoolId ?? "")
+            : (preview.suggestedSpoolId ?? (preview.eligibleSpools.length ? preview.eligibleSpools[0].id : "")),
         );
         setReservationPreviewLoading(false);
-        return;
+        return { ok: true, selection };
       }
     }
     if (response.status === 409 && isRecord(body) && isRecord(body.error) && body.error.code === "already_reserved") {
       await refreshList({ conflictId: printId });
-      return;
+      return { ok: false };
     } else {
       setReservationError(
         response.status >= 500
@@ -950,6 +971,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     }
     setReservationPreview(null);
     setReservationPreviewLoading(false);
+    return { ok: false };
   }
 
   function openReservation(print: PrintDto) {
@@ -993,6 +1015,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         body: new URLSearchParams({
           requestId: crypto.randomUUID(),
           expectedVersion: String(preview.expectedVersion),
+          expectedReservationGrams: String(preview.reservationGrams),
           spoolId: selectedSpoolId,
           selectionMode: reservationSelectionMode,
         }),
@@ -1030,11 +1053,36 @@ export function PrintList({ initialPrints }: PrintListProps) {
     } else if (response.status === 409 && isRecord(body) && isRecord(body.error)) {
       const code = body.error.code;
       if (code === "selection_stale") {
-        await loadReservationPreview(print.id);
-        setReservationError("The suggested best fit changed. Review this fresh preview and confirm again.");
+        const result = await loadReservationPreview(print.id);
+        if (result.ok) {
+          setReservationError("The available selection changed. Review this fresh preview and confirm again.");
+        }
+      } else if (code === "reservation_amount_stale" || code === "reservation_preview_required") {
+        const manualSpoolId =
+          reservationSelectionMode === "manual" && reservationPreview?.printId === print.id
+            ? selectedSpoolId
+            : undefined;
+        const result = await loadReservationPreview(print.id, { preserveManualSpoolId: manualSpoolId });
+        if (result.ok) {
+          const explanation =
+            result.selection === "manual-replaced"
+              ? " Your chosen spool is no longer eligible, so the suggested best fit is selected."
+              : result.selection === "none"
+                ? " No matching spool has enough available material."
+                : result.selection === "manual-retained"
+                  ? " Your chosen spool is still eligible and remains selected."
+                  : " The suggested best fit is selected.";
+          const recoveryMessage =
+            code === "reservation_amount_stale"
+              ? "The current account margin changed the reservation amount. Review this fresh preview and confirm again."
+              : "A fresh reservation preview is required. Review it and confirm again.";
+          setReservationError(recoveryMessage + explanation);
+        }
       } else if (code === "insufficient_material") {
-        await loadReservationPreview(print.id);
-        setReservationError("No eligible spool has enough available material. The preview has been refreshed.");
+        const result = await loadReservationPreview(print.id);
+        if (result.ok) {
+          setReservationError("No eligible spool has enough available material. The preview has been refreshed.");
+        }
       } else if (code === "already_reserved" || code === "edit_conflict") {
         handleUncertainMutation();
         setReservationError(
