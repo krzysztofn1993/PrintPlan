@@ -354,5 +354,5 @@ Rollback must preserve saved preferences, request identity and reservation snaps
 
 #### Manual
 
-- [ ] 4.4 Settings and reservation flows are usable with keyboard navigation in current Chrome and Firefox and on a phone, with readable feedback and no horizontal overflow.
-- [ ] 4.5 The author verifies that saving 5% preserves an existing 88 g reservation and that a new 80 g reservation uses 84 g when enough eligible material is available.
+- [x] 4.4 Settings and reservation flows are usable with keyboard navigation in current Chrome and Firefox and on a phone, with readable feedback and no horizontal overflow.
+- [x] 4.5 The author verifies that saving 5% preserves an existing 88 g reservation and that a new 80 g reservation uses 84 g when enough eligible material is available.
