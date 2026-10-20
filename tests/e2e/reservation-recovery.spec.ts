@@ -328,83 +328,85 @@ test("a correction refresh closes a disappeared spool without saving the draft",
   expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
 });
 
-test("reserved-label refresh preserves the draft and restores saved labels only on request", async ({
-  page,
-  recoveryApi,
-}) => {
-  const spool = await recoveryApi.createSpool({ material: "PLA", colour: "Black", recordedGrams: 200 });
-  const print = await recoveryApi.createPrint({
-    name: recoveryApi.label("correction-label-restore"),
-    material: spool.material,
-    colour: spool.colour,
-    requiredGrams: 80,
-  });
+for (const matchingField of ["Material", "Colour"] as const) {
+  test(`reserved-label refresh preserves the draft and restores saved labels only on request (${matchingField.toLowerCase()} conflict)`, async ({
+    page,
+    recoveryApi,
+  }) => {
+    const spool = await recoveryApi.createSpool({ material: "PLA", colour: "Black", recordedGrams: 200 });
+    const print = await recoveryApi.createPrint({
+      name: recoveryApi.label("correction-label-restore"),
+      material: spool.material,
+      colour: spool.colour,
+      requiredGrams: 80,
+    });
 
-  await openSpools(page);
-  await spoolAction(page, "Edit", spool.id).click();
-  await page.getByLabel("Material").fill("Red");
-  await page.getByLabel("Recorded stock (g)").fill("100");
-  await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+    await openSpools(page);
+    await spoolAction(page, "Edit", spool.id).click();
+    await page.getByLabel(matchingField).fill("Red");
+    await page.getByLabel("Recorded stock (g)").fill("100");
+    await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
 
-  await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "active reservations" })).toBeVisible();
-  await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "active reservations" })).toBeVisible();
+    await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
 
-  const material = page.getByLabel("Material");
-  const colour = page.getByLabel("Colour");
-  const recorded = page.getByLabel("Recorded stock (g)");
-  await expect(material).toHaveValue("Red");
-  await expect(colour).toHaveValue("Black");
-  await expect(recorded).toHaveValue("100");
-  await expect(material).toBeDisabled();
-  await expect(colour).toBeDisabled();
-  const restore = page.getByRole("button", { name: "Use saved material and colour" });
-  await expect(restore).toBeVisible();
-  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
-    recordedGrams: 200,
-    reservedGrams: 88,
-    availableGrams: 112,
-  });
-  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
-    spoolId: spool.id,
-    reservedGrams: 88,
-  });
+    const material = page.getByLabel("Material");
+    const colour = page.getByLabel("Colour");
+    const recorded = page.getByLabel("Recorded stock (g)");
+    await expect(material).toHaveValue(matchingField === "Material" ? "Red" : "PLA");
+    await expect(colour).toHaveValue(matchingField === "Colour" ? "Red" : "Black");
+    await expect(recorded).toHaveValue("100");
+    await expect(material).toBeDisabled();
+    await expect(colour).toBeDisabled();
+    const restore = page.getByRole("button", { name: "Use saved material and colour" });
+    await expect(restore).toBeVisible();
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      recordedGrams: 200,
+      reservedGrams: 88,
+      availableGrams: 112,
+    });
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+      spoolId: spool.id,
+      reservedGrams: 88,
+    });
 
-  const requestsDuringRestore: string[] = [];
-  const recordRequest = (request: import("@playwright/test").Request) => {
-    if (request.method() === "GET" || request.method() === "POST") requestsDuringRestore.push(request.method());
-  };
-  page.on("request", recordRequest);
-  await restore.click();
-  await expect(material).toHaveValue("PLA");
-  await expect(colour).toHaveValue("Black");
-  await expect(recorded).toHaveValue("100");
-  await expect(restore).toHaveCount(0);
-  expect(requestsDuringRestore).toEqual([]);
-  page.off("request", recordRequest);
+    const requestsDuringRestore: string[] = [];
+    const recordRequest = (request: import("@playwright/test").Request) => {
+      if (request.method() === "GET" || request.method() === "POST") requestsDuringRestore.push(request.method());
+    };
+    page.on("request", recordRequest);
+    await restore.click();
+    await expect(material).toHaveValue("PLA");
+    await expect(colour).toHaveValue("Black");
+    await expect(recorded).toHaveValue("100");
+    await expect(restore).toHaveCount(0);
+    expect(requestsDuringRestore).toEqual([]);
+    page.off("request", recordRequest);
 
-  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
-    recordedGrams: 200,
-    reservedGrams: 88,
-    availableGrams: 112,
-  });
-  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
-    spoolId: spool.id,
-    reservedGrams: 88,
-  });
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      recordedGrams: 200,
+      reservedGrams: 88,
+      availableGrams: 112,
+    });
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+      spoolId: spool.id,
+      reservedGrams: 88,
+    });
 
-  await page.getByRole("button", { name: "Save changes" }).click();
-  const row = spoolRow(page, spool.id);
-  await expect(row.getByText("100 g")).toBeVisible();
-  await expect(row.getByText("12 g")).toBeVisible();
-  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
-    material: "PLA",
-    colour: "Black",
-    recordedGrams: 100,
-    reservedGrams: 88,
-    availableGrams: 12,
+    await page.getByRole("button", { name: "Save changes" }).click();
+    const row = spoolRow(page, spool.id);
+    await expect(row.getByText("100 g")).toBeVisible();
+    await expect(row.getByText("12 g")).toBeVisible();
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      material: "PLA",
+      colour: "Black",
+      recordedGrams: 100,
+      reservedGrams: 88,
+      availableGrams: 12,
+    });
   });
-});
+}
 
 test("best-fit reservation and release preserve recorded spool stock", async ({ page, recoveryApi }) => {
   const spool = await recoveryApi.createSpool({
