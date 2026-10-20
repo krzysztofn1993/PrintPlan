@@ -389,7 +389,7 @@ export function SpoolForm({
             </Button>
           )}
           {requestError.kind === "guardrail" && (
-            <>
+            <div className="carbon-feedback-actions">
               <Button
                 type="button"
                 variant="outline"
@@ -401,7 +401,7 @@ export function SpoolForm({
               <a className="carbon-feedback-link" href="/dashboard/prints">
                 Manage reservations in planned prints
               </a>
-            </>
+            </div>
           )}
         </div>
       )}

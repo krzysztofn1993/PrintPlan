@@ -431,6 +431,9 @@
     gap: var(--carbon-collection-gap);
     margin-top: var(--carbon-collection-gap);
   }
+  .carbon-feedback-actions .carbon-feedback-link {
+    margin-top: 0;
+  }
   .carbon-status-message {
     min-height: 1.25rem;
     color: var(--success);
