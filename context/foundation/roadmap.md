@@ -50,7 +50,7 @@ The sequencing goal is `speed`, confirmed by the author. The author has resolved
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done |
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | done |
 | S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | proposed  |
-| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | proposed  |
+| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | in-progress |
 | S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done |
 
 ## Streams
@@ -179,7 +179,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** A reduction below reserved grams must require cancellation first; deletion must leave affected prints unreserved and identify the cancellations.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-07: Settle actual consumption once
 
