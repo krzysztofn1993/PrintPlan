@@ -417,7 +417,7 @@ Per-slice unknowns stay in the slice; cross-cutting ones live here.
 
 Use this exact template (section names are the contract; downstream tooling and `/10x-plan` may grep for them):
 
-```markdown
+````markdown
 ---
 project: <from PRD frontmatter>
 version: 1
@@ -575,7 +575,7 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog. Includ
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived. Do NOT pre-populate. Format:)
 
 - **<Slice ID>: <Outcome>** — Archived <YYYY-MM-DD> → `context/archive/<YYYY-MM-DD-change-id>/`. Lesson: <pointer to lessons.md if any, or `—`>.
-```
+````
 
 **Field semantics, in detail:**
 
