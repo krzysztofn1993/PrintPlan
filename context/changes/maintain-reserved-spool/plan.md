@@ -221,4 +221,4 @@ For implementation prerequisites, use Node from `.nvmrc` and locked dependencies
 #### Manual
 
 - [x] 3.4 On current Chrome and Firefox plus a phone viewport/device, the user can follow the rejection, refresh, and cancellation guidance; refresh preserves the correction draft, controls remain keyboard reachable, and all received cancellation details are readable. — confirmed manually 2026-10-20.
-- [ ] 3.5 Verification records the author's acceptance that lost-response recovery shows current data only and cannot restore the original cancellation list; this limitation is not reported as recovered history or an unimplemented in-scope feature.
+- [x] 3.5 Verification records the author's acceptance that lost-response recovery shows current data only and cannot restore the original cancellation list; this limitation is not reported as recovered history or an unimplemented in-scope feature. — accepted by the author 2026-10-20.

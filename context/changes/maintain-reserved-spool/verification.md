@@ -1,6 +1,6 @@
 # Verification: Maintain a Reserved Spool
 
-This record captures the completed automated evidence for all three phases, the manual checks that remain pending, and hosted behavior that was not observed.
+This record captures the completed automated evidence for all three phases, the author's manual verification and accepted scope limitation, and hosted behavior that was not observed.
 
 ## Phase 1 and 2 commits
 
@@ -39,7 +39,7 @@ The Phase 2 readable deletion case verified both exact reservation identities, p
 | Plan row | Check | Status |
 | --- | --- | --- |
 | 3.4 | Current Chrome and Firefox plus a phone viewport/device: follow rejection, refresh and cancellation guidance; confirm draft retention, keyboard reachability and readable cancellation details. | **PASS — author confirmed manually on 2026-10-20.** Trials 1 and 2 passed; cancellation details and keyboard controls were confirmed in current Chrome, Firefox and on a phone. The author confirmed the added spacing between **Refresh reservation amounts** and **Manage reservations in planned prints**. Exact browser versions, device model and viewport were not supplied. |
-| 3.5 | Author accepts that lost-response recovery shows current data only and cannot restore the original cancellation list. | **Pending author acceptance.** Do not treat the scope decision as recorded acceptance for this row. |
+| 3.5 | Author accepts that lost-response recovery shows current data only and cannot restore the original cancellation list. | **PASS — accepted by the author on 2026-10-20.** |
 | — | Hosted behavior | **Unobserved.** No hosted environment was tested. |
 
 ## Failures and adaptations
@@ -53,4 +53,4 @@ The Phase 2 readable deletion case verified both exact reservation identities, p
 
 ## Retained recovery limitation
 
-After a deletion commits but its response is lost or unreadable, a successful stock refresh can reconcile current inventory only. It cannot recover the original cancellation list or its historical details. The UI does not claim otherwise, and refresh does not repeat the deletion. Durable deletion receipts and cancellation-history recovery remain outside this approved change. This limitation is not a failed in-scope feature; the author's acceptance still awaits manual row 3.5.
+After a deletion commits but its response is lost or unreadable, a successful stock refresh can reconcile current inventory only. It cannot recover the original cancellation list or its historical details. The UI does not claim otherwise, and refresh does not repeat the deletion. Durable deletion receipts and cancellation-history recovery remain outside this approved change. The author accepted this limitation on 2026-10-20; it is not a failed in-scope feature.
