@@ -2,7 +2,13 @@ import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { readSpoolDto } from "@/lib/spool-dto";
-import { MAX_RECORDED_GRAMS, validateSpoolInput, type SpoolField, type SpoolFieldErrors } from "@/lib/spool-validation";
+import {
+  MAX_RECORDED_GRAMS,
+  normalizeSpoolLabel,
+  validateSpoolInput,
+  type SpoolField,
+  type SpoolFieldErrors,
+} from "@/lib/spool-validation";
 import type { SpoolDto } from "@/lib/spools";
 
 interface SpoolFormProps {
@@ -14,10 +20,11 @@ interface SpoolFormProps {
   onCancel: () => void;
   onUncertain: () => void;
   onRefreshLatest: () => Promise<boolean>;
+  onRefreshCorrection: () => Promise<boolean>;
   mutationGuarded: boolean;
 }
 
-type RequestErrorKind = "retryable" | "unauthenticated" | "uncertain" | "generic";
+type RequestErrorKind = "retryable" | "unauthenticated" | "uncertain" | "guardrail" | "generic";
 
 type ApiFieldName = Exclude<SpoolField, "id">;
 
@@ -77,6 +84,7 @@ export function SpoolForm({
   onCancel,
   onUncertain,
   onRefreshLatest,
+  onRefreshCorrection,
   mutationGuarded,
 }: SpoolFormProps) {
   const prefix = mode === "create" ? "new-spool" : `edit-spool-${spool?.id ?? "item"}`;
@@ -85,8 +93,16 @@ export function SpoolForm({
   const [recordedGrams, setRecordedGrams] = useState(spool ? String(spool.recordedGrams) : "");
   const [fieldErrors, setFieldErrors] = useState<SpoolFieldErrors>({});
   const [requestError, setRequestError] = useState<{ kind: RequestErrorKind; message: string } | null>(null);
+  const [correctionRefreshError, setCorrectionRefreshError] = useState("");
   const [pending, setPending] = useState(false);
   const materialInputRef = useRef<HTMLInputElement>(null);
+  const hasReservedLabelConflict = Boolean(
+    spool?.reservedGrams &&
+    (normalizeSpoolLabel(material).toLocaleUpperCase("und") !==
+      normalizeSpoolLabel(spool.material).toLocaleUpperCase("und") ||
+      normalizeSpoolLabel(colour).toLocaleLowerCase("und") !==
+        normalizeSpoolLabel(spool.colour).toLocaleLowerCase("und")),
+  );
 
   useEffect(() => {
     materialInputRef.current?.focus();
@@ -98,7 +114,7 @@ export function SpoolForm({
 
   function clearFieldError(field: ApiFieldName) {
     setFieldErrors((previous) => ({ ...previous, [field]: undefined }));
-    setRequestError((previous) => (previous?.kind === "uncertain" ? previous : null));
+    setRequestError((previous) => (previous?.kind === "uncertain" || previous?.kind === "guardrail" ? previous : null));
   }
 
   function receiveValidationErrors(errors: SpoolFieldErrors) {
@@ -124,6 +140,7 @@ export function SpoolForm({
 
     setFieldErrors({});
     setRequestError(null);
+    setCorrectionRefreshError("");
     updatePending(true);
 
     const payload = new URLSearchParams({ material, colour, recordedGrams });
@@ -189,15 +206,24 @@ export function SpoolForm({
     } else if (response.status === 409) {
       const apiError = isRecord(body) && isRecord(body.error) ? body.error : undefined;
       const code = apiError?.code;
-      setRequestError({
-        kind: "generic",
-        message:
-          code === "reserved_spool_change_requires_cancellation"
-            ? "Cancel this spool's reservations before changing its matching material or colour."
-            : code === "stock_below_reservations"
-              ? `Recorded stock must stay at or above ${spool?.reservedGrams ?? 0} g while reservations are active.`
-              : "This spool changed. Refresh stock and review its current reservation amounts.",
-      });
+      if (code === "reserved_spool_change_requires_cancellation") {
+        setRequestError({
+          kind: "guardrail",
+          message:
+            "This spool has active reservations. Cancel its reservations before changing its matching material or colour.",
+        });
+      } else if (code === "stock_below_reservations") {
+        setRequestError({
+          kind: "guardrail",
+          message:
+            "Recorded stock cannot be reduced below its active reservations. Cancel enough reservations before saving.",
+        });
+      } else {
+        setRequestError({
+          kind: "generic",
+          message: "This spool changed. Refresh stock and review its current reservation amounts.",
+        });
+      }
     } else if (response.status >= 500) {
       onUncertain();
       setRequestError({
@@ -218,6 +244,39 @@ export function SpoolForm({
     const refreshed = await onRefreshLatest();
     if (!refreshed) setPending(false);
     else setRequestError(null);
+  }
+
+  async function refreshCorrection() {
+    if (pending || mutationPending || mutationGuarded) return;
+    setCorrectionRefreshError("");
+    updatePending(true);
+    try {
+      const refreshed = await onRefreshCorrection();
+      if (refreshed) {
+        setRequestError({
+          kind: "guardrail",
+          message: "Reservation amounts were refreshed. Review the latest saved quantities before saving again.",
+        });
+      } else {
+        setCorrectionRefreshError(
+          "Reservation amounts could not be refreshed. Your correction is still unsaved; try again.",
+        );
+      }
+    } catch {
+      setCorrectionRefreshError(
+        "Reservation amounts could not be refreshed. Your correction is still unsaved; try again.",
+      );
+    } finally {
+      updatePending(false);
+    }
+  }
+
+  function useSavedLabels() {
+    if (!spool || pending || mutationPending) return;
+    setMaterial(spool.material);
+    setColour(spool.colour);
+    setFieldErrors((previous) => ({ ...previous, material: undefined, colour: undefined }));
+    setCorrectionRefreshError("");
   }
 
   return (
@@ -329,6 +388,39 @@ export function SpoolForm({
               Refresh and review stock
             </Button>
           )}
+          {requestError.kind === "guardrail" && (
+            <div className="carbon-feedback-actions">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void refreshCorrection()}
+                disabled={pending || mutationPending || mutationGuarded}
+              >
+                Refresh reservation amounts
+              </Button>
+              <a className="carbon-feedback-link" href="/dashboard/prints">
+                Manage reservations in planned prints
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {correctionRefreshError && (
+        <div role="alert" className="carbon-feedback carbon-feedback-error">
+          <p>{correctionRefreshError}</p>
+        </div>
+      )}
+
+      {hasReservedLabelConflict && (
+        <div role="status" className="carbon-feedback carbon-feedback-warning">
+          <p>
+            Active reservations lock the saved material and colour. Your unsaved matching-label changes are still in the
+            form; use the saved labels if you want to keep this stock correction.
+          </p>
+          <Button type="button" variant="outline" onClick={useSavedLabels} disabled={pending || mutationPending}>
+            Use saved material and colour
+          </Button>
         </div>
       )}
 

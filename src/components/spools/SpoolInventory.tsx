@@ -13,6 +13,9 @@ interface DeleteError {
   message: string;
 }
 
+const uncertainDeletionMessage =
+  "Deletion may have completed, but its cancellation details could not be read. Refresh stock to review current spools; refreshing cannot recover the original cancellation list.";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -66,15 +69,18 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     setStatusMessage("");
   }
 
-  async function refreshStock(): Promise<boolean> {
-    if (mutationPendingRef.current || refreshingRef.current) return false;
+  async function refreshStock(intent: "review" | "correction" = "review"): Promise<boolean> {
+    if ((mutationPendingRef.current && intent === "review") || refreshingRef.current) return false;
     refreshingRef.current = true;
     setRefreshing(true);
+    if (intent === "correction") setListError("");
     let response: Response;
     try {
       response = await fetch("/api/spools", { method: "GET", cache: "no-store" });
     } catch {
-      setListError("Stock could not be reached. The pending action remains blocked; try refreshing again.");
+      if (intent === "review") {
+        setListError("Stock could not be reached. The pending action remains blocked; try refreshing again.");
+      }
       refreshingRef.current = false;
       setRefreshing(false);
       return false;
@@ -89,21 +95,33 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     const latest = values?.map(readSpoolDto);
     const validSpools = latest?.filter((spool): spool is SpoolDto => spool !== undefined);
     if (!latest || latest.length !== validSpools?.length) {
-      setListError(
-        "The latest stock state could not be read. The pending action remains blocked; try refreshing again.",
-      );
+      if (intent === "review") {
+        setListError(
+          "The latest stock state could not be read. The pending action remains blocked; try refreshing again.",
+        );
+      }
       refreshingRef.current = false;
       setRefreshing(false);
       return false;
     }
     setSpools(orderedSpools(validSpools));
-    setUncertaintyGuard(false);
     setListError("");
-    setDeleteError(null);
-    setDeleteSpoolId(null);
-    setCreateOpen(false);
-    setEditingSpoolId(null);
-    setStatusMessage("Stock refreshed. Review the current saved spools before making another change.");
+    if (intent === "correction") {
+      const targetIsAvailable = validSpools.some((spool) => spool.id === editingSpoolId);
+      if (editingSpoolId && !targetIsAvailable) {
+        setEditingSpoolId(null);
+        setStatusMessage("This spool is no longer available. The unsaved correction was not saved.");
+      } else {
+        setStatusMessage("Reservation amounts refreshed. Review the latest saved quantities before saving.");
+      }
+    } else {
+      setUncertaintyGuard(false);
+      setDeleteError(null);
+      setDeleteSpoolId(null);
+      setCreateOpen(false);
+      setEditingSpoolId(null);
+      setStatusMessage("Stock refreshed. Review the current saved spools before making another change.");
+    }
     refreshingRef.current = false;
     setRefreshing(false);
     return true;
@@ -184,7 +202,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "We couldn't confirm whether deletion completed. Refresh stock before trying again.",
+        message: uncertainDeletionMessage,
       });
       updateDeletePending(false);
       return;
@@ -237,7 +255,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "Deletion may have completed, but its result could not be read. Refresh stock before trying again.",
+        message: uncertainDeletionMessage,
       });
     } else if (response.status === 401) {
       setDeleteError({ kind: "unauthenticated", message: "Your session has expired. Sign in to continue." });
@@ -250,7 +268,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
       handleUncertainMutation();
       setDeleteError({
         kind: "uncertain",
-        message: "The deletion outcome may be uncertain. Refresh stock and review it before trying again.",
+        message: uncertainDeletionMessage,
       });
     } else if (response.status === 403) {
       setDeleteError({ kind: "generic", message: "This request was rejected. Refresh stock and try again." });
@@ -331,6 +349,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             onCancel={closeCreate}
             onUncertain={handleUncertainMutation}
             onRefreshLatest={refreshStock}
+            onRefreshCorrection={() => refreshStock("correction")}
             mutationGuarded={uncertaintyGuard}
           />
         </section>
@@ -432,6 +451,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                         }}
                         onUncertain={handleUncertainMutation}
                         onRefreshLatest={refreshStock}
+                        onRefreshCorrection={() => refreshStock("correction")}
                         mutationGuarded={uncertaintyGuard}
                       />
                     </div>
@@ -458,9 +478,19 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                             </a>
                           )}
                           {deleteError.kind === "uncertain" && (
-                            <a className="carbon-feedback-link" href="/dashboard/spools">
-                              Refresh stock
-                            </a>
+                            <div className="carbon-feedback-actions">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void refreshStock()}
+                                disabled={mutationPending || refreshing}
+                              >
+                                {refreshing ? "Refreshing…" : "Refresh stock"}
+                              </Button>
+                              <a className="carbon-feedback-link" href="/dashboard/prints">
+                                Manage reservations in planned prints
+                              </a>
+                            </div>
                           )}
                         </div>
                       )}
