@@ -9,6 +9,7 @@ This record captures the completed automated evidence for all three phases, the 
 | 1 — Correct stock with current reservation guidance | `cb2d8c9c1ccbde1bcfccf76e5e284f9f86488689` |
 | 2 — Explain confirmed and uncertain spool deletion | `a63b8519923543962639a82ef01de75126b69bb3` |
 | 3 — Verify the bounded S-06 outcome and record evidence | `94743371efe29308effa0423340fb641fa401ad1` |
+| Final SHA write-back and implemented status | `14bb2de57a838b4183cf2dd33f68c455eb42998c` |
 | Earlier closeout, superseded by the final SHA write-back | `c5bfac9542e3ceadbdd4ca22251ed4529b4e90d4` |
 
 ## Post-rebase follow-up commits
@@ -19,10 +20,27 @@ This record captures the completed automated evidence for all three phases, the 
 | Add spacing between correction recovery actions | `d7e52b709987812f10c741616083200bab28776d` |
 | Record manual browser verification | `7600473dd2f8b73796ab574ef9d322a9608a8909` |
 | Record acceptance of the recovery limitation | `b1589170f93693a8fb15e5a64dfb58e8e65058dd` |
+| Final SHA write-back and implemented status | `14bb2de57a838b4183cf2dd33f68c455eb42998c` |
 
-Automated gates below passed before the rebase onto `origin/master` (`d14a8a6`) and the spacing-only follow-up. They were not rerun afterward. Manual checks 3.4 and 3.5 were confirmed on the current branch.
+The pre-rebase evidence is retained below as historical context. The post-rebase runs dated 2026-10-20 cover the current branch after rebasing onto `origin/master` (`d14a8a6`), the spacing correction, and manual acceptance. Manual checks 3.4 and 3.5 were confirmed on the current branch.
 
-## Completed automated checks
+## Post-rebase automated verification (2026-10-20)
+
+All browser, database, and smoke integration checks used a temporary Supabase project on ports 56321–56327, created from this checkout's migrations. The existing shared Supabase project was not reset or modified. The temporary project and the smoke preview were stopped afterward.
+
+| Plan rows | Command | Outcome |
+| --- | --- | --- |
+| 1.1, 1.3 | `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts` | **PASS** — 18/18 Playwright tests, including setup and teardown (16 Chromium scenarios). Covered guardrail boundaries, stale reservation totals, draft retention/restoration, failed refresh, disappeared targets, and keyboard access. |
+| 1.2 | `npm run test:spools && npm run test:reservations` | **PASS** — spool 15/15; reservation 9/9. |
+| 2.1 | `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts tests/e2e/spool-recovery.spec.ts` | **PASS** — 23/23 Playwright tests, including setup and teardown (21 Chromium scenarios). Covered readable multi-reservation deletion feedback and committed deletion with a masked response. |
+| 2.2 | `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify npx supabase test db` | **PASS** — 452 pgTAP tests across 5 files. |
+| 2.2 | `cd /tmp/printplan-maintain-reserved-verify && node /root/work/maintain-reserved-spool/scripts/reservation-concurrency.mjs` | **PASS** — all 30 database interleavings verified; sessions and account fixtures were cleaned up. The script ran from the isolated project directory so it selected the isolated database container. |
+| 3.1 | `npm run verify:deploy` | **PASS** — exit 0; hooks 16 passed/1 skipped, lint passed, Astro check covered 106 files with 0 errors and 0 warnings (5 unused-parameter hints in the concurrency script), and the production build passed. |
+| 3.2 | `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify E2E_PORT=4326 npm run test:e2e` | **PASS** — full configured Playwright suite 50/50 in 1.4 minutes against the isolated database. Its build-and-preview server stopped before smoke preview started. |
+| 3.3 | `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:56324 npm run smoke` | **PASS** — the authenticated smoke flow completed, including stock, planned prints, reservations, settings, settlements, ownership, token expiry/refresh, and signout. Before it, `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify npm run build` passed and `SUPABASE_WORKDIR=/tmp/printplan-maintain-reserved-verify npm run preview -- --host 127.0.0.1 --port 4321` started the separate smoke preview. |
+| Post-check cleanup | `npm run build` | **PASS** — rebuilt after restoring the original local environment files; the development server was restarted on `0.0.0.0:4321`. |
+
+## Earlier phase-specific evidence (before final rebase)
 
 | Phase | Command | Outcome |
 | --- | --- | --- |
@@ -39,7 +57,7 @@ The Phase 1 browser cases verified 87 g is rejected with an 88 g reservation and
 
 The Phase 2 readable deletion case verified both exact reservation identities, print descriptions and released quantities. Fresh authenticated reads showed both prints survived unreserved and unrelated spool stock was unchanged. The lost-response case forwarded the real reserved deletion before masking its response, observed one browser deletion POST, kept mutations guarded after a failed stock refresh, and later reconciled current stock without claiming a recovered cancellation history. Both prints survived unreserved and unrelated stock remained unchanged.
 
-## Phase 3 automated gates
+## Earlier Phase 3 evidence (before final rebase)
 
 | Plan row | Command | Status |
 | --- | --- | --- |
@@ -62,6 +80,7 @@ The Phase 2 readable deletion case verified both exact reservation identities, p
 - Phase 1 deliberate-break evidence: an initial attempt from the main checkout was blocked before testing by conflicting Supabase credential files and yielded no behavior conclusion. In an isolated worktree, temporarily disabling `useSavedLabels` made the focused test fail at the expected `PLA` versus retained `Red` assertion. The source was restored.
 - Phase 2 deliberate-break evidence: temporarily changing the recovery link to `/dashboard/spools` made the focused lost-delete test fail at the expected `/dashboard/prints` href assertion. The source was restored.
 - The first Phase 3 full browser-suite attempt failed in the isolated verification worktree: the Phase 2 deliberate-break link was still present there, so the reserved-delete test observed `/dashboard/spools` instead of `/dashboard/prints`; the best-fit reservation test also timed out before finding its `Reserve 88 g` option. The isolated worktree was resynced from the current approved source, and the subsequent full-suite run passed 30/30; the best-fit failure did not reproduce.
+- On the first post-rebase focused browser attempt, authentication setup stopped before feature scenarios because `.env` and `.dev.vars` pointed to different local Supabase instances. The original `.env` was moved aside temporarily, the same test command passed on retry, and the original file was restored. No shared database was changed.
 - An optional Phase 1 `git diff --cached --check` reported trailing spaces on the research metadata lines. They are Markdown hard breaks used to keep the metadata lines separate; this was not a plan gate and the required verification suite passed.
 
 ## Retained recovery limitation
