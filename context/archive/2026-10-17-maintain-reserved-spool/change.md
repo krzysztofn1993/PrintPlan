@@ -1,10 +1,10 @@
 ---
 change_id: maintain-reserved-spool
 title: Maintain a spool that has active reservations
-status: impl_reviewed
+status: archived
 created: 2026-10-17
 updated: 2026-10-20
-archived_at: null
+archived_at: 2026-10-20T09:55:55Z
 ---
 
 ## Notes
