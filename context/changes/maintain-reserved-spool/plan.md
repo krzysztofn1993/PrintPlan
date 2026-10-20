@@ -199,24 +199,24 @@ For implementation prerequisites, use Node from `.nvmrc` and locked dependencies
 
 #### Automated
 
-- [x] 1.1 Correction browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts`, proving 87/88 g boundaries, the 88-to-143 g stale-total case, draft preservation, failed refresh, and disappearance handling. — 02ca054
-- [x] 1.2 Existing native spool and reservation contracts pass: `npm run test:spools` and `npm run test:reservations`. — 02ca054
-- [x] 1.3 The matching-label restoration browser case passes: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts`, proving that an unreserved-to-reserved transition preserves the draft, explicit label restoration retains grams without requests or writes, and a deliberate subsequent stock correction succeeds. — 02ca054
+- [x] 1.1 Correction browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts`, proving 87/88 g boundaries, the 88-to-143 g stale-total case, draft preservation, failed refresh, and disappearance handling. — cb2d8c9
+- [x] 1.2 Existing native spool and reservation contracts pass: `npm run test:spools` and `npm run test:reservations`. — cb2d8c9
+- [x] 1.3 The matching-label restoration browser case passes: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts`, proving that an unreserved-to-reserved transition preserves the draft, explicit label restoration retains grams without requests or writes, and a deliberate subsequent stock correction succeeds. — cb2d8c9
 
 ### Phase 2: Explain confirmed and uncertain spool deletion
 
 #### Automated
 
-- [x] 2.1 Reserved and unreserved deletion browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts tests/e2e/spool-recovery.spec.ts`, including both cancellation identities, lost committed response, failed refresh, surviving prints, unchanged unrelated stock, and one deletion POST. — a4e2a8e
-- [x] 2.2 Existing database safety regressions pass: `npx supabase test db` and `npm run test:reservations:concurrency`. — a4e2a8e
+- [x] 2.1 Reserved and unreserved deletion browser cases pass: `E2E_PORT=4326 npm run test:e2e -- tests/e2e/reservation-recovery.spec.ts tests/e2e/spool-recovery.spec.ts`, including both cancellation identities, lost committed response, failed refresh, surviving prints, unchanged unrelated stock, and one deletion POST. — a63b851
+- [x] 2.2 Existing database safety regressions pass: `npx supabase test db` and `npm run test:reservations:concurrency`. — a63b851
 
 ### Phase 3: Verify the bounded S-06 outcome and record evidence
 
 #### Automated
 
-- [x] 3.1 The complete native, lint, type and production-build gate passes: `npm run verify:deploy`. — 2aa6508
-- [x] 3.2 The complete configured browser suite passes: `E2E_PORT=4326 npm run test:e2e`. — 2aa6508
-- [x] 3.3 The existing authenticated smoke suite passes against a separately running production preview: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — 2aa6508
+- [x] 3.1 The complete native, lint, type and production-build gate passes: `npm run verify:deploy`. — 9474337
+- [x] 3.2 The complete configured browser suite passes: `E2E_PORT=4326 npm run test:e2e`. — 9474337
+- [x] 3.3 The existing authenticated smoke suite passes against a separately running production preview: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`. — 9474337
 
 #### Manual
 
