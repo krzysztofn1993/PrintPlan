@@ -2,12 +2,25 @@
 
 This record captures the completed automated evidence for all three phases, the author's manual verification and accepted scope limitation, and hosted behavior that was not observed.
 
-## Phase 1 and 2 commits
+## Phase commits and epilogue
 
 | Phase | Commit |
 | --- | --- |
-| 1 — Correct stock with current reservation guidance | `02ca054fa91721bd28cba5969a9abd250ea326ff` |
-| 2 — Explain confirmed and uncertain spool deletion | `a4e2a8e455a61ab5ffacea17467d2afc9f474562` |
+| 1 — Correct stock with current reservation guidance | `cb2d8c9c1ccbde1bcfccf76e5e284f9f86488689` |
+| 2 — Explain confirmed and uncertain spool deletion | `a63b8519923543962639a82ef01de75126b69bb3` |
+| 3 — Verify the bounded S-06 outcome and record evidence | `94743371efe29308effa0423340fb641fa401ad1` |
+| Earlier closeout, superseded by the final SHA write-back | `c5bfac9542e3ceadbdd4ca22251ed4529b4e90d4` |
+
+## Post-rebase follow-up commits
+
+| Intent | Commit |
+| --- | --- |
+| Clarify the completed verification record | `b00719495fa6cb97468e9650cbfbb9483b95f195` |
+| Add spacing between correction recovery actions | `d7e52b709987812f10c741616083200bab28776d` |
+| Record manual browser verification | `7600473dd2f8b73796ab574ef9d322a9608a8909` |
+| Record acceptance of the recovery limitation | `b1589170f93693a8fb15e5a64dfb58e8e65058dd` |
+
+Automated gates below passed before the rebase onto `origin/master` (`d14a8a6`) and the spacing-only follow-up. They were not rerun afterward. Manual checks 3.4 and 3.5 were confirmed on the current branch.
 
 ## Completed automated checks
 
