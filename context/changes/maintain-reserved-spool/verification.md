@@ -38,7 +38,7 @@ The Phase 2 readable deletion case verified both exact reservation identities, p
 
 | Plan row | Check | Status |
 | --- | --- | --- |
-| 3.4 | Current Chrome and Firefox plus a phone viewport/device: follow rejection, refresh and cancellation guidance; confirm draft retention, keyboard reachability and readable cancellation details. | **Pending human verification.** No browser, device, viewport or acceptance details were supplied. |
+| 3.4 | Current Chrome and Firefox plus a phone viewport/device: follow rejection, refresh and cancellation guidance; confirm draft retention, keyboard reachability and readable cancellation details. | **Partial; final spacing recheck pending.** On 2026-10-20 the author reported that manual trials 1 and 2 passed, cancellation details were confirmed, and the controls worked in Chrome, Firefox and on a phone. Exact browser versions, device model and viewport were not supplied. The author also reported no gap between **Refresh reservation amounts** and **Manage reservations in planned prints**. An action gap was added; the author must confirm the updated layout before this row is checked. |
 | 3.5 | Author accepts that lost-response recovery shows current data only and cannot restore the original cancellation list. | **Pending author acceptance.** Do not treat the scope decision as recorded acceptance for this row. |
 | — | Hosted behavior | **Unobserved.** No hosted environment was tested. |
 
