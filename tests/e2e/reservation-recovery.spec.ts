@@ -153,6 +153,261 @@ test("reopening a print ignores its earlier preview and confirms the latest stoc
   }
 });
 
+test("reserved stock corrections reject below reservations and accept equality", async ({ page, recoveryApi }) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PLA",
+    colour: recoveryApi.label("correction-boundary"),
+    recordedGrams: 150,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("correction-boundary-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+
+  await openSpools(page);
+  await spoolAction(page, "Edit", spool.id).click();
+  const recorded = page.getByLabel("Recorded stock (g)");
+  await recorded.fill("87");
+  await page.getByRole("button", { name: "Save changes" }).click();
+
+  const feedback = page.getByRole("alert").filter({ hasText: "Recorded stock cannot be reduced" });
+  await expect(feedback).toBeVisible();
+  await expect(feedback).not.toContainText("88 g");
+  await expect(feedback.getByRole("link", { name: "Manage reservations in planned prints" })).toHaveAttribute(
+    "href",
+    "/dashboard/prints",
+  );
+  await expect(page.getByRole("button", { name: "Refresh reservation amounts" })).toBeVisible();
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 150,
+    reservedGrams: 88,
+    availableGrams: 62,
+  });
+
+  await recorded.fill("88");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  const row = spoolRow(page, spool.id);
+  await expect(row.locator(".carbon-row-value").first().locator("dd")).toHaveText("88 g");
+  await expect(row.getByText("0 g")).toBeVisible();
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 88,
+    reservedGrams: 88,
+    availableGrams: 0,
+  });
+});
+
+test("correction refresh uses current reservation totals and retains the unsaved draft", async ({
+  page,
+  recoveryApi,
+}) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PETG",
+    colour: recoveryApi.label("correction-refresh"),
+    recordedGrams: 200,
+  });
+  const firstPrint = await recoveryApi.createPrint({
+    name: recoveryApi.label("correction-refresh-first"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  const secondPrint = await recoveryApi.createPrint({
+    name: recoveryApi.label("correction-refresh-second"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 50,
+  });
+  await recoveryApi.reserveMaterial(firstPrint, spool.id, "best_fit");
+
+  await openSpools(page);
+  await spoolAction(page, "Edit", spool.id).click();
+  const recorded = page.getByLabel("Recorded stock (g)");
+  await recorded.fill("100");
+  const secondReservationId = await recoveryApi.reserveMaterial(secondPrint, spool.id, "best_fit");
+
+  let correctionPosts = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith(`/api/spools/${spool.id}/update`)) {
+      correctionPosts += 1;
+    }
+  });
+  await page.getByRole("button", { name: "Save changes" }).click();
+  const feedback = page.getByRole("alert").filter({ hasText: "Recorded stock cannot be reduced" });
+  await expect(feedback).toBeVisible();
+  await expect(feedback).not.toContainText("88 g");
+  expect(correctionPosts).toBe(1);
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 200,
+    reservedGrams: 143,
+    availableGrams: 57,
+  });
+
+  let failedReads = 0;
+  await page.route("**/api/spools", async (route) => {
+    if (route.request().method() === "GET" && failedReads === 0) {
+      failedReads += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "temporary" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Reservation amounts could not be refreshed" })).toBeVisible();
+  await expect(recorded).toHaveValue("100");
+  await expect(spoolRow(page, spool.id).getByText("112 g")).toBeVisible();
+  expect(correctionPosts).toBe(1);
+  await page.unroute("**/api/spools");
+
+  await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+  await expect(recorded).toHaveValue("100");
+  await expect(recorded).toHaveAttribute("min", "143");
+  await expect(spoolRow(page, spool.id).getByText("57 g")).toBeVisible();
+  expect(correctionPosts).toBe(1);
+
+  await recoveryApi.releaseMaterial(secondPrint.id, secondReservationId);
+  await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+  await expect(recorded).toHaveValue("100");
+  await expect(recorded).toHaveAttribute("min", "88");
+  await expect(spoolRow(page, spool.id).getByText("112 g")).toBeVisible();
+  expect(correctionPosts).toBe(1);
+
+  await page.getByRole("button", { name: "Save changes" }).click();
+  const row = spoolRow(page, spool.id);
+  await expect(row.getByText("100 g")).toBeVisible();
+  await expect(row.getByText("12 g")).toBeVisible();
+  expect(correctionPosts).toBe(2);
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 100,
+    reservedGrams: 88,
+    availableGrams: 12,
+  });
+});
+
+test("a correction refresh closes a disappeared spool without saving the draft", async ({ page, recoveryApi }) => {
+  const spool = await recoveryApi.createSpool({
+    material: "ABS",
+    colour: recoveryApi.label("correction-disappeared"),
+    recordedGrams: 150,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("correction-disappeared-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+
+  await openSpools(page);
+  await spoolAction(page, "Edit", spool.id).click();
+  await page.getByLabel("Recorded stock (g)").fill("87");
+  let correctionPosts = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith(`/api/spools/${spool.id}/update`)) {
+      correctionPosts += 1;
+    }
+  });
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Recorded stock cannot be reduced" })).toBeVisible();
+  expect(correctionPosts).toBe(1);
+
+  await recoveryApi.deleteSpool(spool.id);
+  await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+  await expect(page.getByRole("heading", { name: "Correct this spool" })).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveText(
+    "This spool is no longer available. The unsaved correction was not saved.",
+  );
+  expect(correctionPosts).toBe(1);
+  expect((await recoveryApi.listSpools()).some((item) => item.id === spool.id)).toBe(false);
+  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
+});
+
+for (const matchingField of ["Material", "Colour"] as const) {
+  test(`reserved-label refresh preserves the draft and restores saved labels only on request (${matchingField.toLowerCase()} conflict)`, async ({
+    page,
+    recoveryApi,
+  }) => {
+    const spool = await recoveryApi.createSpool({ material: "PLA", colour: "Black", recordedGrams: 200 });
+    const print = await recoveryApi.createPrint({
+      name: recoveryApi.label("correction-label-restore"),
+      material: spool.material,
+      colour: spool.colour,
+      requiredGrams: 80,
+    });
+
+    await openSpools(page);
+    await spoolAction(page, "Edit", spool.id).click();
+    await page.getByLabel(matchingField).fill("Red");
+    await page.getByLabel("Recorded stock (g)").fill("100");
+    await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "active reservations" })).toBeVisible();
+    await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
+
+    const material = page.getByLabel("Material");
+    const colour = page.getByLabel("Colour");
+    const recorded = page.getByLabel("Recorded stock (g)");
+    await expect(material).toHaveValue(matchingField === "Material" ? "Red" : "PLA");
+    await expect(colour).toHaveValue(matchingField === "Colour" ? "Red" : "Black");
+    await expect(recorded).toHaveValue("100");
+    await expect(material).toBeDisabled();
+    await expect(colour).toBeDisabled();
+    const restore = page.getByRole("button", { name: "Use saved material and colour" });
+    await expect(restore).toBeVisible();
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      recordedGrams: 200,
+      reservedGrams: 88,
+      availableGrams: 112,
+    });
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+      spoolId: spool.id,
+      reservedGrams: 88,
+    });
+
+    const requestsDuringRestore: string[] = [];
+    const recordRequest = (request: import("@playwright/test").Request) => {
+      if (request.method() === "GET" || request.method() === "POST") requestsDuringRestore.push(request.method());
+    };
+    page.on("request", recordRequest);
+    await restore.click();
+    await expect(material).toHaveValue("PLA");
+    await expect(colour).toHaveValue("Black");
+    await expect(recorded).toHaveValue("100");
+    await expect(restore).toHaveCount(0);
+    expect(requestsDuringRestore).toEqual([]);
+    page.off("request", recordRequest);
+
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      recordedGrams: 200,
+      reservedGrams: 88,
+      availableGrams: 112,
+    });
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+      spoolId: spool.id,
+      reservedGrams: 88,
+    });
+
+    await page.getByRole("button", { name: "Save changes" }).click();
+    const row = spoolRow(page, spool.id);
+    await expect(row.getByText("100 g")).toBeVisible();
+    await expect(row.getByText("12 g")).toBeVisible();
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      material: "PLA",
+      colour: "Black",
+      recordedGrams: 100,
+      reservedGrams: 88,
+      availableGrams: 12,
+    });
+  });
+}
+
 test("best-fit reservation and release preserve recorded spool stock", async ({ page, recoveryApi }) => {
   const spool = await recoveryApi.createSpool({
     material: "PLA",
@@ -250,6 +505,94 @@ test("a changed best fit needs a new confirmation, manual choice works, and spoo
   await expect(page.getByRole("status")).toContainText("released 88 g");
   expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
   await expect(reservedSpool).toHaveCount(0);
+});
+
+test("deleting a spool reports every reservation and leaves its prints unreserved", async ({ page, recoveryApi }) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PETG",
+    colour: recoveryApi.label("multi-reservation-delete"),
+    recordedGrams: 200,
+  });
+  const namedPrint = await recoveryApi.createPrint({
+    name: recoveryApi.label("multi-reservation-named-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  const unnamedPrint = await recoveryApi.createPrint({
+    name: null,
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 50,
+  });
+  const unrelatedSpool = await recoveryApi.createSpool({
+    material: "TPU",
+    colour: recoveryApi.label("multi-reservation-unrelated"),
+    recordedGrams: 73,
+  });
+  const namedReservationId = await recoveryApi.reserveMaterial(namedPrint, spool.id, "best_fit");
+  const unnamedReservationId = await recoveryApi.reserveMaterial(unnamedPrint, spool.id, "best_fit");
+  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+    recordedGrams: 200,
+    reservedGrams: 143,
+    availableGrams: 57,
+  });
+
+  await openSpools(page);
+  await spoolAction(page, "Delete", spool.id).click();
+  await expect(page.getByRole("heading", { name: "Delete this spool?" })).toBeVisible();
+  const deletionResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/spools/${spool.id}/delete`) && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Confirm deletion" }).click();
+  const deletionResponse = await deletionResponsePromise;
+  expect(deletionResponse.status()).toBe(200);
+  const receipt = (await deletionResponse.json()) as {
+    cancelledReservations: {
+      reservationId: string;
+      printId: string;
+      printName: string | null;
+      material: string;
+      colour: string;
+      releasedGrams: number;
+    }[];
+  };
+  expect(receipt.cancelledReservations).toHaveLength(2);
+  expect(receipt.cancelledReservations).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        reservationId: namedReservationId,
+        printId: namedPrint.id,
+        printName: namedPrint.name,
+        releasedGrams: 88,
+      }),
+      expect.objectContaining({
+        reservationId: unnamedReservationId,
+        printId: unnamedPrint.id,
+        printName: null,
+        material: spool.material,
+        colour: spool.colour,
+        releasedGrams: 55,
+      }),
+    ]),
+  );
+
+  const status = page.getByRole("status");
+  await expect(status).toContainText(`${namedPrint.name} (print ${namedPrint.id}) released 88 g`);
+  await expect(status).toContainText(`${spool.material}, ${spool.colour} (print ${unnamedPrint.id}) released 55 g`);
+  await expect(spoolRow(page, spool.id)).toHaveCount(0);
+  const savedPrints = await recoveryApi.listPrints();
+  expect(savedPrints.find((item) => item.id === namedPrint.id)).toMatchObject({ reservation: null });
+  expect(savedPrints.find((item) => item.id === unnamedPrint.id)).toMatchObject({ reservation: null });
+  const savedSpools = await recoveryApi.listSpools();
+  expect(savedSpools.some((item) => item.id === spool.id)).toBe(false);
+  expect(savedSpools.find((item) => item.id === unrelatedSpool.id)).toMatchObject({
+    material: unrelatedSpool.material,
+    colour: unrelatedSpool.colour,
+    recordedGrams: 73,
+    reservedGrams: 0,
+    availableGrams: 73,
+  });
 });
 
 test("committed reserve and release with unreadable acknowledgements stay guarded until refresh", async ({
@@ -484,9 +827,11 @@ test("reservation selection, confirmation, and release are reachable with the ke
   });
 
   await openPrints(page);
+  await expect(page.locator('astro-island[component-export="PrintList"]:not([ssr])')).toHaveCount(1);
   const row = printRow(page, print.id);
   const reserve = row.getByRole("button", { name: "Reserve material" });
   await reserve.focus();
+  await expect(reserve).toBeFocused();
   await page.keyboard.press("Enter");
 
   const radio = row.getByRole("radio");

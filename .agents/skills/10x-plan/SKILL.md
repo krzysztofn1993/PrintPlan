@@ -185,7 +185,7 @@ Before any reading, identify what kinds of upstream artifacts the user passed in
      `[1-sentence what this does] · Strength: [key advantage] · Tradeoff: [key cost or risk]`
    - The recommendation should be grounded in research (codebase patterns for software, domain knowledge and context for non-software) — not guessing
 
-   **Check the question payload before asking:** every `header` is 1–12 characters (count spaces), each question has 2–4 distinct choices within the actual host limit, only the first label contains the exact `⭐ Recommended` marker, and every description contains both `· Strength:` and `· Tradeoff:` with concrete content. Use `Format` instead of the 13-character `Output format`. Verify the native question arguments themselves, not only a prose preview.
+   **Check the question payload before asking:** every `header` is 1–12 characters (count spaces), each question has 2–4 distinct choices within the actual host limit, only the first label contains the exact `⭐ Recommended` marker, and every description contains both `· Strength:` and `· Tradeoff:` markers, each surrounded by one ordinary space, with concrete content. Use `Format` instead of the 13-character `Output format`. Verify the native question arguments themselves, not only a prose preview.
 
    **Example user question with recommendations (software — delivery):** `Rollout` is `[S]` — delivery strategy; ask only when the change can fail in production in a way the release path would have to contain, otherwise inherit the team's default.
 
