@@ -15,6 +15,7 @@ const KNOWN_MIGRATIONS = [
   "20261017000000_account_safety_margin.sql",
   "20261018000000_settle_print_consumption.sql",
   "20261019000000_preserve_margin_with_settlements.sql",
+  "20261022000000_recalculate_reserved_print.sql",
 ];
 const COMMAND_TIMEOUT_MS = 45_000;
 const MAX_CAPTURE_BYTES = 16 * 1024 * 1024;
@@ -839,12 +840,205 @@ async function main() {
       "PASS  saved margins, legacy replay, witness enforcement, and settled-print guards survive both migrations",
     );
 
+    const historicalRename = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.update_print('" +
+          upgradePrintB.id +
+          "',2,'Historically renamed reserved print','PLA','Black / Red / Gold',50)::text;",
+        "Rename a reserved legacy print before S-05",
+      ),
+    );
+    ensure(
+      historicalRename.version === 3 && historicalRename.name === "Historically renamed reserved print",
+      "The historical name-only edit did not advance the legacy print version before S-05.",
+    );
+    const printsBeforeRecalculationMigration = await restrictedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Prints before recalculation migration",
+    );
+    const reservationsBeforeRecalculationMigration = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Reservations before recalculation migration",
+    );
+    const requestsBeforeRecalculationMigration = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Request evidence before recalculation migration",
+    );
+    const historicalRequestBefore = requestsBeforeRecalculationMigration.find(
+      (request) => request.request_id === requestB,
+    );
+    const historicalReservationBefore = reservationsBeforeRecalculationMigration.find(
+      (reservation) => reservation.print_id === upgradePrintB.id,
+    );
+    ensure(
+      historicalRequestBefore?.expected_version === 1 &&
+        historicalRequestBefore.expected_reservation_grams === null &&
+        historicalReservationBefore?.id === legacyReplay.reservationId,
+      "The pre-S-05 historical replay fixture did not retain its original command and reservation evidence.",
+    );
+
+    const recalculationMigration = await readFile(MIGRATIONS_DIR + "/" + KNOWN_MIGRATIONS[6], "utf8");
+    await psql(container, scratch, "BEGIN;\n" + recalculationMigration + "\nCOMMIT;\n", {
+      label: "Transactional populated reserved-print recalculation migration",
+    });
+    const printsAfterRecalculationMigration = await restrictedPrintRows(
+      container,
+      scratch,
+      ownerA,
+      "Prints after recalculation migration",
+    );
+    const reservationsAfterRecalculationMigration = await restrictedReservationRows(
+      container,
+      scratch,
+      ownerA,
+      "Reservations after recalculation migration",
+    );
+    const requestsAfterRecalculationMigration = await ownerRequestRows(
+      container,
+      scratch,
+      ownerA,
+      "Request evidence after recalculation migration",
+    );
+    const priorRequestFieldsAfter = requestsAfterRecalculationMigration.map(
+      ({ allocation_spool_id, recalculated_at, ...request }) => request,
+    );
+    ensure(
+      JSON.stringify(stable(printsAfterRecalculationMigration)) ===
+        JSON.stringify(stable(printsBeforeRecalculationMigration)) &&
+        JSON.stringify(stable(reservationsAfterRecalculationMigration)) ===
+          JSON.stringify(stable(reservationsBeforeRecalculationMigration)) &&
+        JSON.stringify(stable(priorRequestFieldsAfter)) ===
+          JSON.stringify(stable(requestsBeforeRecalculationMigration)),
+      "The recalculation migration changed populated print, reservation, or original request fields.",
+    );
+    ensure(
+      requestsAfterRecalculationMigration.every(
+        (request) => request.allocation_spool_id === request.spool_id && request.recalculated_at === null,
+      ) &&
+        requestsAfterRecalculationMigration.find((request) => request.request_id === requestB)?.recalculated_at ===
+          null,
+      "The populated upgrade did not backfill current-spool evidence or NULL recalculation markers, including the historically renamed print.",
+    );
+    const allocationEvidenceForeignKeys = await queryValue(
+      container,
+      scratch,
+      "SELECT count(*) FROM pg_catalog.pg_constraint AS constraint_row " +
+        "WHERE constraint_row.conrelid = 'private.reservation_requests'::regclass " +
+        "AND constraint_row.contype = 'f' " +
+        "AND pg_get_constraintdef(constraint_row.oid) ILIKE '%allocation_spool_id%';",
+      { label: "Current allocation evidence foreign-key check" },
+    );
+    ensure(allocationEvidenceForeignKeys === "0", "Current-spool evidence received a spool foreign key.");
+
+    const beforeLegacyReplay = JSON.stringify(
+      stable({
+        prints: printsAfterRecalculationMigration,
+        reservations: reservationsAfterRecalculationMigration,
+        requests: requestsAfterRecalculationMigration,
+      }),
+    );
+    const upgradedLegacyReplay = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.reserve_print_material(" + legacyReserveArgs.join(",") + ")::text;",
+        "Replay historically renamed legacy reservation after S-05 upgrade",
+      ),
+    );
+    ensure(
+      upgradedLegacyReplay.replayed === true && upgradedLegacyReplay.reservationId === legacyReplay.reservationId,
+      "The exact legacy reserve replay did not survive the S-05 migration before recalculation.",
+    );
+    const afterLegacyReplay = JSON.stringify(
+      stable({
+        prints: await restrictedPrintRows(container, scratch, ownerA, "Prints after legacy replay"),
+        reservations: await restrictedReservationRows(container, scratch, ownerA, "Reservations after legacy replay"),
+        requests: await ownerRequestRows(container, scratch, ownerA, "Requests after legacy replay"),
+      }),
+    );
+    ensure(afterLegacyReplay === beforeLegacyReplay, "The legacy replay changed populated product or request state.");
+
+    const recalculatedLegacyEdit = JSON.parse(
+      await ownerQuery(
+        container,
+        scratch,
+        ownerA,
+        "SELECT public.update_print('" +
+          upgradePrintB.id +
+          "',3,'S-05 recalculated reserved print','PLA','Black / Red / Gold',50)::text;",
+        "Recalculate the historically renamed reservation",
+      ),
+    );
+    const reservationAfterLegacyEdit = (
+      await restrictedReservationRows(container, scratch, ownerA, "Recalculated legacy reservation")
+    ).find((reservation) => reservation.print_id === upgradePrintB.id);
+    const requestAfterLegacyEdit = (
+      await ownerRequestRows(container, scratch, ownerA, "Recalculated legacy request evidence")
+    ).find((request) => request.request_id === requestB);
+    const fingerprintFields = [
+      "user_id",
+      "request_id",
+      "print_id",
+      "spool_id",
+      "expected_version",
+      "selection_mode",
+      "reservation_id",
+      "created_at",
+      "expected_reservation_grams",
+    ];
+    const fingerprintBefore = Object.fromEntries(
+      fingerprintFields.map((field) => [field, historicalRequestBefore[field]]),
+    );
+    const fingerprintAfter = Object.fromEntries(
+      fingerprintFields.map((field) => [field, requestAfterLegacyEdit?.[field]]),
+    );
+    ensure(
+      recalculatedLegacyEdit.print.version === 4 &&
+        recalculatedLegacyEdit.print.reservation?.id === legacyReplay.reservationId &&
+        recalculatedLegacyEdit.print.reservation.reservedGrams === 53 &&
+        recalculatedLegacyEdit.recalculation.outcome === "manual_retained" &&
+        recalculatedLegacyEdit.recalculation.previousReservation.reservedGrams === 55 &&
+        reservationAfterLegacyEdit?.created_at === historicalReservationBefore.created_at &&
+        reservationAfterLegacyEdit?.reserved_grams === 53 &&
+        requestAfterLegacyEdit?.allocation_spool_id === ids.duplicate &&
+        typeof requestAfterLegacyEdit?.recalculated_at === "string" &&
+        JSON.stringify(stable(fingerprintAfter)) === JSON.stringify(stable(fingerprintBefore)),
+      "The first S-05 edit did not preserve reservation identity, age, and original command fingerprint while updating current evidence.",
+    );
+    await expectUnchangedReservationError(
+      container,
+      scratch,
+      ownerA,
+      "public.reserve_print_material(" + legacyReserveArgs.join(",") + ")",
+      "reservation_request_completed",
+      "Legacy replay after its first S-05 recalculation",
+    );
+    console.log(
+      "PASS  populated upgrade backfills evidence, preserves renamed legacy replay, and supersedes it only after S-05 recalculation",
+    );
+
     const releasedLegacy = JSON.parse(
       await ownerQuery(
         container,
         scratch,
         ownerA,
-        "SELECT public.release_print_material('" + legacyReplay.reservationId + "','" + upgradePrintB.id + "')::text;",
+        "SELECT public.release_print_material('" +
+          legacyReplay.reservationId +
+          "','" +
+          upgradePrintB.id +
+          "'," +
+          recalculatedLegacyEdit.print.version +
+          ")::text;",
         "Release the migrated legacy reservation",
       ),
     );

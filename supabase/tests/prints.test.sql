@@ -727,7 +727,7 @@ JOIN (VALUES
   ON record.material = 'LABEL-EDIT-BOUNDARY-' || fixture.suffix
 )
 SELECT is(
-  (SELECT count(receipt->>'id')::integer FROM changed),
+  (SELECT count(receipt->'print'->>'id')::integer FROM changed),
   6,
   'Unicode edits affect all six independently seeded rows'
 );
