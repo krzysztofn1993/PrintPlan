@@ -66,6 +66,8 @@ SELECT set_config('test.reservation_1',(SELECT reservation_id::text FROM public.
 SELECT set_config('test.reservation_2',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000002'),true);
 SELECT set_config('test.reservation_3',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000003'),true);
 SELECT set_config('test.reservation_4',(SELECT reservation_id::text FROM public.planned_prints WHERE id='41000000-0000-0000-0000-000000000004'),true);
+SELECT set_config('test.reservation_1_expected_version',
+  (SELECT version::text FROM public.prints WHERE id='41000000-0000-0000-0000-000000000001'),true);
 RESET ROLE;
 UPDATE public.print_reservations SET created_at = '2026-10-14 12:00:00+00' WHERE print_id = '41000000-0000-0000-0000-000000000002';
 UPDATE public.print_reservations SET created_at = '2026-10-15 12:00:00+00' WHERE print_id = '41000000-0000-0000-0000-000000000003';
@@ -192,7 +194,7 @@ SELECT throws_ok(
   $$SELECT public.settle_print_consumption('52000000-0000-0000-0000-000000000099','41000000-0000-0000-0000-000000000001',2,current_setting('test.reservation_1')::uuid,75)$$,
   'P0001','already_settled','a new key cannot settle the same print again'
 );
-SELECT is((public.release_print_material(current_setting('test.reservation_1')::uuid,'41000000-0000-0000-0000-000000000001')->>'disposition'),'already_released','exact release remains idempotent after settlement');
+SELECT is((public.release_print_material(current_setting('test.reservation_1')::uuid,'41000000-0000-0000-0000-000000000001',current_setting('test.reservation_1_expected_version')::integer)->>'disposition'),'already_released','exact release remains idempotent after settlement');
 SELECT throws_ok(
   $$SELECT public.reserve_print_material('51000000-0000-0000-0000-000000000001','41000000-0000-0000-0000-000000000001',1,'31000000-0000-0000-0000-000000000001','best_fit',88)$$,
   'P0001','reservation_request_completed','terminal reserve replay keeps its prior outcome'

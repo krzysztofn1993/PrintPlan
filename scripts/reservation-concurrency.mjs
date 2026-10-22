@@ -315,6 +315,7 @@ async function main() {
   async function reserveForSettlement(f, print = f.prints[0], requestId = f.requestId) {
     const result = await execute(f.owner, reserve(f, print, requestId, print.version));
     f.reservationId = result.reservationId;
+    f.reservationVersion = printState(await state(f), print.id).version;
     return result.reservationId;
   }
 
@@ -333,8 +334,10 @@ async function main() {
     );
   }
 
-  function release(reservationId, printId) {
-    return "SELECT public.release_print_material(" + quote(reservationId) + "," + quote(printId) + ");";
+  function release(reservationId, printId, expectedVersion) {
+    return (
+      "SELECT public.release_print_material(" + [quote(reservationId), quote(printId), expectedVersion].join(",") + ");"
+    );
   }
 
   function reduce(f) {
@@ -587,11 +590,16 @@ async function main() {
     await runRace("release then replacement then stale cancellation", {
       async prepare(f) {
         f.originalReservationId = (await execute(owner, reserve(f))).reservationId;
+        f.originalExpectedVersion = printState(await state(f), f.prints[0].id).version;
       },
-      holder: (f) => release(f.originalReservationId, f.prints[0].id),
+      holder: (f) => release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
       waiter: (f) => reserve(f, f.prints[0], f.replacementRequestId, 3),
       async beforeWaiterCommit(f, waiterBackend, participants) {
-        const stale = mutation(owner, release(f.originalReservationId, f.prints[0].id), true);
+        const stale = mutation(
+          owner,
+          release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
+          true,
+        );
         participants.push(stale);
         await waitForBlocked(stale, waiterBackend.pid);
         return async () => JSON.parse(succeeded(await stale.done));
@@ -621,8 +629,9 @@ async function main() {
     await runRace("release then replacement then stale settlement", {
       async prepare(f) {
         f.originalReservationId = await reserveForSettlement(f);
+        f.originalExpectedVersion = f.reservationVersion;
       },
-      holder: (f) => release(f.originalReservationId, f.prints[0].id),
+      holder: (f) => release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
       waiter: (f) => reserve(f, f.prints[0], f.replacementRequestId, 3),
       async beforeWaiterCommit(f, waiterBackend, participants) {
         const stale = mutation(
@@ -672,6 +681,8 @@ async function main() {
         quote(f.reservationId) +
         "," +
         quote(f.prints[0].id) +
+        "," +
+        f.reservationVersion +
         "); END $$;\n" +
         reserve(f, f.prints[0], f.replacementRequestId, 3),
       error: ["P0001", "print_settled"],
@@ -805,7 +816,7 @@ async function main() {
         f.reservationId = await reserveForSettlement(f);
       },
       holder: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, 2),
-      waiter: (f) => release(f.reservationId, f.prints[0].id),
+      waiter: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
       verify(f, { final, waiterReceipt }) {
         stock(final, 75, 0);
         assert.equal(waiterReceipt.disposition, "already_released");
@@ -818,7 +829,7 @@ async function main() {
       async prepare(f) {
         f.reservationId = await reserveForSettlement(f);
       },
-      holder: (f) => release(f.reservationId, f.prints[0].id),
+      holder: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
       waiter: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, 2),
       error: ["P0001", "edit_conflict"],
       verify(f, { final }) {
