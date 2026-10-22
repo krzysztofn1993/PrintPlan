@@ -342,7 +342,7 @@ Execution uses Node from `.nvmrc`, installed dependencies, Docker/local Supabase
 
 #### Manual
 
-- [ ] 3.3 Reserved edits explain retained manual selection, best-fit fallback and saved-unreserved outcomes; keyboard focus and draft-discard consent remain usable.
+- [x] 3.3 Reserved edits explain retained manual selection, best-fit fallback and saved-unreserved outcomes; keyboard focus and draft-discard consent remain usable. — 1e3df51
 
 ### Phase 4: End-to-end verification
 
