@@ -366,7 +366,7 @@ export function PrintForm({
             <Button
               type="button"
               variant="outline"
-              className="whitespace-normal"
+              className="mt-3 whitespace-normal"
               onClick={() => {
                 void refreshLatest();
               }}
