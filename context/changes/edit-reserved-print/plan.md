@@ -330,15 +330,15 @@ Execution uses Node from `.nvmrc`, installed dependencies, Docker/local Supabase
 
 #### Automated
 
-- [x] 2.1 Print, reservation, settlement and settings contracts pass: `npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings`.
-- [x] 2.2 Lint, types and production build pass: `npm run verify:deploy`.
+- [x] 2.1 Print, reservation, settlement and settings contracts pass: `npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings`. — 91afdeb
+- [x] 2.2 Lint, types and production build pass: `npm run verify:deploy`. — 91afdeb
 
 ### Phase 3: Form and recovery
 
 #### Automated
 
-- [ ] 3.1 Existing browser suites pass with unlocked reserved-print fields and explicitly versioned cancellation fixtures: `npm run test:e2e`.
-- [ ] 3.2 Native contracts, lint, types and production build remain green: `npm run verify:deploy`.
+- [x] 3.1 Existing browser suites pass with unlocked reserved-print fields and explicitly versioned cancellation fixtures: `npm run test:e2e`.
+- [x] 3.2 Native contracts, lint, types and production build remain green: `npm run verify:deploy`.
 
 #### Manual
 

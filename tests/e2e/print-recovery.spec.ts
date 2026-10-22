@@ -130,6 +130,94 @@ test("a real stale print edit keeps its draft and requires consent before readin
   });
 });
 
+test("an uncertain reserved edit retries the captured command and waits for paired reads", async ({
+  page,
+  recoveryApi,
+}) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PLA",
+    colour: recoveryApi.label("print-edit-recovery-colour"),
+    recordedGrams: 180,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("print-edit-recovery"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  await recoveryApi.reserveMaterial(print, spool.id, "manual");
+
+  const commandBodies: string[] = [];
+  let browserPosts = 0;
+  let failedStockReads = 0;
+  await openPrints(page);
+  await printAction(page, "Edit", print.id).click();
+  await page.route(`**/api/prints/${print.id}/update`, async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    browserPosts += 1;
+    commandBodies.push(route.request().postData() ?? "");
+    if (browserPosts === 1) {
+      await route.abort("failed");
+      return;
+    }
+    await route.continue();
+  });
+  await page.route("**/api/spools", async (route) => {
+    if (route.request().method() === "GET" && failedStockReads === 0) {
+      failedStockReads += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "unavailable" } }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  const savedName = recoveryApi.label("captured-edit-command");
+  await fillPrintForm(page, { name: savedName, material: "PLA", colour: spool.colour, requiredGrams: 90 });
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "exact edit may have completed" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry exact edit" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add a print" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
+
+  await page.getByLabel("Name (optional)").fill(`${savedName}-draft-only`);
+  await page.getByLabel("Required filament (g)").fill("91");
+  await expect(page.getByLabel("Name (optional)")).toHaveValue(`${savedName}-draft-only`);
+  await page.getByRole("button", { name: "Retry exact edit" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "current spool inventory could not be read" }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry exact edit" })).toHaveCount(0);
+  await expect(page.getByLabel("Name (optional)")).toHaveValue(`${savedName}-draft-only`);
+  await expect(printRow(page, print.id)).toContainText(savedName);
+  await expect(printRow(page, print.id)).toContainText("90 g");
+  expect(browserPosts).toBe(2);
+  expect(commandBodies[1]).toBe(commandBodies[0]);
+
+  await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
+  await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("manual spool was retained");
+  await expect(page.getByRole("status")).toContainText("99 g held");
+  await expect(page.getByRole("heading", { name: "Edit planned print" })).toHaveCount(0);
+  expect(browserPosts).toBe(2);
+  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
+    name: savedName,
+    material: "PLA",
+    colour: spool.colour,
+    requiredGrams: 90,
+    reservation: { spoolId: spool.id, reservedGrams: 99 },
+  });
+  await page.unroute("**/api/spools");
+  await page.unroute(`**/api/prints/${print.id}/update`);
+});
+
 test("a held committed print save blocks collection actions and recovers after a failed then successful read", async ({
   page,
   recoveryApi,

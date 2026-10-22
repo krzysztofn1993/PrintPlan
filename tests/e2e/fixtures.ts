@@ -83,7 +83,7 @@ export interface RecoveryApi {
   prepareSettingsMutation(): Promise<void>;
   saveAccountSettings(marginPercent: number): Promise<{ marginPercent: number; version: number }>;
   reserveMaterial(print: PrintRecord, spoolId: string, selectionMode: "best_fit" | "manual"): Promise<string>;
-  releaseMaterial(printId: string, reservationId: string): Promise<void>;
+  releaseMaterial(printId: string, reservationId: string, expectedVersion: number): Promise<void>;
   settlePrint(printId: string, command: SettlementCommand): Promise<SettlementCommandResult>;
   readPrintSettlement(printId: string): Promise<SettlementReceipt | null>;
 }
@@ -330,7 +330,7 @@ export const test = base.extend<E2EFixtures>({
       trackPrint,
 
       async updatePrint(id, expectedVersion, input) {
-        const payload = await readJson<{ print: PrintRecord }>(
+        const payload = await readJson<{ print: PrintRecord; recalculation: unknown }>(
           await context.request.post(endpoint(`/api/prints/${id}/update`), {
             form: { ...input, name: input.name ?? "", expectedVersion },
             headers: { Origin: new URL(baseURL).origin },
@@ -383,10 +383,10 @@ export const test = base.extend<E2EFixtures>({
         return payload.reservationId;
       },
 
-      async releaseMaterial(printId, reservationId) {
+      async releaseMaterial(printId, reservationId, expectedVersion) {
         await readJson<{ reservationId: string }>(
           await context.request.post(endpoint(`/api/prints/${printId}/reservation/cancel`), {
-            form: { reservationId },
+            form: { reservationId, expectedVersion: String(expectedVersion) },
             headers: { Origin: new URL(baseURL).origin },
           }),
           200,

@@ -3,16 +3,26 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { MAX_REQUIRED_GRAMS, type PrintFieldErrors } from "@/lib/print-validation";
 import { readPrintDto } from "@/lib/print-dto";
+import { readPrintUpdateDto, type PrintUpdateDto } from "@/lib/print-update-dto";
 import type { PrintDto } from "@/lib/prints";
+
+export interface PrintUpdateCommand {
+  readonly printId: string;
+  readonly expectedVersion: number;
+  readonly name: string;
+  readonly material: string;
+  readonly colour: string;
+  readonly requiredGrams: string;
+}
 
 interface PrintFormProps {
   mode: "create" | "edit";
   print?: PrintDto;
   mutationPending: boolean;
   onPendingChange: (pending: boolean) => void;
-  onSaved: (print: PrintDto) => void;
+  onSaved: (print: PrintDto | PrintUpdateDto) => void;
   onCancel: () => void;
-  onUncertain: () => void;
+  onUncertain: (command?: PrintUpdateCommand) => void;
   onRefreshLatest: () => Promise<boolean>;
   mutationGuarded: boolean;
 }
@@ -112,9 +122,20 @@ export function PrintForm({
     setFieldErrors({});
     setRequestError(null);
     updatePending(true);
+    const command: PrintUpdateCommand | undefined =
+      mode === "edit" && print
+        ? Object.freeze({
+            printId: print.id,
+            expectedVersion: print.version,
+            name,
+            material,
+            colour,
+            requiredGrams,
+          })
+        : undefined;
     const payload = new URLSearchParams({ name, material, colour, requiredGrams });
     const endpoint = mode === "create" ? "/api/prints" : `/api/prints/${print?.id}/update`;
-    if (mode === "edit" && print) payload.set("expectedVersion", String(print.version));
+    if (command) payload.set("expectedVersion", String(command.expectedVersion));
 
     let response: Response;
     try {
@@ -124,11 +145,12 @@ export function PrintForm({
         body: payload,
       });
     } catch {
-      onUncertain();
+      onUncertain(command);
       setRequestError({
         kind: "uncertain",
-        message:
-          "We couldn't confirm whether the save completed. Refresh the print list and review it before trying again.",
+        message: command
+          ? "We couldn't confirm whether this exact edit completed. Keep this draft while the collection resolves it."
+          : "We couldn't confirm whether the save completed. Refresh the print list and review it before trying again.",
       });
       updatePending(false);
       return;
@@ -143,27 +165,37 @@ export function PrintForm({
 
     const expectedStatus = mode === "create" ? 201 : 200;
     if (response.ok) {
-      const saved = response.status === expectedStatus && isRecord(body) ? readPrintDto(body.print) : undefined;
+      const saved =
+        response.status === expectedStatus && isRecord(body)
+          ? mode === "create"
+            ? readPrintDto(body.print)
+            : command
+              ? readPrintUpdateDto(body, command.printId, command.expectedVersion)
+              : undefined
+          : undefined;
       if (saved) {
         updatePending(false);
         onSaved(saved);
         return;
       }
-      onUncertain();
+      onUncertain(command);
       setRequestError({
         kind: "uncertain",
-        message:
-          "The save may have completed, but its result could not be read. Refresh the print list before trying again.",
+        message: command
+          ? "The edit may have completed, but its committed result could not be read. Keep this draft while the collection resolves it."
+          : "The save may have completed, but its result could not be read. Refresh the print list before trying again.",
       });
       updatePending(false);
       return;
     }
 
     if (response.status >= 500 && response.status <= 599) {
-      onUncertain();
+      onUncertain(command);
       setRequestError({
         kind: "uncertain",
-        message: "The save outcome may be uncertain. Refresh the print list and review it before trying again.",
+        message: command
+          ? "The edit outcome may be uncertain. Keep this draft while the collection resolves it."
+          : "The save outcome may be uncertain. Refresh the print list and review it before trying again.",
       });
     } else if (response.status === 422) {
       const apiError = isRecord(body) && isRecord(body.error) ? body.error : undefined;
@@ -181,8 +213,8 @@ export function PrintForm({
       setRequestError({
         kind: "conflict",
         message:
-          code === "reserved_print_edit_requires_cancellation"
-            ? "Cancel this print's reservation before changing its material, colour, or required grams. Your entries are still here."
+          code === "print_settled"
+            ? "This print was settled before the edit could be saved. Your entries are still here; read the latest print before continuing."
             : "Another save changed this print after you opened it. Your entries are still here; read the latest print before saving again.",
       });
     } else if (response.status === 401) {
@@ -245,12 +277,8 @@ export function PrintForm({
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending || Boolean(print?.reservation)}
-          hint={
-            print?.reservation
-              ? "Cancel this print's reservation before changing its material."
-              : "Suggestions are optional; a spool does not need to exist."
-          }
+          disabled={pending || mutationPending}
+          hint="Suggestions are optional; a spool does not need to exist."
           error={fieldErrors.material?.message}
         />
         <datalist id={`${prefix}-material-options`}>
@@ -272,12 +300,8 @@ export function PrintForm({
           required
           minLength={1}
           autoComplete="off"
-          disabled={pending || mutationPending || Boolean(print?.reservation)}
-          hint={
-            print?.reservation
-              ? "Cancel this print's reservation before changing its colour."
-              : "Keep a multicolour label together, for example Black / Red / Gold."
-          }
+          disabled={pending || mutationPending}
+          hint="Keep a multicolour label together, for example Black / Red / Gold."
           error={fieldErrors.colour?.message}
         />
         <datalist id={`${prefix}-colour-options`}>
@@ -300,12 +324,8 @@ export function PrintForm({
           min={1}
           max={MAX_REQUIRED_GRAMS}
           step={1}
-          disabled={pending || mutationPending || Boolean(print?.reservation)}
-          hint={
-            print?.reservation
-              ? "Cancel this print's reservation before changing required grams."
-              : "Whole grams before any safety margin; this does not reserve stock."
-          }
+          disabled={pending || mutationPending}
+          hint="Whole grams before any safety margin; this does not reserve stock."
           error={fieldErrors.requiredGrams?.message}
         />
       </div>
@@ -314,8 +334,9 @@ export function PrintForm({
         <div role="note" className="carbon-feedback carbon-feedback-warning">
           <p className="font-medium">This print has an active material reservation.</p>
           <p className="mt-1 text-sm leading-relaxed">
-            You can change its name while it is reserved. Material, colour, and required grams are locked; release the
-            reservation first using the reservation controls on this print to change them.
+            Every save recalculates the held amount using the current safety margin, including a name-only save. The
+            current manual spool is retained when it still fits; otherwise a best-fit spool is selected, or the print is
+            saved without a reservation when no spool has enough available material.
           </p>
           <p className="mt-1 text-xs break-all">
             {print.reservation.reservedGrams} g held · reservation <code>{print.reservation.id}</code>
@@ -338,7 +359,7 @@ export function PrintForm({
               Sign in
             </a>
           )}
-          {(requestError.kind === "uncertain" || requestError.kind === "not_found") && (
+          {requestError.kind === "not_found" && (
             <p className="mt-2 text-sm">Use the list refresh below to review the current saved prints.</p>
           )}
           {requestError.kind === "conflict" && (
