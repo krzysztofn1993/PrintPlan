@@ -80,10 +80,17 @@ export function validateReserveForm(form: FormData): ReservationFormResult<{
   };
 }
 
-export function validateReleaseForm(form: FormData): ReservationFormResult<{ reservationId: string }> {
-  if (Array.from(form.keys()).some((key) => key !== "reservationId")) return { ok: false, reason: "unexpected_field" };
+export function validateReleaseForm(
+  form: FormData,
+): ReservationFormResult<{ reservationId: string; expectedVersion: number }> {
+  if (Array.from(form.keys()).some((key) => key !== "reservationId" && key !== "expectedVersion"))
+    return { ok: false, reason: "unexpected_field" };
   const reservationId = singleText(form, "reservationId");
-  return reservationId && isValidReservationId(reservationId)
-    ? { ok: true, value: { reservationId } }
+  const version = singleText(form, "expectedVersion");
+  if (!reservationId || !isValidReservationId(reservationId) || !version || !/^[0-9]+$/.test(version))
+    return { ok: false, reason: "invalid" };
+  const expectedVersion = Number(version);
+  return Number.isSafeInteger(expectedVersion) && expectedVersion >= 1 && expectedVersion <= 2_147_483_647
+    ? { ok: true, value: { reservationId, expectedVersion } }
     : { ok: false, reason: "invalid" };
 }

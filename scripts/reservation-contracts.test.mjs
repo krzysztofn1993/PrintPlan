@@ -21,6 +21,7 @@ import { toSpoolDto } from "../src/lib/spools.ts";
 const OWNER_ID = "11111111-1111-4111-8111-111111111111";
 const PRINT_ID = "33333333-3333-4333-8333-333333333333";
 const SPOOL_ID = "44444444-4444-4444-8444-444444444444";
+const OTHER_SPOOL_ID = "77777777-7777-4777-8777-777777777777";
 const RESERVATION_ID = "55555555-5555-4555-8555-555555555555";
 const REQUEST_ID = "66666666-6666-4666-8666-666666666666";
 
@@ -119,12 +120,81 @@ test("reservation form validation rejects duplicates, files, unknown fields and 
     validateReleaseForm(
       form([
         ["reservationId", RESERVATION_ID],
+        ["expectedVersion", "2"],
         ["grams", "88"],
       ]),
     ),
     { ok: false, reason: "unexpected_field" },
   );
-  assert.deepEqual(validateReleaseForm(form([["reservationId", "bad"]])), { ok: false, reason: "invalid" });
+  assert.deepEqual(
+    validateReleaseForm(
+      form([
+        ["reservationId", RESERVATION_ID],
+        ["expectedVersion", "2"],
+      ]),
+    ),
+    {
+      ok: true,
+      value: { reservationId: RESERVATION_ID, expectedVersion: 2 },
+    },
+  );
+  assert.deepEqual(
+    validateReleaseForm(
+      form([
+        ["reservationId", RESERVATION_ID],
+        ["expectedVersion", "2147483647"],
+      ]),
+    ),
+    { ok: true, value: { reservationId: RESERVATION_ID, expectedVersion: 2_147_483_647 } },
+  );
+  for (const entries of [
+    [["expectedVersion", "2"]],
+    [["reservationId", RESERVATION_ID]],
+    [
+      ["reservationId", "bad"],
+      ["expectedVersion", "2"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", "0"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", "2147483648"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", "1.5"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", " 2"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", "2"],
+      ["expectedVersion", "3"],
+    ],
+    [
+      ["reservationId", RESERVATION_ID],
+      ["reservationId", RESERVATION_ID],
+      ["expectedVersion", "2"],
+    ],
+  ]) {
+    assert.deepEqual(validateReleaseForm(form(entries)), { ok: false, reason: "invalid" });
+  }
+  const releaseFile = form([
+    ["reservationId", RESERVATION_ID],
+    ["expectedVersion", "2"],
+  ]);
+  releaseFile.set("expectedVersion", new Blob(["2"]));
+  assert.deepEqual(validateReleaseForm(releaseFile), { ok: false, reason: "invalid" });
+  const releaseIdFile = form([
+    ["reservationId", RESERVATION_ID],
+    ["expectedVersion", "2"],
+  ]);
+  releaseIdFile.set("reservationId", new Blob([RESERVATION_ID]));
+  assert.deepEqual(validateReleaseForm(releaseIdFile), { ok: false, reason: "invalid" });
 });
 
 test("reservation form transport accepts only supported form media types", async () => {
@@ -334,13 +404,146 @@ test("reserve and release commands call exact RPCs and return the committed rese
   });
   assert.equal(legacyReplay.ok, true);
   assert.equal(calls[1].args.p_expected_reservation_grams, null);
-  const release = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID, PRINT_ID);
+  const release = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID, PRINT_ID, 2);
   assert.equal(release.ok, true);
   assert.equal(release.value.disposition, "released");
   assert.deepEqual(calls[2], {
     name: "release_print_material",
-    args: { p_reservation_id: RESERVATION_ID, p_print_id: PRINT_ID },
+    args: { p_reservation_id: RESERVATION_ID, p_print_id: PRINT_ID, p_expected_version: 2 },
   });
+});
+
+test("reserve confirmation rejects a same-ID reassignment between its paired reads", async (t) => {
+  t.mock.method(console, "error", () => undefined);
+  const calls = [];
+  const client = {
+    rpc(name, args) {
+      calls.push({ name, args });
+      return Promise.resolve({
+        data: { reservationId: RESERVATION_ID, disposition: "active", replayed: false },
+        error: null,
+        status: 200,
+      });
+    },
+    from(table) {
+      const rows = table === "planned_prints" ? [printRow({ reservation_spool_id: OTHER_SPOOL_ID })] : [spoolRow()];
+      const builder = {
+        select() {
+          return builder;
+        },
+        eq() {
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        range() {
+          return Promise.resolve({ data: rows, error: null, status: 200 });
+        },
+      };
+      return builder;
+    },
+  };
+  const result = await reservePrintMaterial(client, OWNER_ID, {
+    printId: PRINT_ID,
+    requestId: REQUEST_ID,
+    expectedVersion: 2,
+    expectedReservationGrams: 88,
+    spoolId: SPOOL_ID,
+    selectionMode: "best_fit",
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "database_error");
+  const response = mapReservationFailure(result, "mutation");
+  assert.equal(response.status, 500);
+  assert.equal((await response.json()).error.refreshRequired, true);
+  assert.deepEqual(calls[0], {
+    name: "reserve_print_material",
+    args: {
+      p_request_id: REQUEST_ID,
+      p_print_id: PRINT_ID,
+      p_expected_version: 2,
+      p_expected_reservation_grams: 88,
+      p_spool_id: SPOOL_ID,
+      p_selection_mode: "best_fit",
+    },
+  });
+});
+
+test("original reserve replay survives settings-only changes and is rejected after recalculation", async () => {
+  const input = {
+    printId: PRINT_ID,
+    requestId: REQUEST_ID,
+    expectedVersion: 2,
+    expectedReservationGrams: 88,
+    spoolId: SPOOL_ID,
+    selectionMode: "best_fit",
+  };
+  const recalculatedClient = {
+    rpc(name, args) {
+      assert.equal(name, "reserve_print_material");
+      assert.equal(args.p_request_id, REQUEST_ID);
+      return Promise.resolve({
+        data: null,
+        error: { message: "reservation_request_completed" },
+        status: 409,
+      });
+    },
+  };
+  const recalculatedReplay = await reservePrintMaterial(recalculatedClient, OWNER_ID, input);
+  assert.deepEqual(recalculatedReplay, { ok: false, reason: "reservation_request_completed" });
+
+  const settingsOnlyClient = {
+    rpc() {
+      return Promise.resolve({
+        data: { reservationId: RESERVATION_ID, disposition: "active", replayed: true },
+        error: null,
+        status: 200,
+      });
+    },
+    from(table) {
+      const rows = table === "planned_prints" ? [printRow()] : [spoolRow()];
+      const builder = {
+        select() {
+          return builder;
+        },
+        eq() {
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        range() {
+          return Promise.resolve({ data: rows, error: null, status: 200 });
+        },
+      };
+      return builder;
+    },
+  };
+  const settingsOnlyReplay = await reservePrintMaterial(settingsOnlyClient, OWNER_ID, input);
+  assert.equal(settingsOnlyReplay.ok, true);
+  assert.equal(settingsOnlyReplay.value.reservationId, RESERVATION_ID);
+});
+
+test("stale active releases pass the reviewed version and map to cancellation refresh guidance", async () => {
+  const calls = [];
+  const client = {
+    rpc(name, args) {
+      calls.push({ name, args });
+      return Promise.resolve({ data: null, error: { message: "edit_conflict" }, status: 409 });
+    },
+  };
+  const result = await releasePrintMaterial(client, OWNER_ID, RESERVATION_ID, PRINT_ID, 7);
+  assert.deepEqual(calls, [
+    {
+      name: "release_print_material",
+      args: { p_reservation_id: RESERVATION_ID, p_print_id: PRINT_ID, p_expected_version: 7 },
+    },
+  ]);
+  assert.deepEqual(result, { ok: false, reason: "edit_conflict" });
+  const response = mapReservationFailure(result, "cancellation");
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error.refreshRequired, true);
 });
 
 test("reservation responses are private and business failures keep precise status codes", async () => {
@@ -373,6 +576,12 @@ test("reservation responses are private and business failures keep precise statu
     assert.equal(conflict.headers.get("Cache-Control"), "private, no-cache, no-store, must-revalidate, max-age=0");
   }
   assert.equal(mapReservationFailure({ reason: "not_found" }).status, 404);
+  const staleCancellation = mapReservationFailure({ reason: "edit_conflict" }, "cancellation");
+  assert.equal(staleCancellation.status, 409);
+  const staleCancellationBody = await staleCancellation.json();
+  assert.equal(staleCancellationBody.error.code, "edit_conflict");
+  assert.equal(staleCancellationBody.error.refreshRequired, true);
+  assert.match(staleCancellationBody.error.message, /review its current reservation/);
   assert.equal(mapReservationFailure({ reason: "database_error", status: 503 }).status, 503);
 });
 

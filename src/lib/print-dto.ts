@@ -1,6 +1,7 @@
 import type { PrintDto } from "./prints.ts";
 import { readPrintSettlementDto } from "./settlement-dto.ts";
 import { MAX_REQUIRED_GRAMS, isValidPrintId } from "./print-validation.ts";
+import { MAX_EXPECTED_RESERVATION_GRAMS } from "./reservation-validation.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,7 +55,7 @@ export function readPrintDto(value: unknown): PrintDto | undefined {
     typeof reservation.reservedGrams !== "number" ||
     !Number.isSafeInteger(reservation.reservedGrams) ||
     reservation.reservedGrams < 1 ||
-    reservation.reservedGrams > 4_294_967_294
+    reservation.reservedGrams > MAX_EXPECTED_RESERVATION_GRAMS
   )
     return undefined;
   return {

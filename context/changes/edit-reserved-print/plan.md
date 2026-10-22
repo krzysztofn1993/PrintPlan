@@ -322,16 +322,16 @@ Execution uses Node from `.nvmrc`, installed dependencies, Docker/local Supabase
 
 #### Automated
 
-- [x] 1.1 Database contracts pass: `npx supabase test db`, including recalculation, stable identity/age, request evidence, versioned release, rollback and owner isolation.
-- [x] 1.2 Migration applies to a populated baseline without losing existing allocations or replay evidence: `npm run test:migrations`.
-- [x] 1.3 Existing concurrency scenarios remain executable with explicit captured cancellation versions: `npm run test:reservations:concurrency`.
+- [x] 1.1 Database contracts pass: `npx supabase test db`, including recalculation, stable identity/age, request evidence, versioned release, rollback and owner isolation. — ebd5226
+- [x] 1.2 Migration applies to a populated baseline without losing existing allocations or replay evidence: `npm run test:migrations`. — ebd5226
+- [x] 1.3 Existing concurrency scenarios remain executable with explicit captured cancellation versions: `npm run test:reservations:concurrency`. — ebd5226
 
 ### Phase 2: API and contracts
 
 #### Automated
 
-- [ ] 2.1 Print, reservation, settlement and settings contracts pass: `npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings`.
-- [ ] 2.2 Lint, types and production build pass: `npm run verify:deploy`.
+- [x] 2.1 Print, reservation, settlement and settings contracts pass: `npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings`.
+- [x] 2.2 Lint, types and production build pass: `npm run verify:deploy`.
 
 ### Phase 3: Form and recovery
 
