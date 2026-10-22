@@ -337,8 +337,8 @@ Execution uses Node from `.nvmrc`, installed dependencies, Docker/local Supabase
 
 #### Automated
 
-- [x] 3.1 Existing browser suites pass with unlocked reserved-print fields and explicitly versioned cancellation fixtures: `npm run test:e2e`.
-- [x] 3.2 Native contracts, lint, types and production build remain green: `npm run verify:deploy`.
+- [x] 3.1 Existing browser suites pass with unlocked reserved-print fields and explicitly versioned cancellation fixtures: `npm run test:e2e`. — b5780f3
+- [x] 3.2 Native contracts, lint, types and production build remain green: `npm run verify:deploy`. — b5780f3
 
 #### Manual
 
