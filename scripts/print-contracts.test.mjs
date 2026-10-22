@@ -459,21 +459,25 @@ test("create returns the reservation-aware committed row through RPC and the sha
 });
 
 test("update is owner, ID, and expected-version scoped and returns the incremented committed row", async () => {
-  const committed = row(1, {
+  const committedPrint = {
     id: PRINT_ID,
     name: null,
     material: "PETG",
     colour: "Blue",
-    required_grams: 250,
+    requiredGrams: 250,
     version: 2,
-    updated_at: "2026-10-12T12:00:00.000Z",
-  });
-  const fixture = makePrintClient({ mutationResponses: [{ data: committed, error: null, status: 200 }] });
+    createdAt: "2026-10-10T10:00:00.000Z",
+    updatedAt: "2026-10-12T12:00:00.000Z",
+    reservation: null,
+    settlement: null,
+  };
+  const receipt = { print: committedPrint, recalculation: null };
+  const fixture = makePrintClient({ mutationResponses: [{ data: receipt, error: null, status: 200 }] });
   const input = validatePrintFormData(editForm({ material: "PETG", requiredGrams: "250" }), "edit").data;
   const result = await updatePrint(fixture.client, OWNER_ID, PRINT_ID, 1, input);
   assert.equal(result.ok, true);
-  assert.equal(result.value.version, 2);
-  assert.equal(result.value.requiredGrams, 250);
+  assert.deepEqual(result.value, receipt);
+  assert.equal(fixture.calls.length, 1, "the committed snapshot must not trigger a post-commit read");
   assert.deepEqual(fixture.calls[0], {
     operation: "rpc",
     name: "update_print",
@@ -486,6 +490,85 @@ test("update is owner, ID, and expected-version scoped and returns the increment
       p_required_grams: 250,
     },
   });
+});
+
+test("update rejects malformed and inconsistent committed receipts", async () => {
+  const reservationId = "55555555-5555-4555-8555-555555555555";
+  const spoolId = "44444444-4444-4444-8444-444444444444";
+  const activeReceipt = {
+    print: {
+      id: PRINT_ID,
+      name: null,
+      material: "PETG",
+      colour: "Blue",
+      requiredGrams: 250,
+      version: 2,
+      createdAt: "2026-10-10T10:00:00.000Z",
+      updatedAt: "2026-10-12T12:00:00.000Z",
+      reservation: { id: reservationId, spoolId, reservedGrams: 275 },
+      settlement: null,
+    },
+    recalculation: {
+      outcome: "best_fit",
+      marginPercent: 10,
+      reservationGrams: 275,
+      previousReservation: { id: reservationId, spoolId, reservedGrams: 88 },
+    },
+  };
+  const invalidReceipts = [
+    { ...activeReceipt, print: { ...activeReceipt.print, id: OTHER_OWNER_ID } },
+    { ...activeReceipt, print: { ...activeReceipt.print, version: 3 } },
+    { ...activeReceipt, print: { ...activeReceipt.print, requiredGrams: MAX_REQUIRED_GRAMS + 1 } },
+    { ...activeReceipt, recalculation: { ...activeReceipt.recalculation, outcome: "unknown" } },
+    { ...activeReceipt, recalculation: { ...activeReceipt.recalculation, marginPercent: 101 } },
+    { ...activeReceipt, recalculation: { ...activeReceipt.recalculation, reservationGrams: 4_294_967_295 } },
+    {
+      ...activeReceipt,
+      recalculation: {
+        ...activeReceipt.recalculation,
+        previousReservation: { ...activeReceipt.recalculation.previousReservation, id: "bad" },
+      },
+    },
+    { ...activeReceipt, print: { ...activeReceipt.print, reservation: null } },
+    {
+      ...activeReceipt,
+      recalculation: { ...activeReceipt.recalculation, outcome: "manual_retained" },
+      print: { ...activeReceipt.print, reservation: { ...activeReceipt.print.reservation, spoolId: OTHER_OWNER_ID } },
+    },
+    {
+      ...activeReceipt,
+      recalculation: { ...activeReceipt.recalculation, outcome: "insufficient_material" },
+    },
+  ];
+  for (const receipt of invalidReceipts) {
+    const fixture = makePrintClient({ mutationResponses: [{ data: receipt, error: null, status: 200 }] });
+    const result = await updatePrint(fixture.client, OWNER_ID, PRINT_ID, 1, {
+      name: null,
+      material: "PETG",
+      colour: "Blue",
+      requiredGrams: 250,
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "database_error");
+    assert.equal(fixture.calls.length, 1);
+  }
+
+  const noFitReceipt = {
+    ...activeReceipt,
+    print: { ...activeReceipt.print, reservation: null },
+    recalculation: { ...activeReceipt.recalculation, outcome: "insufficient_material" },
+  };
+  const noFitFixture = makePrintClient({ mutationResponses: [{ data: noFitReceipt, error: null, status: 200 }] });
+  const noFitResult = await updatePrint(noFitFixture.client, OWNER_ID, PRINT_ID, 1, {
+    name: null,
+    material: "PETG",
+    colour: "Blue",
+    requiredGrams: 250,
+  });
+  assert.equal(noFitResult.ok, true, "insufficient material is a saved result, not an edit rejection");
+  assert.equal(noFitResult.value.print.reservation, null);
+  assert.equal(noFitResult.value.recalculation.outcome, "insufficient_material");
+  assert.equal(noFitFixture.calls.length, 1);
 });
 
 test("database RPC distinguishes stale print version from missing print", async () => {

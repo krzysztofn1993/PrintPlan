@@ -50,17 +50,9 @@ export const POST: APIRoute = async (context) => {
           409,
         );
       }
-      if (result.reason === "reserved_print_edit_requires_cancellation") {
-        return createPrintJsonResponse(
-          {
-            error: { code: result.reason, message: "Cancel this reservation before changing the print requirements." },
-          },
-          409,
-        );
-      }
       return createPrintDatabaseErrorResponse(result.error, result.status, "mutation");
     }
-    return createPrintJsonResponse({ print: result.value });
+    return createPrintJsonResponse(result.value);
   } catch (error) {
     return createPrintDatabaseErrorResponse(
       new Error("Unexpected print API boundary failure", { cause: error }),
