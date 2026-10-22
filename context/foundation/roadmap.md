@@ -3,7 +3,7 @@ project: PrintPlan
 version: 3
 status: draft
 created: 2026-10-09
-updated: 2026-10-20
+updated: 2026-10-22
 prd_version: 3
 main_goal: speed
 top_blocker: decisions
@@ -49,7 +49,7 @@ The sequencing goal is `speed`, confirmed by the author. The author has resolved
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | done |
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done |
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | done |
-| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | proposed  |
+| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | in-progress |
 | S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | done |
 | S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done |
 
@@ -167,7 +167,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Recalculation must release or replace the prior reservation as one change without transient overbooking; explain when the saved print has become unreserved.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-06: Maintain a spool that has active reservations
 
@@ -203,7 +203,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 | S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Done; archived at `context/archive/2026-10-12-personal-planned-prints/`. |
 | S-03       | reserve-and-release-material | Reserve and release material safely               | yes                   | Run `/10x-plan reserve-and-release-material`.                          |
 | S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Depends on S-03.                                                       |
-| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Depends on S-03 and S-04.                                              |
+| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | yes                   | Run `/10x-plan edit-reserved-print`; S-03 and S-04 are done.                                              |
 | S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Depends on S-03.                                                       |
 | S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Depends on S-03.                                                       |
 
