@@ -34,7 +34,7 @@ export async function runReservationSmoke({
     assertPrivateHeaders(result, "json", "Reservation");
     return { result, payload: readAppJson(result, "reservation") };
   };
-  const createSpool = async (colour) => {
+  const createSpool = async (colour, recordedGrams = 150) => {
     const { payload } = await appJson(
       "/api/spools",
       {
@@ -42,7 +42,7 @@ export async function runReservationSmoke({
         formEntries: [
           ["material", "PLA"],
           ["colour", colour],
-          ["recordedGrams", "150"],
+          ["recordedGrams", String(recordedGrams)],
         ],
       },
       201,
@@ -256,6 +256,104 @@ export async function runReservationSmoke({
       reservationId = secondReservation.payload.reservationId;
       reservationVersion = secondReservation.payload.print.version;
     });
+
+    await step(
+      "authenticated reserved edits retain identity and age before a no-fit edit releases capacity",
+      async () => {
+        const editColour = `Reservation edit smoke ${randomUUID()}`;
+        const manualSpool = await createSpool(editColour, 150);
+        const tighterFitSpool = await createSpool(editColour, 120);
+        const editedPrint = await createPrint("Reservation edit smoke print", editColour);
+        const editPreview = (await appJson(`/api/prints/${editedPrint.id}/reservation`)).payload;
+        const initialReservation = await reserve(editedPrint, manualSpool.id, editPreview.reservationGrams, "manual");
+        const activePrint = initialReservation.payload.print;
+        const originalReservationId = initialReservation.payload.reservationId;
+        ensure(typeof originalReservationId === "string", "The edit fixture did not receive a reservation ID.");
+        const token = sessionIdentity(activeJarA, "account A").session.access_token;
+        const readReservationEvidence = async () => {
+          const response = await restRequest({
+            config,
+            requestSignal,
+            token,
+            path: "/rest/v1/print_reservations",
+            query: `select=id,print_id,spool_id,created_at&print_id=eq.${editedPrint.id}`,
+            method: "GET",
+          });
+          ensure(Array.isArray(response.data), "Reservation age evidence was not returned as a row list.");
+          ensure(response.data.length <= 1, "A print had more than one active reservation evidence row.");
+          return response.data[0] ?? null;
+        };
+        const beforeEvidence = await readReservationEvidence();
+        ensure(
+          beforeEvidence?.id === originalReservationId &&
+            beforeEvidence.print_id === editedPrint.id &&
+            beforeEvidence.spool_id === manualSpool.id,
+          "The active reservation identity could not be read before editing.",
+        );
+
+        const retained = await appJson(`/api/prints/${editedPrint.id}/update`, {
+          method: "POST",
+          formEntries: [
+            ["name", editedPrint.name],
+            ["material", editedPrint.material],
+            ["colour", editedPrint.colour],
+            ["requiredGrams", "90"],
+            ["expectedVersion", String(activePrint.version)],
+          ],
+        });
+        ensure(
+          retained.payload.print?.id === editedPrint.id &&
+            retained.payload.print.version === activePrint.version + 1 &&
+            retained.payload.print.requiredGrams === 90 &&
+            retained.payload.print.reservation?.id === originalReservationId &&
+            retained.payload.print.reservation.spoolId === manualSpool.id &&
+            retained.payload.print.reservation.reservedGrams === 99 &&
+            retained.payload.recalculation?.outcome === "manual_retained",
+          "The reserved edit did not retain the eligible manual spool and reservation identity.",
+        );
+        const afterEvidence = await readReservationEvidence();
+        ensure(
+          afterEvidence?.id === beforeEvidence.id &&
+            afterEvidence.created_at === beforeEvidence.created_at &&
+            afterEvidence.spool_id === manualSpool.id,
+          "The reserved edit changed reservation identity, spool, or creation age.",
+        );
+        const editStocks = await listSpools();
+        ensure(
+          editStocks.find((item) => item.id === manualSpool.id)?.reservedGrams === 99 &&
+            editStocks.find((item) => item.id === manualSpool.id)?.availableGrams === 51 &&
+            editStocks.find((item) => item.id === tighterFitSpool.id)?.reservedGrams === 0 &&
+            editStocks.find((item) => item.id === tighterFitSpool.id)?.availableGrams === 120,
+          "Reserved edit stock totals changed outside the selected manual spool.",
+        );
+
+        const noFit = await appJson(`/api/prints/${editedPrint.id}/update`, {
+          method: "POST",
+          formEntries: [
+            ["name", retained.payload.print.name],
+            ["material", retained.payload.print.material],
+            ["colour", retained.payload.print.colour],
+            ["requiredGrams", "1000"],
+            ["expectedVersion", String(retained.payload.print.version)],
+          ],
+        });
+        ensure(
+          noFit.payload.print?.version === retained.payload.print.version + 1 &&
+            noFit.payload.print.requiredGrams === 1000 &&
+            noFit.payload.print.reservation === null &&
+            noFit.payload.recalculation?.outcome === "insufficient_material",
+          "A no-fit edit did not persist the requirement while releasing its reservation.",
+        );
+        ensure((await readReservationEvidence()) === null, "The released reservation remained in current evidence.");
+        const releasedStock = (await listSpools()).find((item) => item.id === manualSpool.id);
+        ensure(
+          releasedStock?.recordedGrams === 150 &&
+            releasedStock.reservedGrams === 0 &&
+            releasedStock.availableGrams === 150,
+          "No-fit recalculation changed recorded stock or failed to restore availability.",
+        );
+      },
+    );
 
     await step("logout and a fresh login retain reservation state", async () => {
       const signout = await appRequest("/api/auth/signout", { method: "POST", jar: activeJarA });

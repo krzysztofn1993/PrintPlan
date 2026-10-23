@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "./fixtures";
-import { deferred, openPrints, openSpools, printRow, spoolAction, spoolRow } from "./helpers/ui";
+import { deferred, openPrints, openSpools, printAction, printRow, spoolAction, spoolRow } from "./helpers/ui";
 
 for (const lateResponse of ["success", "network failure", "already reserved"] as const) {
   test(`a late preview ${lateResponse} cannot replace another print's confirmation`, async ({ page, recoveryApi }) => {
@@ -190,7 +190,7 @@ test("reserved stock corrections reject below reservations and accept equality",
   await recorded.fill("88");
   await page.getByRole("button", { name: "Save changes" }).click();
   const row = spoolRow(page, spool.id);
-  await expect(row.locator(".carbon-row-value").first().locator("dd")).toHaveText("88 g");
+  await expect(row.getByRole("cell").nth(1)).toContainText("88 g");
   await expect(row.getByText("0 g")).toBeVisible();
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     recordedGrams: 88,
@@ -622,162 +622,315 @@ test("deleting a spool reports every reservation and leaves its prints unreserve
   });
 });
 
-test("committed reserve and release with unreadable acknowledgements require exact retry and paired reads", async ({
-  page,
-  recoveryApi,
-}) => {
-  const spool = await recoveryApi.createSpool({
-    material: "ABS",
-    colour: recoveryApi.label("reservation-ack"),
-    recordedGrams: 130,
-  });
-  const print = await recoveryApi.createPrint({
-    name: recoveryApi.label("reservation-ack-print"),
-    material: "ABS",
-    colour: spool.colour,
-    requiredGrams: 50,
-  });
-  let reservePosts = 0;
-  let cancelPosts = 0;
+for (const failedCollection of ["prints", "spools"] as const) {
+  test(`committed cancellation recovery waits for the ${failedCollection} read after an exact retry`, async ({
+    page,
+    recoveryApi,
+  }) => {
+    const spool = await recoveryApi.createSpool({
+      material: "ABS",
+      colour: recoveryApi.label("reservation-ack"),
+      recordedGrams: 130,
+    });
+    const print = await recoveryApi.createPrint({
+      name: recoveryApi.label("reservation-ack-print"),
+      material: "ABS",
+      colour: spool.colour,
+      requiredGrams: 50,
+    });
+    let reservePosts = 0;
+    let cancelPosts = 0;
 
-  await openPrints(page);
-  const row = printRow(page, print.id);
-  await row.getByRole("button", { name: "Reserve material" }).click();
-  await page.route(`**/api/prints/${print.id}/reservation/reserve`, async (route) => {
-    reservePosts += 1;
-    const committed = await route.fetch();
-    expect(committed.status()).toBe(200);
-    await route.fulfill({ response: committed, body: "unreadable reservation receipt" });
-  });
-  await row.getByRole("button", { name: "Confirm reservation" }).click();
-  await expect(row.getByRole("alert")).toContainText("outcome may be uncertain");
-  await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
-  expect(reservePosts).toBe(1);
+    await openPrints(page);
+    const row = printRow(page, print.id);
+    await row.getByRole("button", { name: "Reserve material" }).click();
+    await page.route(`**/api/prints/${print.id}/reservation/reserve`, async (route) => {
+      reservePosts += 1;
+      const committed = await route.fetch();
+      expect(committed.status()).toBe(200);
+      await route.fulfill({ response: committed, body: "unreadable reservation receipt" });
+    });
+    await row.getByRole("button", { name: "Confirm reservation" }).click();
+    await expect(row.getByRole("alert")).toContainText("outcome may be uncertain");
+    await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
+    expect(reservePosts).toBe(1);
 
-  let failedPrintReads = 0;
-  await page.route("**/api/prints", async (route) => {
-    if (route.request().method() === "GET" && failedPrintReads === 0) {
-      failedPrintReads += 1;
-      await route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "temporary" }),
-      });
-      return;
-    }
-    await route.continue();
-  });
-  await page.getByRole("button", { name: "Refresh and review prints" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "temporarily unavailable" })).toBeVisible();
-  await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
-  await page.getByRole("button", { name: "Refresh and review prints" }).click();
-  await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
-  await page.unroute("**/api/prints");
-
-  await row.getByRole("button", { name: "Manage reservation" }).click();
-  const activePrint = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
-  if (!activePrint?.reservation) throw new Error("The active reservation could not be reloaded before release.");
-  const cancellationCommands: string[] = [];
-  await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
-    cancelPosts += 1;
-    cancellationCommands.push(route.request().postData() ?? "");
-    if (cancelPosts > 1) {
+    let failedPrintReads = 0;
+    await page.route("**/api/prints", async (route) => {
+      if (route.request().method() === "GET" && failedPrintReads === 0) {
+        failedPrintReads += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "temporary" }),
+        });
+        return;
+      }
       await route.continue();
-      return;
-    }
-    const committed = await route.fetch();
-    expect(committed.status()).toBe(200);
-    await route.fulfill({ response: committed, body: "unreadable release receipt" });
-  });
-  await row.getByRole("button", { name: "Release reservation" }).click();
-  await expect(page.getByRole("alert")).toContainText("cancellation result is uncertain");
-  expect(cancelPosts).toBe(1);
+    });
+    await page.getByRole("button", { name: "Refresh and review prints" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "temporarily unavailable" })).toBeVisible();
+    await expect(row.locator(`#confirm-reservation-${print.id}`)).toBeDisabled();
+    await page.getByRole("button", { name: "Refresh and review prints" }).click();
+    await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
+    await page.unroute("**/api/prints");
 
-  let failedSpoolReads = 0;
-  await page.route("**/api/spools", async (route) => {
-    if (route.request().method() === "GET" && failedSpoolReads === 0) {
-      failedSpoolReads += 1;
-      await route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "temporary" }),
-      });
-      return;
-    }
-    await route.continue();
-  });
-  await page.getByRole("button", { name: "Retry exact cancellation" }).click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "current spool inventory could not be read" }).first(),
-  ).toBeVisible();
-  await expect(row.getByRole("button", { name: "Reserve material" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
-  await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
-  await expect(row.getByRole("button", { name: "Reserve material" })).toBeVisible();
-  await page.unroute("**/api/spools");
-  await page.unroute("**/api/prints");
-  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
-    reservedGrams: 0,
-    availableGrams: 130,
-  });
-  expect(reservePosts).toBe(1);
-  expect(cancelPosts).toBe(2);
-  expect(cancellationCommands[1]).toBe(cancellationCommands[0]);
-  expect(new URLSearchParams(cancellationCommands[0]).get("expectedVersion")).toBe(String(activePrint.version));
-});
-
-test("a stale cancellation reviews current stock without cancelling the latest reservation", async ({
-  page,
-  recoveryApi,
-}) => {
-  const spool = await recoveryApi.createSpool({
-    material: "PLA",
-    colour: recoveryApi.label("stale-cancel-colour"),
-    recordedGrams: 160,
-  });
-  const print = await recoveryApi.createPrint({
-    name: recoveryApi.label("stale-cancel-print"),
-    material: spool.material,
-    colour: spool.colour,
-    requiredGrams: 80,
-  });
-  await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
-  const reviewedPrint = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
-  if (!reviewedPrint?.reservation) throw new Error("The active reservation could not be read.");
-
-  await openPrints(page);
-  const row = printRow(page, print.id);
-  await row.getByRole("button", { name: "Manage reservation" }).click();
-  let cancelPosts = 0;
-  let submittedVersion: string | null = null;
-  await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
-    if (route.request().method() === "POST") {
+    await row.getByRole("button", { name: "Manage reservation" }).click();
+    const activePrint = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+    if (!activePrint?.reservation) throw new Error("The active reservation could not be reloaded before release.");
+    const cancellationCommands: string[] = [];
+    let retriedDisposition: string | undefined;
+    await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
       cancelPosts += 1;
-      submittedVersion = new URLSearchParams(route.request().postData() ?? "").get("expectedVersion");
-    }
-    await route.continue();
-  });
+      cancellationCommands.push(route.request().postData() ?? "");
+      if (cancelPosts > 1) {
+        const retry = await route.fetch();
+        expect(retry.status()).toBe(200);
+        retriedDisposition = ((await retry.json()) as { disposition?: string }).disposition;
+        await route.fulfill({ response: retry });
+        return;
+      }
+      const committed = await route.fetch();
+      expect(committed.status()).toBe(200);
+      await route.fulfill({ response: committed, body: "unreadable release receipt" });
+    });
+    await row.getByRole("button", { name: "Release reservation" }).click();
+    await expect(page.getByRole("alert")).toContainText("cancellation result is uncertain");
+    expect(cancelPosts).toBe(1);
 
-  await recoveryApi.updatePrint(print.id, reviewedPrint.version, {
-    name: "Reservation changed after the page opened",
-    material: print.material,
-    colour: print.colour,
-    requiredGrams: print.requiredGrams,
+    let failedReads = 0;
+    await page.route(`**/api/${failedCollection}`, async (route) => {
+      if (route.request().method() === "GET" && failedReads === 0) {
+        failedReads += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "temporary" }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+    await page.getByRole("button", { name: "Retry exact cancellation" }).click();
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({
+          hasText:
+            failedCollection === "spools"
+              ? "current spool inventory could not be read"
+              : "current print list could not be read",
+        })
+        .first(),
+    ).toBeVisible();
+    await expect(row.getByRole("button", { name: "Reserve material" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
+    await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
+    await expect(row.getByRole("button", { name: "Reserve material" })).toBeVisible();
+    await page.unroute(`**/api/${failedCollection}`);
+    await page.unroute("**/api/prints");
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      reservedGrams: 0,
+      availableGrams: 130,
+    });
+    expect(reservePosts).toBe(1);
+    expect(cancelPosts).toBe(2);
+    expect(retriedDisposition).toBe("already_released");
+    expect(cancellationCommands[1]).toBe(cancellationCommands[0]);
+    expect(new URLSearchParams(cancellationCommands[0]).get("expectedVersion")).toBe(String(activePrint.version));
   });
-  await row.getByRole("button", { name: "Release reservation" }).click();
-  await expect(page.getByRole("status")).toContainText("Review the current reservation before cancelling again.");
-  await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
-  expect(cancelPosts).toBe(1);
-  expect(submittedVersion).toBe(String(reviewedPrint.version));
-  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
-    version: reviewedPrint.version + 1,
-    reservation: { id: reviewedPrint.reservation.id, spoolId: spool.id, reservedGrams: 88 },
+}
+
+for (const failedCollection of ["prints", "spools"] as const) {
+  test(`a stale cancellation keeps its guard when the ${failedCollection} conflict read fails`, async ({
+    page,
+    recoveryApi,
+  }) => {
+    const spool = await recoveryApi.createSpool({
+      material: "PLA",
+      colour: recoveryApi.label("stale-cancel-colour"),
+      recordedGrams: 160,
+    });
+    const print = await recoveryApi.createPrint({
+      name: recoveryApi.label("stale-cancel-print"),
+      material: spool.material,
+      colour: spool.colour,
+      requiredGrams: 80,
+    });
+    await recoveryApi.reserveMaterial(print, spool.id, "best_fit");
+    const reviewedPrint = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+    if (!reviewedPrint?.reservation) throw new Error("The active reservation could not be read.");
+
+    await openPrints(page);
+    const row = printRow(page, print.id);
+    await row.getByRole("button", { name: "Manage reservation" }).click();
+    let cancelPosts = 0;
+    let submittedVersion: string | null = null;
+    await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
+      if (route.request().method() === "POST") {
+        cancelPosts += 1;
+        submittedVersion = new URLSearchParams(route.request().postData() ?? "").get("expectedVersion");
+      }
+      await route.continue();
+    });
+
+    await recoveryApi.updatePrint(print.id, reviewedPrint.version, {
+      name: "Reservation changed after the page opened",
+      material: print.material,
+      colour: print.colour,
+      requiredGrams: print.requiredGrams,
+    });
+    let failedReads = 0;
+    await page.route(`**/api/${failedCollection}`, async (route) => {
+      if (route.request().method() === "GET" && failedReads === 0) {
+        failedReads += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "unavailable" } }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+    await row.getByRole("button", { name: "Release reservation" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "The print changed before cancellation" })).toContainText(
+      failedCollection === "spools"
+        ? "current spool inventory could not be read"
+        : "current print list could not be read",
+    );
+    await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
+    await expect(row.getByRole("button", { name: "Manage reservation" })).toBeDisabled();
+    await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
+    await expect(row.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
+    await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+    await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
+    await page.unroute(`**/api/${failedCollection}`);
+    expect(cancelPosts).toBe(1);
+    expect(submittedVersion).toBe(String(reviewedPrint.version));
+    expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
+      version: reviewedPrint.version + 1,
+      reservation: { id: reviewedPrint.reservation.id, spoolId: spool.id, reservedGrams: 88 },
+    });
+    expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+      reservedGrams: 88,
+      availableGrams: 72,
+    });
   });
-  expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
-    reservedGrams: 88,
-    availableGrams: 72,
+}
+
+for (const competingOutcome of ["exact retry wins", "recalculation makes it stale"] as const) {
+  test(`a held cancellation stays guarded through reads when ${competingOutcome}`, async ({
+    page,
+    context,
+    recoveryApi,
+  }) => {
+    const spool = await recoveryApi.createSpool({
+      material: "PETG",
+      colour: recoveryApi.label("held-cancel-colour"),
+      recordedGrams: 180,
+    });
+    const print = await recoveryApi.createPrint({
+      name: recoveryApi.label("held-cancel-print"),
+      material: spool.material,
+      colour: spool.colour,
+      requiredGrams: 80,
+    });
+    const reservationId = await recoveryApi.reserveMaterial(print, spool.id, "manual");
+    const before = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+    if (!before?.reservation) throw new Error("The active reservation could not be read before cancellation.");
+
+    const competingPage = await context.newPage();
+    const originalHeld = deferred();
+    const releaseOriginal = deferred();
+    const lateResponse = deferred<{ status: number; body: { disposition?: string; error?: { code?: string } } }>();
+    let originalCommand = "";
+    try {
+      await openPrints(page);
+      const row = printRow(page, print.id);
+      await row.getByRole("button", { name: "Manage reservation" }).click();
+      await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
+        if (route.request().method() !== "POST") {
+          await route.continue();
+          return;
+        }
+        originalCommand = route.request().postData() ?? "";
+        originalHeld.resolve();
+        await releaseOriginal.promise;
+        const response = await route.fetch();
+        const body = (await response.json()) as { disposition?: string; error?: { code?: string } };
+        lateResponse.resolve({ status: response.status(), body });
+        await route.fulfill({ response, body: JSON.stringify(body) });
+      });
+
+      const firstCancellation = row.getByRole("button", { name: "Release reservation" }).click();
+      await originalHeld.promise;
+      const readStatuses = await page.evaluate(async () => {
+        const [prints, spools] = await Promise.all([fetch("/api/prints"), fetch("/api/spools")]);
+        return [prints.status, spools.status];
+      });
+      expect(readStatuses).toEqual([200, 200]);
+      await expect(row.getByRole("button", { name: "Manage reservation" })).toBeDisabled();
+      await expect(row.getByRole("button", { name: "Releasing…" })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Retry exact cancellation" })).toHaveCount(0);
+
+      await openPrints(competingPage);
+      const competingRow = printRow(competingPage, print.id);
+      if (competingOutcome === "exact retry wins") {
+        let retryCommand = "";
+        await competingPage.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
+          if (route.request().method() === "POST") retryCommand = route.request().postData() ?? "";
+          await route.continue();
+        });
+        await competingRow.getByRole("button", { name: "Manage reservation" }).click();
+        await competingRow.getByRole("button", { name: "Release reservation" }).click();
+        await expect(competingPage.getByRole("status")).toContainText("88 g released");
+        expect(retryCommand).toBe(originalCommand);
+      } else {
+        await printAction(competingPage, "Edit", print.id).click();
+        await competingPage.getByLabel("Required filament (g)").fill("90");
+        await competingPage.getByRole("button", { name: "Save changes", exact: true }).click();
+        await expect(competingPage.getByRole("status")).toContainText("99 g held");
+      }
+
+      releaseOriginal.resolve();
+      await firstCancellation;
+      const late = await lateResponse.promise;
+      const expectedCommand = new URLSearchParams(originalCommand);
+      expect(expectedCommand.get("reservationId")).toBe(reservationId);
+      expect(expectedCommand.get("expectedVersion")).toBe(String(before.version));
+
+      if (competingOutcome === "exact retry wins") {
+        expect(late).toMatchObject({ status: 200, body: { disposition: "already_released" } });
+        await expect(page.getByRole("status")).toContainText("88 g released");
+        const final = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+        expect(final).toMatchObject({ version: before.version + 1, reservation: null });
+        expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+          recordedGrams: 180,
+          reservedGrams: 0,
+          availableGrams: 180,
+        });
+      } else {
+        expect(late).toMatchObject({ status: 409, body: { error: { code: "edit_conflict" } } });
+        await expect(row.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
+        await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+        const final = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
+        expect(final).toMatchObject({
+          version: before.version + 1,
+          reservation: { id: reservationId, spoolId: spool.id, reservedGrams: 99 },
+        });
+        expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
+          recordedGrams: 180,
+          reservedGrams: 99,
+          availableGrams: 81,
+        });
+      }
+    } finally {
+      releaseOriginal.resolve();
+      await competingPage.close();
+    }
   });
-});
+}
 
 test("cancellation matches its print path and remains idempotent after deletion", async ({
   context,

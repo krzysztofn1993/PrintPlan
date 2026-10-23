@@ -98,6 +98,20 @@ SELECT is((SELECT recorded_grams FROM public.spools WHERE id='32000000-0000-0000
   'recalculation never changes recorded stock');
 SELECT is((SELECT available_grams FROM public.spool_inventory WHERE id='32000000-0000-0000-0000-000000000001'),7::numeric,
   'remaining availability accounts for the other hold and the recalculated hold');
+SELECT set_config('test.noop_edit_expected_version',
+  (SELECT version::text FROM public.prints WHERE id='42000000-0000-0000-0000-000000000001'),true);
+SELECT set_config('test.noop_edit_result',public.update_print(
+  '42000000-0000-0000-0000-000000000001',current_setting('test.noop_edit_expected_version')::integer,
+  'Manual hold name only','PLA','Black',80)::text,true);
+SELECT is(current_setting('test.noop_edit_result')::jsonb->'print'->>'version','4',
+  'a name-only reserved edit advances the print version once');
+SELECT is(current_setting('test.noop_edit_result')::jsonb->'print'->'reservation'->>'id',
+  current_setting('test.main_reservation'),'a name-only edit keeps the active reservation identity');
+SELECT throws_ok(
+  $$SELECT public.release_print_material(current_setting('test.main_reservation')::uuid,
+    '42000000-0000-0000-0000-000000000001',current_setting('test.noop_edit_expected_version')::integer)$$,
+  'P0001','edit_conflict','release captured before a name-only edit is stale while the same reservation remains active'
+);
 
 RESET ROLE;
 SELECT is((SELECT created_at::text FROM public.print_reservations
@@ -136,7 +150,7 @@ SELECT throws_ok(
   'P0001','edit_conflict','a cancellation captured before recalculation is stale while the same reservation remains active'
 );
 SELECT set_config('test.main_recalculated_version',
-  current_setting('test.main_edit_result')::jsonb->'print'->>'version',true);
+  current_setting('test.noop_edit_result')::jsonb->'print'->>'version',true);
 SELECT is((public.release_print_material(current_setting('test.main_reservation')::uuid,
   '42000000-0000-0000-0000-000000000001',current_setting('test.main_recalculated_version')::integer)->>'disposition'),
   'released','cancellation with the current version releases once');
@@ -211,7 +225,8 @@ SELECT throws_ok(
   $$SELECT public.update_print('42000000-0000-0000-0000-000000000001',4,'Stale edit','PLA','Black',80)$$,
   'P0001','edit_conflict','a stale edit is rejected before changing reservation evidence');
 SELECT throws_ok(
-  $$SELECT public.update_print('42000000-0000-0000-0000-000000000001',5,'Invalid edit','PLA','Black',0)$$,
+  $$SELECT public.update_print('42000000-0000-0000-0000-000000000001',
+    current_setting('test.replacement_reserve_version')::integer,'Invalid edit','PLA','Black',0)$$,
   '23514','new row for relation "prints" violates check constraint "prints_required_grams_valid"',
   'a database-invalid edit is rejected');
 RESET ROLE;
@@ -223,7 +238,8 @@ SELECT is(jsonb_build_object(
     WHERE request.reservation_id=current_setting('test.replacement_reservation')::uuid)
 ),current_setting('test.main_rollback_snapshot')::jsonb,
   'failed stale and invalid edits roll back print and reservation evidence changes');
-SELECT is((SELECT version FROM public.prints WHERE id='42000000-0000-0000-0000-000000000001'),5,
+SELECT is((SELECT version FROM public.prints WHERE id='42000000-0000-0000-0000-000000000001'),
+  current_setting('test.replacement_reserve_version')::integer,
   'failed edits do not advance the print version');
 
 SET LOCAL ROLE authenticated;
