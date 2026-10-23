@@ -392,15 +392,15 @@ export function PrintList({ initialPrints }: PrintListProps) {
         response.status === 404
           ? "The print no longer exists."
           : code === "print_settled"
-            ? "The print was settled before the edit could apply."
-            : "A newer edit changed this print before the command could apply.";
+            ? "The print is now settled."
+            : "The submitted print version is no longer current.";
       void reconcilePrintRecovery({
         kind: "edit",
         phase: "reconciling",
         editCommand: command,
         closeEditAfterRead: true,
-        message: `${reason} Reading current print and stock; the original edit result cannot be recovered.`,
-        knownOutcome: `${reason} The original edit result cannot be recovered.`,
+        message: `${reason} The original edit may have completed. Reading current print and stock; the original edit result cannot be recovered.`,
+        knownOutcome: `${reason} The original edit may have completed. The original edit result cannot be recovered.`,
       });
       return;
     }

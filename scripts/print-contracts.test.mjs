@@ -38,6 +38,7 @@ import {
   updatePrint,
 } from "../src/lib/prints.ts";
 import { readPrintDto } from "../src/lib/print-dto.ts";
+import { readPrintUpdateDto } from "../src/lib/print-update-dto.ts";
 
 const OWNER_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_OWNER_ID = "22222222-2222-4222-8222-222222222222";
@@ -569,6 +570,61 @@ test("update rejects malformed and inconsistent committed receipts", async () =>
   assert.equal(noFitResult.value.print.reservation, null);
   assert.equal(noFitResult.value.recalculation.outcome, "insufficient_material");
   assert.equal(noFitFixture.calls.length, 1);
+});
+
+test("update receipts enforce recalculation arithmetic across outcomes and rounding boundaries", () => {
+  const reservationId = "55555555-5555-4555-8555-555555555555";
+  const spoolId = "44444444-4444-4444-8444-444444444444";
+  const cases = [
+    { requiredGrams: 1, marginPercent: 0, expectedGrams: 1 },
+    { requiredGrams: 81, marginPercent: 5, expectedGrams: 86 },
+    { requiredGrams: 100, marginPercent: 10, expectedGrams: 110 },
+    { requiredGrams: MAX_REQUIRED_GRAMS, marginPercent: 100, expectedGrams: 4_294_967_294 },
+  ];
+  for (const { requiredGrams, marginPercent, expectedGrams } of cases) {
+    for (const outcome of ["manual_retained", "manual_fallback", "best_fit", "insufficient_material"]) {
+      const receipt = {
+        print: {
+          id: PRINT_ID,
+          name: null,
+          material: "PLA",
+          colour: "Blue",
+          requiredGrams,
+          version: 2,
+          createdAt: "2026-10-10T10:00:00.000Z",
+          updatedAt: "2026-10-12T12:00:00.000Z",
+          reservation:
+            outcome === "insufficient_material"
+              ? null
+              : {
+                  id: reservationId,
+                  spoolId: outcome === "manual_fallback" ? OTHER_OWNER_ID : spoolId,
+                  reservedGrams: expectedGrams,
+                },
+          settlement: null,
+        },
+        recalculation: {
+          outcome,
+          marginPercent,
+          reservationGrams: expectedGrams,
+          previousReservation: { id: reservationId, spoolId, reservedGrams: 88 },
+        },
+      };
+      const context = `${outcome}: ${requiredGrams} g at ${marginPercent}%`;
+      assert.deepEqual(readPrintUpdateDto(receipt, PRINT_ID, 1), receipt, context);
+
+      for (const wrongGrams of [expectedGrams === 1 ? 2 : 1, expectedGrams > 1 ? expectedGrams - 1 : 3]) {
+        const corruptReceipt = {
+          print: {
+            ...receipt.print,
+            reservation: receipt.print.reservation ? { ...receipt.print.reservation, reservedGrams: wrongGrams } : null,
+          },
+          recalculation: { ...receipt.recalculation, reservationGrams: wrongGrams },
+        };
+        assert.equal(readPrintUpdateDto(corruptReceipt, PRINT_ID, 1), undefined, `${context}, got ${wrongGrams} g`);
+      }
+    }
+  }
 });
 
 test("database RPC distinguishes stale print version from missing print", async () => {
