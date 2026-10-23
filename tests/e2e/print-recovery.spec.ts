@@ -284,6 +284,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
     });
 
     const savedName = recoveryApi.label("committed-before-lost-reply");
+    const recoverySummary = "The submitted print version is no longer current. The original edit may have completed.";
     await fillPrintForm(page, { name: savedName, material: spool.material, colour: spool.colour, requiredGrams: 90 });
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "exact edit may have completed" })).toBeVisible();
@@ -297,6 +298,9 @@ for (const failedCollection of ["prints", "spools"] as const) {
     );
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add a print" })).toBeDisabled();
+    await expect(page.getByRole("alert").filter({ hasText: "original edit result cannot be recovered" })).toContainText(
+      recoverySummary,
+    );
     expect(browserPosts).toBe(2);
     expect(commandBodies[1]).toBe(commandBodies[0]);
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
@@ -309,6 +313,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
     await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toHaveCount(0);
     await expect(page.getByRole("status")).toContainText("original edit result cannot be recovered");
+    await expect(page.getByRole("status")).toContainText(recoverySummary);
     await expect(page.getByRole("status")).not.toContainText("manual spool was retained");
     expect(browserPosts).toBe(2);
     await page.unroute(`**/api/${failedCollection}`);

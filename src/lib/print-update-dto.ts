@@ -100,6 +100,8 @@ export function readPrintUpdateDto(
 
   const recalculation = readRecalculation(value.recalculation);
   if (!recalculation) return undefined;
+  const expectedGrams = Math.ceil((print.requiredGrams * (100 + recalculation.marginPercent)) / 100);
+  if (recalculation.reservationGrams !== expectedGrams) return undefined;
 
   if (recalculation.outcome === "insufficient_material") {
     if (print.reservation !== null || print.settlement !== null) return undefined;

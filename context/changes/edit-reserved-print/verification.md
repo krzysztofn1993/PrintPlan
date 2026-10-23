@@ -26,3 +26,14 @@ The author also confirmed the saved reservation data in the database behaved cor
 ## Environment notes
 
 Local Supabase and Mailpit were available. Port 4321 was already occupied by the existing Astro dev server; use `E2E_PORT=4322` for the browser suite and port 4322 for the separate preview used by smoke acceptance.
+
+## Implementation review follow-ups — 2026-10-23
+
+All three implementation-review findings were fixed through author-approved triage. Recovery feedback now acknowledges that an edit with a lost reply may have completed. The committed edit decoder validates recalculation arithmetic for every outcome. Thirteen new browser scenarios cover failed exact retries and commands delayed at the transport boundary until after the originating page resolves uncertainty.
+
+- `npm run test:prints`: passed all 23 contracts, including arithmetic, rounding and boundary regressions.
+- `npm run verify:deploy`: passed native contracts, lint, types and production build; Astro reported 0 errors, 0 warnings and six existing hints.
+- `E2E_PORT=4322 npm run test:e2e`: passed all 80 tests in 2.4 minutes, including authentication setup and teardown.
+- `git diff --check`: passed.
+
+The working review report at `reviews/impl-review.md` records each decision, intermediate test-development issues and retained command evidence. Its post-triage verdict is APPROVED with no pending findings. The author-run manual results above remain the recorded manual evidence.
