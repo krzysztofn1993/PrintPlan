@@ -38,10 +38,16 @@ export const POST: APIRoute = async (context) => {
     return createReservationErrorResponse(
       validation.reason === "unexpected_field" ? "invalid_payload" : "validation_failed",
       422,
-      "Provide one valid reservation ID.",
+      "Provide one valid reservation ID and print version.",
     );
-  const result = await releasePrintMaterial(client, user.id, validation.value.reservationId, printId);
-  if (!result.ok) return mapReservationFailure(result, "mutation");
+  const result = await releasePrintMaterial(
+    client,
+    user.id,
+    validation.value.reservationId,
+    printId,
+    validation.value.expectedVersion,
+  );
+  if (!result.ok) return mapReservationFailure(result, "cancellation");
   return createReservationJsonResponse(result.value);
 };
 

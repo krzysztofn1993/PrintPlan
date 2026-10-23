@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { CollectionTable, CollectionTableCell, CollectionTableRow } from "@/components/ui/CollectionTable";
 import { Button } from "@/components/ui/button";
-import { PrintForm } from "@/components/prints/PrintForm";
+import { PrintForm, type PrintUpdateCommand } from "@/components/prints/PrintForm";
 import { ReservationPanel } from "@/components/prints/ReservationPanel";
 import { SettlementPanel } from "@/components/prints/SettlementPanel";
 import { readPrintDto } from "@/lib/print-dto";
+import { readPrintUpdateDto, type PrintRecalculationDto, type PrintUpdateDto } from "@/lib/print-update-dto";
 import type { PrintDto } from "@/lib/prints";
 import { MAX_EXPECTED_RESERVATION_GRAMS } from "@/lib/reservation-validation";
 import type { ReservationPreview } from "@/lib/reservations";
@@ -53,6 +55,23 @@ interface SettlementWorkflow {
   fieldError: string;
   signInRequired: boolean;
   attemptNote: string;
+}
+
+interface ReleaseCommand {
+  readonly printId: string;
+  readonly reservationId: string;
+  readonly expectedVersion: number;
+}
+
+interface PrintRecovery {
+  kind: "edit" | "release";
+  phase: "uncertain" | "reconciling" | "read_failed";
+  editCommand?: PrintUpdateCommand;
+  releaseCommand?: ReleaseCommand;
+  knownPrint?: PrintDto;
+  message: string;
+  knownOutcome?: string;
+  closeEditAfterRead?: boolean;
 }
 
 type CollectionRead<T> = { ok: true; value: T[] } | { ok: false; message: string; unauthenticated: boolean };
@@ -136,6 +155,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
   const [prints, setPrints] = useState(() => orderedPrints(initialPrints));
   const [createOpen, setCreateOpen] = useState(false);
   const [editingPrintId, setEditingPrintId] = useState<string | null>(null);
+  const [editFormResetVersion, setEditFormResetVersion] = useState(0);
   const [deletePrintId, setDeletePrintId] = useState<string | null>(null);
   const [mutationPending, setMutationPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
@@ -144,6 +164,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
   const [listError, setListError] = useState<ListError | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [uncertaintyGuard, setUncertaintyGuard] = useState(false);
+  const [printRecovery, setPrintRecovery] = useState<PrintRecovery | null>(null);
   const [reservationPrintId, setReservationPrintId] = useState<string | null>(null);
   const [reservationPreview, setReservationPreview] = useState<ReservationPreview | null>(null);
   const [selectedSpoolId, setSelectedSpoolId] = useState("");
@@ -151,6 +172,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
   const [reservationPending, setReservationPending] = useState(false);
   const [reservationPreviewLoading, setReservationPreviewLoading] = useState(false);
   const [reservationError, setReservationError] = useState("");
+  const [reservationNotice, setReservationNotice] = useState("");
   const [settlementPanelPrintId, setSettlementPanelPrintId] = useState<string | null>(null);
   const [settlementWorkflows, setSettlementWorkflows] = useState<Record<string, SettlementWorkflow>>({});
   const [settlementGuard, setSettlementGuard] = useState(false);
@@ -164,6 +186,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
   const settlementPanelPrintIdRef = useRef<string | null>(null);
   const settlementPanelRequestRef = useRef<Record<string, number>>({});
   const settlementReconciliationRequestRef = useRef<Record<string, number>>({});
+  const printRecoveryRef = useRef<PrintRecovery | null>(null);
+  const printRecoveryRequestRef = useRef(0);
 
   useEffect(
     () => () => {
@@ -185,6 +209,310 @@ export function PrintList({ initialPrints }: PrintListProps) {
   function updateMutationPending(pending: boolean) {
     mutationPendingRef.current = pending;
     setMutationPending(pending);
+  }
+
+  function updatePrintRecovery(recovery: PrintRecovery | null) {
+    printRecoveryRef.current = recovery;
+    setPrintRecovery(recovery);
+  }
+
+  function describeRecalculation(print: PrintDto, recalculation: PrintRecalculationDto | null): string {
+    const summary = describePrint(print);
+    if (!recalculation) return `${summary} saved.`;
+    if (recalculation.outcome === "insufficient_material") {
+      return `${summary} saved without a reservation. No eligible spool has enough available material.`;
+    }
+    const spool = print.reservation?.spoolId;
+    const grams = recalculation.reservationGrams;
+    const margin = recalculation.marginPercent;
+    if (recalculation.outcome === "manual_retained") {
+      return `${summary} saved. The manual spool was retained with ${grams} g held at the current ${margin}% margin.`;
+    }
+    if (recalculation.outcome === "manual_fallback") {
+      return `${summary} saved. The manual spool no longer fit, so reservation ${grams} g moved to best-fit spool ${spool}.`;
+    }
+    return `${summary} saved. Reservation ${grams} g was assigned to best-fit spool ${spool} at the current ${margin}% margin.`;
+  }
+
+  async function reconcilePrintRecovery(recovery: PrintRecovery) {
+    const requestId = ++printRecoveryRequestRef.current;
+    const currentRecovery = { ...recovery, phase: "reconciling" as const };
+    updatePrintRecovery(currentRecovery);
+    setUncertaintyGuard(true);
+    setListError(null);
+    if (currentRecovery.knownPrint) {
+      setPrints((previous) =>
+        orderedPrints(
+          previous.map((print) => (print.id === currentRecovery.knownPrint?.id ? currentRecovery.knownPrint : print)),
+        ),
+      );
+    }
+    const [printResult, spoolResult] = await Promise.all([
+      readCollection("/api/prints", "prints", readPrintDto, "print list"),
+      readCollection("/api/spools", "spools", readSpoolDto, "spool inventory"),
+    ]);
+    if (printRecoveryRequestRef.current !== requestId) return false;
+
+    if (!printResult.ok) {
+      updatePrintRecovery({
+        ...currentRecovery,
+        phase: "read_failed",
+        message: `${printResult.message} ${currentRecovery.knownOutcome ?? "The command remains unresolved."}`,
+      });
+      setListError({
+        kind: printResult.unauthenticated ? "unauthenticated" : "unavailable",
+        message: printResult.message,
+      });
+      return false;
+    }
+    if (!spoolResult.ok) {
+      updatePrintRecovery({
+        ...currentRecovery,
+        phase: "read_failed",
+        message: `${spoolResult.message} ${currentRecovery.knownOutcome ?? "The command remains unresolved."}`,
+      });
+      setListError({
+        kind: spoolResult.unauthenticated ? "unauthenticated" : "unavailable",
+        message: spoolResult.message,
+      });
+      return false;
+    }
+
+    setPrints(orderedPrints(printResult.value));
+    setListError(null);
+    closeReservation();
+    if (currentRecovery.closeEditAfterRead) {
+      const printId = currentRecovery.editCommand?.printId;
+      if (printId && editingPrintId === printId) {
+        setEditingPrintId(null);
+        focusTarget.current = printResult.value.some((print) => print.id === printId)
+          ? `edit-print-${printId}`
+          : "add-print-button";
+      }
+    }
+    updatePrintRecovery(null);
+    setUncertaintyGuard(false);
+    const currentReleasePrint = currentRecovery.releaseCommand
+      ? printResult.value.find((print) => print.id === currentRecovery.releaseCommand?.printId)
+      : undefined;
+    if (currentRecovery.kind === "release" && currentReleasePrint?.reservation) {
+      reservationPrintIdRef.current = currentReleasePrint.id;
+      setReservationPrintId(currentReleasePrint.id);
+      setReservationNotice(
+        "Cancellation was not applied because the print changed. The current reservation is shown here; review it before cancelling again.",
+      );
+      setStatusMessage("");
+    } else {
+      setStatusMessage(
+        currentRecovery.knownOutcome
+          ? `${currentRecovery.knownOutcome} Current print and stock are loaded.`
+          : "The current print and stock were loaded. Review them before making another change.",
+      );
+    }
+    return true;
+  }
+
+  function beginUncertainEdit(command: PrintUpdateCommand) {
+    updatePrintRecovery({
+      kind: "edit",
+      phase: "uncertain",
+      editCommand: command,
+      message: "The exact edit may have completed. Retry the same versioned command to resolve it safely.",
+    });
+    setUncertaintyGuard(true);
+  }
+
+  async function retryPrintRecoveryReads() {
+    const recovery = printRecoveryRef.current;
+    if (recovery?.phase !== "read_failed" || mutationPendingRef.current || refreshingRef.current) return;
+    await reconcilePrintRecovery(recovery);
+  }
+
+  async function retryPrintEdit(command: PrintUpdateCommand) {
+    if (mutationPendingRef.current || refreshingRef.current) return;
+    updateMutationPending(true);
+    let response: Response;
+    try {
+      response = await fetch(`/api/prints/${command.printId}/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: new URLSearchParams({
+          name: command.name,
+          material: command.material,
+          colour: command.colour,
+          requiredGrams: command.requiredGrams,
+          expectedVersion: String(command.expectedVersion),
+        }),
+      });
+    } catch {
+      updateMutationPending(false);
+      updatePrintRecovery({
+        kind: "edit",
+        phase: "uncertain",
+        editCommand: command,
+        message:
+          "The exact edit could not be reached. Retry the same versioned command when the connection is available.",
+      });
+      return;
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    updateMutationPending(false);
+    if (response.status === 200 && response.ok) {
+      const result = readPrintUpdateDto(body, command.printId, command.expectedVersion);
+      if (result) {
+        setPrints((previous) =>
+          orderedPrints(previous.map((print) => (print.id === result.print.id ? result.print : print))),
+        );
+        void reconcilePrintRecovery({
+          kind: "edit",
+          phase: "reconciling",
+          editCommand: command,
+          message: "The exact edit is confirmed. Reading the current print and stock.",
+          knownOutcome: describeRecalculation(result.print, result.recalculation),
+          knownPrint: result.print,
+          closeEditAfterRead: true,
+        });
+        return;
+      }
+    }
+
+    const error = isRecord(body) && isRecord(body.error) ? body.error : undefined;
+    const code = error?.code;
+    if (
+      (response.status === 409 && (code === "edit_conflict" || code === "print_settled")) ||
+      response.status === 404
+    ) {
+      const reason =
+        response.status === 404
+          ? "The print no longer exists."
+          : code === "print_settled"
+            ? "The print is now settled."
+            : "The submitted print version is no longer current.";
+      void reconcilePrintRecovery({
+        kind: "edit",
+        phase: "reconciling",
+        editCommand: command,
+        closeEditAfterRead: true,
+        message: `${reason} The original edit may have completed. Reading current print and stock; the original edit result cannot be recovered.`,
+        knownOutcome: `${reason} The original edit may have completed. The original edit result cannot be recovered.`,
+      });
+      return;
+    }
+
+    const detail =
+      response.status === 401
+        ? "Your session expired before the command could be checked. Sign in, then retry the exact edit."
+        : response.status >= 500 || response.ok
+          ? "The edit result is still uncertain. Retry the exact same versioned command."
+          : "The command could not be validated. Keep it unchanged and retry after resolving the form or session issue.";
+    updatePrintRecovery({ kind: "edit", phase: "uncertain", editCommand: command, message: detail });
+  }
+
+  function readReleaseReceipt(value: unknown, command: ReleaseCommand) {
+    if (
+      !isRecord(value) ||
+      value.reservationId !== command.reservationId ||
+      (value.disposition !== "released" && value.disposition !== "already_released")
+    )
+      return undefined;
+    const print = value.print === null ? null : readPrintDto(value.print);
+    const spool = value.spool === null ? null : readSpoolDto(value.spool);
+    if ((value.print !== null && !print) || (value.spool !== null && !spool)) return undefined;
+    if (print && print.id !== command.printId) return undefined;
+    return { disposition: value.disposition, print: print ?? null };
+  }
+
+  async function retryPrintRecovery() {
+    const recovery = printRecoveryRef.current;
+    if (!recovery || recovery.phase === "reconciling" || mutationPendingRef.current || refreshingRef.current) return;
+    if (recovery.phase !== "uncertain") {
+      await retryPrintRecoveryReads();
+      return;
+    }
+    if (recovery.kind === "edit" && recovery.editCommand) {
+      await retryPrintEdit(recovery.editCommand);
+      return;
+    }
+    const command = recovery.releaseCommand;
+    if (!command) return;
+    updateMutationPending(true);
+    let response: Response;
+    try {
+      response = await fetch(`/api/prints/${command.printId}/reservation/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: new URLSearchParams({
+          reservationId: command.reservationId,
+          expectedVersion: String(command.expectedVersion),
+        }),
+      });
+    } catch {
+      updateMutationPending(false);
+      updatePrintRecovery({
+        ...recovery,
+        message: "The exact cancellation could not be reached. Retry the same reservation and print version.",
+      });
+      return;
+    }
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    updateMutationPending(false);
+    const receipt = response.status === 200 && response.ok ? readReleaseReceipt(body, command) : undefined;
+    if (receipt) {
+      const currentPrint = receipt.print;
+      const knownOutcome =
+        receipt.print?.reservation && receipt.print.reservation.id !== command.reservationId
+          ? "The submitted reservation is terminal; a newer reservation is active."
+          : receipt.disposition === "released"
+            ? "The reservation release is confirmed."
+            : "The reservation was already released.";
+      void reconcilePrintRecovery({
+        kind: "release",
+        phase: "reconciling",
+        message: "The exact cancellation is resolved. Reading the current print and stock.",
+        knownOutcome,
+        knownPrint: currentPrint ?? undefined,
+      });
+      return;
+    }
+    const error = isRecord(body) && isRecord(body.error) ? body.error : undefined;
+    const code = error?.code;
+    if (
+      (response.status === 409 && (code === "edit_conflict" || code === "print_settled")) ||
+      response.status === 404
+    ) {
+      const reason =
+        response.status === 404
+          ? "The print or reservation is no longer active."
+          : "The print changed before cancellation.";
+      void reconcilePrintRecovery({
+        kind: "release",
+        phase: "reconciling",
+        releaseCommand: command,
+        message: `${reason} Reading current print and stock; the exact cancellation will not be advanced to a newer version.`,
+        knownOutcome: `${reason} Review the current reservation before cancelling again.`,
+      });
+      return;
+    }
+    updatePrintRecovery({
+      ...recovery,
+      message:
+        response.status === 401
+          ? "Your session expired before cancellation could be checked. Sign in, then retry the exact cancellation."
+          : response.status >= 500 || response.ok
+            ? "The cancellation result is still uncertain. Retry the exact same reservation and print version."
+            : "The cancellation command could not be validated. Keep it unchanged and retry after resolving the form or session issue.",
+    });
   }
 
   function updateDeletePending(pending: boolean) {
@@ -602,6 +930,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     setReservationPreview(null);
     setSelectedSpoolId("");
     setReservationError("");
+    setReservationNotice("");
   }
 
   async function loadReservedSpool(printId: string, spoolId: string) {
@@ -725,6 +1054,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
   }
 
   function closeEdit(printId: string) {
+    if (printRecoveryRef.current?.editCommand?.printId === printId) return;
     if (mutationPendingRef.current || refreshingRef.current) return;
     focusTarget.current = `edit-print-${printId}`;
     setEditingPrintId(null);
@@ -753,19 +1083,26 @@ export function PrintList({ initialPrints }: PrintListProps) {
     setDeleteError(null);
   }
 
-  function savePrint(saved: PrintDto, mode: "create" | "edit") {
+  function savePrint(saved: PrintDto | PrintUpdateDto, mode: "create" | "edit") {
+    if (mode === "edit") {
+      if (!("print" in saved)) return;
+      const result = saved;
+      setPrints((previous) =>
+        orderedPrints(previous.map((print) => (print.id === result.print.id ? result.print : print))),
+      );
+      const outcome = describeRecalculation(result.print, result.recalculation);
+      setStatusMessage(outcome);
+      focusTarget.current = `edit-print-${result.print.id}`;
+      setEditingPrintId(null);
+      return;
+    }
+    if ("print" in saved) return;
     setPrints((previous) => {
-      if (mode === "create") return orderedPrints([saved, ...previous]);
-      return orderedPrints(previous.map((print) => (print.id === saved.id ? saved : print)));
+      return orderedPrints([saved, ...previous]);
     });
     setStatusMessage(`${describePrint(saved)} saved.`);
-    if (mode === "create") {
-      focusTarget.current = `edit-print-${saved.id}`;
-      setCreateOpen(false);
-    } else {
-      focusTarget.current = `edit-print-${saved.id}`;
-      setEditingPrintId(null);
-    }
+    focusTarget.current = `edit-print-${saved.id}`;
+    setCreateOpen(false);
   }
 
   function handleUncertainMutation() {
@@ -819,6 +1156,10 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
   async function refreshList(options: { conflictId?: string } = {}): Promise<boolean> {
     if (mutationPendingRef.current || refreshingRef.current) return false;
+    if (printRecoveryRef.current) {
+      await retryPrintRecoveryReads();
+      return false;
+    }
     const visibleSettlement = settlementPanelPrintId
       ? settlementWorkflowsRef.current[settlementPanelPrintId]
       : undefined;
@@ -867,6 +1208,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     setDeleteError(null);
     setDeletePrintId(null);
     setCreateOpen(false);
+    if (options.conflictId) setEditFormResetVersion((version) => version + 1);
     setEditingPrintId(
       options.conflictId && refreshed.some((print) => print.id === options.conflictId) ? options.conflictId : null,
     );
@@ -1117,6 +1459,11 @@ export function PrintList({ initialPrints }: PrintListProps) {
       settlementPanelPrintId
     )
       return;
+    const command: ReleaseCommand = Object.freeze({
+      printId: print.id,
+      reservationId,
+      expectedVersion: print.version,
+    });
     setReservationPending(true);
     updateMutationPending(true);
     setReservationError("");
@@ -1125,13 +1472,19 @@ export function PrintList({ initialPrints }: PrintListProps) {
       response = await fetch(`/api/prints/${print.id}/reservation/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: new URLSearchParams({ reservationId }),
+        body: new URLSearchParams({
+          reservationId: command.reservationId,
+          expectedVersion: String(command.expectedVersion),
+        }),
       });
     } catch {
-      handleUncertainMutation();
-      setReservationError(
-        "We couldn't confirm whether material was released. Refresh the print list before trying again.",
-      );
+      updatePrintRecovery({
+        kind: "release",
+        phase: "uncertain",
+        releaseCommand: command,
+        message: "The cancellation outcome may be uncertain. Retry the exact reservation and print version.",
+      });
+      setUncertaintyGuard(true);
       setReservationPending(false);
       updateMutationPending(false);
       return;
@@ -1142,32 +1495,63 @@ export function PrintList({ initialPrints }: PrintListProps) {
     } catch {
       body = undefined;
     }
-    const current = response.status === 200 && response.ok && isRecord(body) ? readPrintDto(body.print) : undefined;
-    if (current?.id === print.id && isRecord(body) && body.reservationId === reservationId) {
-      setPrints((previous) => orderedPrints(previous.map((item) => (item.id === print.id ? current : item))));
-      if (current.reservation) {
+    const receipt = response.status === 200 && response.ok ? readReleaseReceipt(body, command) : undefined;
+    setReservationPending(false);
+    updateMutationPending(false);
+    if (receipt) {
+      const currentPrint = receipt.print;
+      if (currentPrint) {
+        setPrints((previous) =>
+          orderedPrints(previous.map((item) => (item.id === currentPrint.id ? currentPrint : item))),
+        );
+      }
+      if (currentPrint?.reservation && currentPrint.reservation.id !== reservationId) {
         setReservationError(
           "The displayed reservation was released, and a newer reservation is now active. The current state has been updated.",
         );
         setReservationPrintId(print.id);
+        focusTarget.current = `manage-reservation-${print.id}`;
       } else {
         setStatusMessage(`${print.reservation?.reservedGrams} g released. Recorded stock remains unchanged.`);
         closeReservation();
+        focusTarget.current = `reserve-material-${print.id}`;
       }
       setReservationPreview(null);
-      focusTarget.current = current.reservation ? `manage-reservation-${print.id}` : `reserve-material-${print.id}`;
-    } else if (response.status >= 500 || response.ok) {
-      handleUncertainMutation();
-      setReservationError(
-        "The release outcome may be uncertain. Refresh the print list and review current stock before trying again.",
-      );
-    } else {
-      setReservationError(
-        "The reservation could not be released. Refresh the print list and review the current state.",
-      );
+      return;
     }
-    setReservationPending(false);
-    updateMutationPending(false);
+
+    const error = isRecord(body) && isRecord(body.error) ? body.error : undefined;
+    const code = error?.code;
+    if (
+      (response.status === 409 && (code === "edit_conflict" || code === "print_settled")) ||
+      response.status === 404
+    ) {
+      const reason =
+        response.status === 404
+          ? "The print or reservation is no longer active."
+          : "The print changed before cancellation.";
+      void reconcilePrintRecovery({
+        kind: "release",
+        phase: "reconciling",
+        releaseCommand: command,
+        message: `${reason} Reading current print and stock; cancellation will not be advanced to a newer version.`,
+        knownOutcome: `${reason} Review the current reservation before cancelling again.`,
+      });
+      return;
+    }
+
+    updatePrintRecovery({
+      kind: "release",
+      phase: "uncertain",
+      releaseCommand: command,
+      message:
+        response.status === 401
+          ? "Your session expired before cancellation could be checked. Sign in, then retry the exact cancellation."
+          : response.status >= 500 || response.ok
+            ? "The cancellation result is uncertain. Retry the exact same reservation and print version."
+            : "The cancellation command could not be validated. Keep it unchanged and retry after resolving the session or validation issue.",
+    });
+    setUncertaintyGuard(true);
   }
 
   async function confirmDelete(print: PrintDto) {
@@ -1347,7 +1731,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
             onClick={() => {
               void refreshList();
             }}
-            disabled={mutationPending || refreshing}
+            disabled={mutationPending || refreshing || uncertaintyGuard}
           >
             {refreshing ? "Refreshing…" : "Refresh list"}
           </Button>
@@ -1376,8 +1760,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
       {uncertaintyGuard && (
         <div role="alert" className="carbon-feedback carbon-feedback-warning">
           <p>
-            A previous change may have completed without confirmation. Review the current saved list before repeating
-            any action.
+            {printRecovery?.message ??
+              "A previous change may have completed without confirmation. Review the current saved list before repeating any action."}
           </p>
           <div className="carbon-feedback-actions">
             <Button
@@ -1385,11 +1769,22 @@ export function PrintList({ initialPrints }: PrintListProps) {
               variant="outline"
               className="whitespace-normal"
               onClick={() => {
-                void refreshList();
+                if (printRecovery) void retryPrintRecovery();
+                else void refreshList();
               }}
-              disabled={mutationPending || refreshing}
+              disabled={mutationPending || refreshing || printRecovery?.phase === "reconciling"}
             >
-              {refreshing ? "Refreshing…" : "Refresh and review prints"}
+              {printRecovery?.phase === "reconciling"
+                ? "Reading current print and stock…"
+                : printRecovery?.phase === "read_failed"
+                  ? "Retry current print and stock reads"
+                  : printRecovery?.kind === "edit"
+                    ? "Retry exact edit"
+                    : printRecovery?.kind === "release"
+                      ? "Retry exact cancellation"
+                      : refreshing
+                        ? "Refreshing…"
+                        : "Refresh and review prints"}
             </Button>
           </div>
         </div>
@@ -1474,7 +1869,10 @@ export function PrintList({ initialPrints }: PrintListProps) {
               savePrint(saved, "create");
             }}
             onCancel={closeCreate}
-            onUncertain={handleUncertainMutation}
+            onUncertain={(command) => {
+              if (command) beginUncertainEdit(command);
+              else handleUncertainMutation();
+            }}
             onRefreshLatest={() => refreshList()}
           />
         </section>
@@ -1488,7 +1886,17 @@ export function PrintList({ initialPrints }: PrintListProps) {
           </p>
         </div>
       ) : (
-        <ul className="carbon-row-list">
+        <CollectionTable
+          label="Print queue"
+          actionColumn="standard"
+          columns={[
+            { label: "Print" },
+            { label: "Material" },
+            { label: "Required" },
+            { label: "Reserved", ariaLabel: "Reservation / result" },
+            { label: "Actions" },
+          ]}
+        >
           {prints.map((print) => {
             const isEditing = editingPrintId === print.id;
             const isDeleting = deletePrintId === print.id;
@@ -1498,48 +1906,53 @@ export function PrintList({ initialPrints }: PrintListProps) {
               mutationPending || refreshing || uncertaintyGuard || settlementGuard || settlementPanelPrintId !== null;
             const summary = describePrint(print);
             return (
-              <li key={print.id}>
-                <article aria-labelledby={`print-title-${print.id}`} className="carbon-collection-row">
-                  <div className="carbon-row-main">
-                    <p className="carbon-label">{print.settlement ? "Completed print" : "Planned print"}</p>
-                    <h3 id={`print-title-${print.id}`} className="carbon-row-title mt-1 text-lg font-semibold">
-                      {summary}
-                    </h3>
-                    {print.name && (
-                      <p className="carbon-row-secondary text-muted-foreground mt-1 text-sm">
-                        {print.material} <span aria-hidden="true">·</span> {print.colour}
-                      </p>
-                    )}
-                    <p className="text-muted-foreground mt-2 text-xs break-all">
-                      Print <code className="font-mono">{print.id}</code>
+              <CollectionTableRow key={print.id} labelledBy={`print-title-${print.id}`}>
+                <CollectionTableCell label="Print" mobileFullWidth className="carbon-row-main">
+                  {print.settlement && <p className="carbon-label">Completed print</p>}
+                  <h3 id={`print-title-${print.id}`} className="carbon-row-title mt-1 text-lg font-semibold">
+                    {summary}
+                  </h3>
+                  <p className="text-muted-foreground mt-2 text-xs break-all">
+                    Print{" "}
+                    <code className="font-mono" title={print.id}>
+                      <span aria-hidden="true">{shortId(print.id)}…</span>
+                      <span className="sr-only">{print.id}</span>
+                    </code>
+                  </p>
+                </CollectionTableCell>
+
+                <CollectionTableCell label="Material / colour" className="carbon-print-table-cell-material">
+                  <p className="carbon-row-secondary text-sm">
+                    {print.material} · {print.colour}
+                  </p>
+                </CollectionTableCell>
+
+                <CollectionTableCell label="Required estimate" className="carbon-print-table-cell-required">
+                  <p className="carbon-value text-lg">{print.requiredGrams} g</p>
+                </CollectionTableCell>
+
+                <CollectionTableCell
+                  label="Reservation / result"
+                  mobileFullWidth
+                  className="carbon-print-table-cell-result"
+                >
+                  {print.reservation ? (
+                    <p className="carbon-value text-lg">
+                      {print.reservation.reservedGrams} g<span className="sr-only"> reserved</span>
                     </p>
-                  </div>
+                  ) : print.settlement ? (
+                    <>
+                      <p className="carbon-label">Actual consumption</p>
+                      <p className="carbon-value text-lg">{print.settlement.actualGrams} g consumed</p>
+                    </>
+                  ) : (
+                    <p className="carbon-row-secondary text-sm">No active reservation</p>
+                  )}
+                </CollectionTableCell>
 
-                  <dl className="carbon-row-values">
-                    <div className="carbon-row-value">
-                      <dt className="carbon-label">Material</dt>
-                      <dd className="carbon-row-secondary mt-1 text-sm">{print.material}</dd>
-                    </div>
-                    <div className="carbon-row-value">
-                      <dt className="carbon-label">Colour</dt>
-                      <dd className="carbon-row-secondary mt-1 text-sm">{print.colour}</dd>
-                    </div>
-                    <div className="carbon-row-value">
-                      <dt className="carbon-label">Required estimate</dt>
-                      <dd className="carbon-value mt-1 text-lg">{print.requiredGrams} g</dd>
-                      <p className="text-muted-foreground mt-1 text-xs">Before safety margin</p>
-                    </div>
-                    {print.settlement && (
-                      <div className="carbon-row-value">
-                        <dt className="carbon-label">Actual consumption</dt>
-                        <dd className="carbon-value mt-1 text-lg">{print.settlement.actualGrams} g</dd>
-                        <p className="text-muted-foreground mt-1 text-xs">Completed</p>
-                      </div>
-                    )}
-                  </dl>
-
-                  {!isEditing && !isDeleting && (
-                    <div className="carbon-row-actions">
+                {!isEditing && !isDeleting && (
+                  <CollectionTableCell label="Actions" mobileFullWidth className="carbon-print-table-cell-actions">
+                    <div className="carbon-row-actions carbon-data-table-actions">
                       {print.settlement ? (
                         <Button
                           id={`review-settlement-${print.id}`}
@@ -1551,7 +1964,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
                             openSettlement(print);
                           }}
                         >
-                          Review settlement
+                          <span>Review</span>
+                          <span className="sr-only"> settlement</span>
                         </Button>
                       ) : (
                         <>
@@ -1565,7 +1979,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
                                 openSettlement(print);
                               }}
                             >
-                              Settle print
+                              <span>Settle</span>
+                              <span className="sr-only"> print</span>
                             </Button>
                           )}
                           <Button
@@ -1578,7 +1993,17 @@ export function PrintList({ initialPrints }: PrintListProps) {
                               openReservation(print);
                             }}
                           >
-                            {print.reservation ? "Manage reservation" : "Reserve material"}
+                            {print.reservation ? (
+                              <>
+                                <span>Manage</span>
+                                <span className="sr-only"> reservation</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Reserve</span>
+                                <span className="sr-only"> material</span>
+                              </>
+                            )}
                           </Button>
                           <Button
                             id={`edit-print-${print.id}`}
@@ -1609,88 +2034,99 @@ export function PrintList({ initialPrints }: PrintListProps) {
                         Delete
                       </Button>
                     </div>
-                  )}
+                  </CollectionTableCell>
+                )}
 
-                  {isEditing && (
-                    <div className="carbon-inline-panel carbon-row-inline-panel">
-                      <h4 className="mb-4 text-base font-semibold">Edit planned print</h4>
-                      <PrintForm
-                        key={`${print.id}-${print.version}`}
-                        mode="edit"
-                        print={print}
-                        mutationPending={mutationPending}
-                        mutationGuarded={uncertaintyGuard}
-                        onPendingChange={updateMutationPending}
-                        onSaved={(saved) => {
-                          savePrint(saved, "edit");
-                        }}
-                        onCancel={() => {
-                          closeEdit(print.id);
-                        }}
-                        onUncertain={handleUncertainMutation}
-                        onRefreshLatest={() => refreshList({ conflictId: print.id })}
-                      />
-                    </div>
-                  )}
+                {isEditing && (
+                  <CollectionTableCell
+                    mobileFullWidth
+                    ariaColSpan={5}
+                    className="carbon-inline-panel carbon-row-inline-panel carbon-data-table-panel"
+                  >
+                    <h4 className="mb-4 text-base font-semibold">Edit planned print</h4>
+                    <PrintForm
+                      key={`${print.id}-${editFormResetVersion}`}
+                      mode="edit"
+                      print={print}
+                      mutationPending={mutationPending}
+                      mutationGuarded={uncertaintyGuard}
+                      onPendingChange={updateMutationPending}
+                      onSaved={(saved) => {
+                        savePrint(saved, "edit");
+                      }}
+                      onCancel={() => {
+                        closeEdit(print.id);
+                      }}
+                      onUncertain={(command) => {
+                        if (command) beginUncertainEdit(command);
+                        else handleUncertainMutation();
+                      }}
+                      onRefreshLatest={() => refreshList({ conflictId: print.id })}
+                    />
+                  </CollectionTableCell>
+                )}
 
-                  {isDeleting && (
-                    <div
-                      className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel"
-                      aria-labelledby={`delete-confirmation-${print.id}`}
-                    >
-                      <h4 id={`delete-confirmation-${print.id}`} className="font-semibold">
-                        Delete this {print.settlement ? "completed" : "planned"} print?
-                      </h4>
-                      <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm leading-relaxed">
-                        {print.settlement
-                          ? `Deleting ${summary} will not reverse its saved ${print.settlement.actualGrams} g consumption or restore stock. `
-                          : `Confirm deletion of ${summary}. `}
-                        Full print ID: <code className="font-mono break-all">{print.id}</code>
-                      </p>
-                      {deleteError && (
-                        <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
-                          <p>{deleteError.message}</p>
-                          {deleteError.kind === "unauthenticated" && (
-                            <a className="carbon-feedback-link" href="/auth/signin">
-                              Sign in
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      <div className="carbon-form-actions mt-4">
-                        <Button
-                          id={`confirm-delete-${print.id}`}
-                          type="button"
-                          variant="destructive"
-                          onClick={() => {
-                            void confirmDelete(print);
-                          }}
-                          disabled={mutationPending || refreshing || uncertaintyGuard || settlementGuard}
-                        >
-                          {deletePending ? "Deleting…" : "Confirm deletion"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            closeDelete(print.id);
-                          }}
-                          disabled={mutationPending || refreshing}
-                        >
-                          Cancel
-                        </Button>
+                {isDeleting && (
+                  <CollectionTableCell
+                    mobileFullWidth
+                    ariaColSpan={5}
+                    className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel carbon-data-table-panel"
+                    ariaLabelledBy={`delete-confirmation-${print.id}`}
+                  >
+                    <h4 id={`delete-confirmation-${print.id}`} className="font-semibold">
+                      Delete this {print.settlement ? "completed" : "planned"} print?
+                    </h4>
+                    <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm leading-relaxed">
+                      {print.settlement
+                        ? `Deleting ${summary} will not reverse its saved ${print.settlement.actualGrams} g consumption or restore stock. `
+                        : `Confirm deletion of ${summary}. `}
+                      Full print ID: <code className="font-mono break-all">{print.id}</code>
+                    </p>
+                    {deleteError && (
+                      <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
+                        <p>{deleteError.message}</p>
+                        {deleteError.kind === "unauthenticated" && (
+                          <a className="carbon-feedback-link" href="/auth/signin">
+                            Sign in
+                          </a>
+                        )}
                       </div>
-                      <p role="status" aria-live="polite" className="sr-only">
-                        {deletePending ? `Deleting ${summary}.` : ""}
-                      </p>
+                    )}
+                    <div className="carbon-form-actions mt-4">
+                      <Button
+                        id={`confirm-delete-${print.id}`}
+                        type="button"
+                        variant="destructive"
+                        onClick={() => {
+                          void confirmDelete(print);
+                        }}
+                        disabled={mutationPending || refreshing || uncertaintyGuard || settlementGuard}
+                      >
+                        {deletePending ? "Deleting…" : "Confirm deletion"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          closeDelete(print.id);
+                        }}
+                        disabled={mutationPending || refreshing}
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                  )}
+                    <p role="status" aria-live="polite" className="sr-only">
+                      {deletePending ? `Deleting ${summary}.` : ""}
+                    </p>
+                  </CollectionTableCell>
+                )}
 
-                  {reservationPrintId === print.id &&
-                    !isEditing &&
-                    !isDeleting &&
-                    !print.settlement &&
-                    !settlementPanelOpen && (
+                {reservationPrintId === print.id &&
+                  !isEditing &&
+                  !isDeleting &&
+                  !print.settlement &&
+                  !settlementPanelOpen && (
+                    <CollectionTableCell mobileFullWidth ariaColSpan={5} className="carbon-data-table-panel">
                       <ReservationPanel
                         print={print}
                         preview={reservationPreview?.printId === print.id ? reservationPreview : null}
@@ -1698,6 +2134,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
                         selectedSpoolId={selectedSpoolId}
                         pending={reservationPending || uncertaintyGuard || settlementGuard}
                         error={reservationError}
+                        notice={reservationNotice}
                         onSelectSpool={(spoolId) => {
                           setSelectedSpoolId(spoolId);
                           setReservationSelectionMode("manual");
@@ -1710,14 +2147,18 @@ export function PrintList({ initialPrints }: PrintListProps) {
                           (spool) => spool.id === print.reservation?.spoolId,
                         )}
                       />
-                    )}
+                    </CollectionTableCell>
+                  )}
 
-                  {settlementPanelOpen && !isEditing && !isDeleting && renderSettlementPanel(print, settlementWorkflow)}
-                </article>
-              </li>
+                {settlementPanelOpen && !isEditing && !isDeleting && (
+                  <CollectionTableCell mobileFullWidth ariaColSpan={5} className="carbon-data-table-panel">
+                    {renderSettlementPanel(print, settlementWorkflow)}
+                  </CollectionTableCell>
+                )}
+              </CollectionTableRow>
             );
           })}
-        </ul>
+        </CollectionTable>
       )}
 
       {detachedSettlementWorkflows.map((workflow) => (

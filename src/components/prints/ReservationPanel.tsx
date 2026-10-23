@@ -10,6 +10,7 @@ interface ReservationPanelProps {
   selectedSpoolId: string;
   pending: boolean;
   error: string;
+  notice: string;
   onSelectSpool: (spoolId: string) => void;
   onReserve: () => void;
   onCancelReservation: () => void;
@@ -29,6 +30,7 @@ export function ReservationPanel({
   selectedSpoolId,
   pending,
   error,
+  notice,
   onSelectSpool,
   onReserve,
   onCancelReservation,
@@ -55,6 +57,15 @@ export function ReservationPanel({
         <p className="text-muted-foreground mt-1 text-xs break-all">
           Reservation <code>{print.reservation.id}</code>
         </p>
+        <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
+          Releasing uses the print version shown in this view. If the print changes first, review the current print and
+          stock before cancelling again.
+        </p>
+        {notice && (
+          <div role="status" aria-live="polite" className="carbon-feedback carbon-feedback-warning mt-3">
+            {notice}
+          </div>
+        )}
         {error && (
           <p role="alert" className="carbon-feedback carbon-feedback-error mt-3">
             {error}
