@@ -1,10 +1,10 @@
 ---
 change_id: edit-reserved-print
 title: Edit reserved print
-status: impl_reviewed
+status: archived
 created: 2026-10-20
 updated: 2026-10-23
-archived_at: null
+archived_at: 2026-10-23T17:06:03Z
 ---
 
 ## Notes

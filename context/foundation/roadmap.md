@@ -3,7 +3,7 @@ project: PrintPlan
 version: 3
 status: draft
 created: 2026-10-09
-updated: 2026-10-22
+updated: 2026-10-23
 prd_version: 3
 main_goal: speed
 top_blocker: decisions
@@ -49,7 +49,7 @@ The sequencing goal is `speed`, confirmed by the author. The author has resolved
 | S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | done |
 | S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done |
 | S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | done |
-| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | in-progress |
+| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | done |
 | S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | done |
 | S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done |
 
@@ -167,7 +167,7 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Recalculation must release or replace the prior reservation as one change without transient overbooking; explain when the saved print has become unreserved.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-06: Maintain a spool that has active reservations
 
@@ -247,3 +247,5 @@ All eight declared functional requirements remain in this milestone; the speed g
 - **S-04: user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.** — Archived 2026-10-19 → `context/archive/2026-10-17-account-safety-margin/`. Lesson: —.
 
 - **S-06: user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.** — Archived 2026-10-20 → `context/archive/2026-10-17-maintain-reserved-spool/`. Lesson: —.
+
+- **S-05: user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.** — Archived 2026-10-23 → `context/archive/2026-10-20-edit-reserved-print/`. Lesson: —.
