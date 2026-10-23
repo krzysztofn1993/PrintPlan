@@ -348,13 +348,13 @@ Execution uses Node from `.nvmrc`, installed dependencies, Docker/local Supabase
 
 #### Automated
 
-- [x] 4.1 Controlled races pass for recalculation versus settings, reserve, release, edit, settlement, stock correction and deletion: `npm run test:reservations:concurrency`. — all 46 interleavings passed (2026-10-22).
-- [x] 4.2 Database and populated-upgrade acceptance pass, including historical rename replay and absence of an unversioned release bypass: `npx supabase test db` and `npm run test:migrations`. — 546 SQL tests and populated migration acceptance passed (2026-10-22).
-- [x] 4.3 Browser acceptance proves same-ID stale cancellation rejection, lost-response exact recovery, pending-request guards and paired-read failures: `npm run test:e2e`. — all 67 Chromium tests passed on the built preview (2026-10-22).
-- [x] 4.4 Authenticated HTTP acceptance passes against production preview with local Supabase and Mailpit: `npm run smoke`. — all smoke checks passed, including session-expiry coverage (2026-10-22).
-- [x] 4.5 Final native, lint, type and build gate passes: `npm run verify:deploy`. — passed with 0 errors and 0 warnings; Astro reported 6 nonblocking hints (2026-10-22).
+- [x] 4.1 Controlled races pass for recalculation versus settings, reserve, release, edit, settlement, stock correction and deletion: `npm run test:reservations:concurrency`. — all 46 interleavings passed (2026-10-22). — 9365348
+- [x] 4.2 Database and populated-upgrade acceptance pass, including historical rename replay and absence of an unversioned release bypass: `npx supabase test db` and `npm run test:migrations`. — 546 SQL tests and populated migration acceptance passed (2026-10-22). — 9365348
+- [x] 4.3 Browser acceptance proves same-ID stale cancellation rejection, lost-response exact recovery, pending-request guards and paired-read failures: `npm run test:e2e`. — all 67 Chromium tests passed on the built preview (2026-10-22). — 9365348
+- [x] 4.4 Authenticated HTTP acceptance passes against production preview with local Supabase and Mailpit: `npm run smoke`. — all smoke checks passed, including session-expiry coverage (2026-10-22). — 9365348
+- [x] 4.5 Final native, lint, type and build gate passes: `npm run verify:deploy`. — passed with 0 errors and 0 warnings; Astro reported 6 nonblocking hints (2026-10-22). — 9365348
 
 #### Manual
 
-- [x] 4.6 Reserved editing, no-fit feedback, stale cancellation and recovery passed manual checks in Chrome, Firefox and a phone viewport. The stale-cancellation message was corrected and verified automatically. The author selected option 2, Data Table, from `reviews/row-layout-options.html`; a shared table base now serves Planned Prints and Filament Stock with wide-screen columns and labeled phone cards. The author confirmed both views and button layouts on desktop and phone (2026-10-23). See `verification.md`.
-- [x] 4.7 The author confirmed saved reservation data persisted correctly in the database after the manual run (2026-10-22). See `verification.md`.
+- [x] 4.6 Reserved editing, no-fit feedback, stale cancellation and recovery passed manual checks in Chrome, Firefox and a phone viewport. The stale-cancellation message was corrected and verified automatically. The author selected option 2, Data Table, from `reviews/row-layout-options.html`; a shared table base now serves Planned Prints and Filament Stock with wide-screen columns and labeled phone cards. The author confirmed both views and button layouts on desktop and phone (2026-10-23). See `verification.md`. — 9365348
+- [x] 4.7 The author confirmed saved reservation data persisted correctly in the database after the manual run (2026-10-22). See `verification.md`. — 9365348
