@@ -166,7 +166,7 @@ test("a committed stock save with an unreadable reply keeps the active-form guar
     .getByRole("button", { name: "Refresh and review stock" })
     .click();
   await expect(page).toHaveURL(/\/dashboard\/spools$/);
-  await expect(page.getByRole("article").filter({ hasText: colour })).toBeVisible();
+  await expect(spoolRow(page, persisted[0].id)).toBeVisible();
   expect((await recoveryApi.listSpools()).filter((spool) => spool.colour === colour)).toHaveLength(1);
   expect(browserPosts).toBe(1);
 });

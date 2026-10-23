@@ -14,6 +14,7 @@ export function deferred<T = void>() {
 export async function openSpools(page: Page): Promise<void> {
   await page.goto("/dashboard/spools");
   await page.getByRole("heading", { name: "Filament stock", level: 1 }).waitFor();
+  await page.locator('astro-island[component-export="SpoolInventory"]:not([ssr])').waitFor();
 }
 
 export async function openPrints(page: Page): Promise<void> {
@@ -48,11 +49,14 @@ export async function fillPrintForm(page: Page, input: PrintInput): Promise<void
 }
 
 export function spoolRow(page: Page, id: string) {
-  return page.getByRole("article").filter({ hasText: id.slice(0, 8) });
+  return page
+    .getByRole("table", { name: "Filament stock" })
+    .getByRole("row")
+    .filter({ hasText: id.slice(0, 8) });
 }
 
 export function printRow(page: Page, id: string) {
-  return page.getByRole("article").filter({ hasText: id });
+  return page.getByRole("table", { name: "Print queue" }).getByRole("row").filter({ hasText: id });
 }
 
 export function spoolAction(page: Page, action: "Edit" | "Delete", id: string) {

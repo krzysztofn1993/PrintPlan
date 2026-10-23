@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { expect, test as base } from "@playwright/test";
 import type { APIResponse, BrowserContext, Response as BrowserResponse } from "@playwright/test";
 import type { SettlementReceipt } from "../../src/lib/settlement-dto";
+import { readLocalSupabaseConfig } from "../../scripts/smoke-utils.mjs";
 import { FIXTURE_LEDGER_FILE, readCredentials, type LocalTestAccount } from "./helpers/local-account";
 
 export interface SpoolRecord {
@@ -35,6 +36,13 @@ export interface SettlementCommand {
 export interface SettlementCommandResult {
   settlement: SettlementReceipt;
   replayed: boolean;
+}
+
+export interface ReservationEvidence {
+  id: string;
+  printId: string;
+  spoolId: string;
+  createdAt: string;
 }
 
 export interface ReservationPreviewRecord {
@@ -75,6 +83,7 @@ export interface RecoveryApi {
   deleteSpool(id: string): Promise<void>;
   createPrint(input: PrintInput): Promise<PrintRecord>;
   listPrints(): Promise<PrintRecord[]>;
+  readReservation(printId: string): Promise<ReservationEvidence | null>;
   trackPrint(id: string): Promise<void>;
   updatePrint(id: string, expectedVersion: number, input: PrintInput): Promise<PrintRecord>;
   deletePrint(id: string): Promise<void>;
@@ -153,6 +162,16 @@ export const test = base.extend<E2EFixtures>({
     const account = await readCredentials();
     const ledger = await readLedger(account.userId);
     const endpoint = (path: string) => `${baseURL}${path}`;
+    const supabase = await readLocalSupabaseConfig();
+    expect(supabase.url).toBe(account.supabaseUrl);
+    const authResponse = await context.request.post(`${supabase.url}/auth/v1/token?grant_type=password`, {
+      headers: { apikey: String(supabase.key) },
+      data: { email: account.email, password: account.password },
+    });
+    expect(authResponse.status()).toBe(200);
+    const authPayload = (await authResponse.json()) as { access_token?: unknown };
+    expect(typeof authPayload.access_token).toBe("string");
+    const accessToken = authPayload.access_token as string;
 
     const getAccountSettings = async () => {
       const payload = await readJson<{ settings: { marginPercent: number; version: number } }>(
@@ -230,6 +249,31 @@ export const test = base.extend<E2EFixtures>({
       );
       expect(Array.isArray(payload.prints)).toBe(true);
       return payload.prints;
+    };
+
+    const readReservation = async (printId: string): Promise<ReservationEvidence | null> => {
+      const url = new URL("/rest/v1/print_reservations", supabase.url);
+      url.searchParams.set("select", "id,print_id,spool_id,created_at");
+      url.searchParams.set("print_id", `eq.${printId}`);
+      const response = await context.request.get(url.toString(), {
+        headers: { apikey: String(supabase.key), Authorization: `Bearer ${accessToken}` },
+      });
+      expect(response.status()).toBe(200);
+      const rows = (await response.json()) as {
+        id: string;
+        print_id: string;
+        spool_id: string;
+        created_at: string;
+      }[];
+      expect(Array.isArray(rows)).toBe(true);
+      expect(rows.length).toBeLessThanOrEqual(1);
+      if (!rows.length) return null;
+      return {
+        id: rows[0].id,
+        printId: rows[0].print_id,
+        spoolId: rows[0].spool_id,
+        createdAt: rows[0].created_at,
+      };
     };
 
     const trackSpool = async (id: string) => {
@@ -327,6 +371,7 @@ export const test = base.extend<E2EFixtures>({
       },
 
       listPrints,
+      readReservation,
       trackPrint,
 
       async updatePrint(id, expectedVersion, input) {

@@ -3,7 +3,7 @@ change_id: edit-reserved-print
 title: Edit reserved print
 status: implementing
 created: 2026-10-20
-updated: 2026-10-22
+updated: 2026-10-23
 archived_at: null
 ---
 
