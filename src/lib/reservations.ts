@@ -180,7 +180,13 @@ export async function reservePrintMaterial(
     const currentResult = await currentPrintAndSpool(client, ownerId, input.printId, input.spoolId);
     if (!currentResult.ok) return currentResult;
     const current = currentResult.value;
-    if (!current.print || !current.spool || current.print.reservation?.id !== receipt.reservationId) {
+    const currentReservation = current.print?.reservation;
+    if (
+      !current.print ||
+      !current.spool ||
+      currentReservation?.id !== receipt.reservationId ||
+      currentReservation.spoolId !== current.spool.id
+    ) {
       return {
         ok: false,
         reason: "database_error",
@@ -212,11 +218,13 @@ export async function releasePrintMaterial(
   ownerId: string,
   reservationId: string,
   expectedPrintId: string,
+  expectedVersion: number,
 ): Promise<ReservationCommandResult<ReleaseReceipt>> {
   try {
     const { data, error, status } = await client.rpc("release_print_material", {
       p_reservation_id: reservationId,
       p_print_id: expectedPrintId,
+      p_expected_version: expectedVersion,
     });
     if (error) return rpcError(error, status);
     const receipt = data && asRecord(data);

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/types/database";
 import type { PrintWriteInput } from "@/lib/print-validation";
+import { readPrintUpdateDto, type PrintUpdateDto } from "./print-update-dto.ts";
 import { readPrintSettlementDto, type PrintSettlementDto } from "./settlement-dto.ts";
 import { listSpools, type SpoolDto } from "./spools.ts";
 
@@ -49,10 +50,9 @@ export type PrintMutationFailure =
   | PrintDatabaseFailure
   | { ok: false; reason: "not_found" }
   | { ok: false; reason: "conflict" }
-  | { ok: false; reason: "print_settled" }
-  | { ok: false; reason: "reserved_print_edit_requires_cancellation" };
+  | { ok: false; reason: "print_settled" };
 export type PrintDatabaseResult<T> = { ok: true; value: T } | PrintDatabaseFailure;
-export type PrintBusinessConflict = "conflict" | "print_settled" | "reserved_print_edit_requires_cancellation";
+export type PrintBusinessConflict = "conflict" | "print_settled";
 export type PrintMutationResult<T> = { ok: true; value: T } | PrintMutationFailure;
 export type PrintDeleteResult<T> = PrintDatabaseResult<T> | { ok: false; reason: "not_found" };
 
@@ -108,8 +108,6 @@ function rpcFailure(error: unknown, status?: number): PrintMutationFailure {
   if (message.includes("not_found")) return { ok: false, reason: "not_found" };
   if (message.includes("edit_conflict")) return { ok: false, reason: "conflict" };
   if (message.includes("print_settled")) return { ok: false, reason: "print_settled" };
-  if (message.includes("reserved_print_edit_requires_cancellation"))
-    return { ok: false, reason: "reserved_print_edit_requires_cancellation" };
   return { ok: false, reason: "database_error", error, status };
 }
 
@@ -192,11 +190,11 @@ export async function createPrint(
 
 export async function updatePrint(
   client: PrintClient,
-  ownerId: string,
+  _ownerId: string,
   id: string,
   expectedVersion: number,
   input: PrintWriteInput,
-): Promise<PrintMutationResult<PrintDto>> {
+): Promise<PrintMutationResult<PrintUpdateDto>> {
   try {
     const { data, error, status } = await client.rpc("update_print", {
       p_print_id: id,
@@ -207,11 +205,14 @@ export async function updatePrint(
       p_required_grams: input.requiredGrams,
     });
     if (error) return rpcFailure(error, status);
-    const returnedId =
-      data && typeof data === "object" && !Array.isArray(data) && typeof data.id === "string" ? data.id : "";
-    if (!returnedId)
-      return { ok: false, reason: "database_error", error: new Error("The print RPC did not return its updated row.") };
-    return await readPrint(client, ownerId, returnedId);
+    const receipt = readPrintUpdateDto(data, id, expectedVersion);
+    if (!receipt)
+      return {
+        ok: false,
+        reason: "database_error",
+        error: new Error("The print update RPC returned an invalid committed receipt."),
+      };
+    return { ok: true, value: receipt };
   } catch (error) {
     return { ok: false, reason: "database_error", error };
   }

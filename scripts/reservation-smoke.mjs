@@ -34,7 +34,7 @@ export async function runReservationSmoke({
     assertPrivateHeaders(result, "json", "Reservation");
     return { result, payload: readAppJson(result, "reservation") };
   };
-  const createSpool = async (colour) => {
+  const createSpool = async (colour, recordedGrams = 150) => {
     const { payload } = await appJson(
       "/api/spools",
       {
@@ -42,7 +42,7 @@ export async function runReservationSmoke({
         formEntries: [
           ["material", "PLA"],
           ["colour", colour],
-          ["recordedGrams", "150"],
+          ["recordedGrams", String(recordedGrams)],
         ],
       },
       201,
@@ -93,17 +93,47 @@ export async function runReservationSmoke({
     );
   const listPrints = async (jar = activeJarA) => (await appJson("/api/prints", {}, 200, jar)).payload.prints;
   const listSpools = async (jar = activeJarA) => (await appJson("/api/spools", {}, 200, jar)).payload.spools;
-  const release = async (printId, reservationId) =>
-    appJson(`/api/prints/${printId}/reservation/cancel`, {
-      method: "POST",
-      formEntries: [["reservationId", reservationId]],
-    });
+  const release = async (printId, reservationId, expectedVersion, expectedStatus = 200, jar = activeJarA) =>
+    appJson(
+      `/api/prints/${printId}/reservation/cancel`,
+      {
+        method: "POST",
+        formEntries: [
+          ["reservationId", reservationId],
+          ["expectedVersion", String(expectedVersion)],
+        ],
+      },
+      expectedStatus,
+      jar,
+    );
 
   try {
     const colour = `Reservation smoke ${randomUUID()}`;
     const spool = await createSpool(colour);
-    const first = await createPrint("Reservation smoke first", colour);
+    let first = await createPrint("Reservation smoke first", colour);
     const second = await createPrint("Reservation smoke second", colour);
+
+    await step("an unreserved edit returns its saved transaction result", async () => {
+      const saved = await appJson(`/api/prints/${first.id}/update`, {
+        method: "POST",
+        formEntries: [
+          ["name", first.name],
+          ["material", first.material],
+          ["colour", first.colour],
+          ["requiredGrams", String(first.requiredGrams)],
+          ["expectedVersion", String(first.version)],
+        ],
+      });
+      ensure(
+        saved.payload.print?.id === first.id && saved.payload.print.version === first.version + 1,
+        "The successful edit did not return its committed print snapshot.",
+      );
+      ensure(
+        Object.hasOwn(saved.payload, "recalculation") && saved.payload.recalculation === null,
+        "An unreserved edit did not return a null recalculation result.",
+      );
+      first = saved.payload.print;
+    });
 
     const firstPreview = await step(
       "best-fit preview applies the default margin and identifies the spool",
@@ -122,11 +152,13 @@ export async function runReservationSmoke({
     );
 
     let reservationId;
+    let reservationVersion;
     await step("reserve, retry, and fresh reads preserve recorded stock", async () => {
       const requestId = randomUUID();
       const firstWrite = await reserve(first, spool.id, firstPreview.reservationGrams, "best_fit", requestId);
       ensure(firstWrite.payload.disposition === "active", "The confirmed reservation was not active.");
       reservationId = firstWrite.payload.reservationId;
+      reservationVersion = firstWrite.payload.print.version;
       const replay = await reserve(first, spool.id, firstPreview.reservationGrams, "best_fit", requestId);
       ensure(
         replay.payload.reservationId === reservationId && replay.payload.disposition === "active",
@@ -158,12 +190,17 @@ export async function runReservationSmoke({
         foreign.payload.error?.code === "not_found",
         "A foreign print reservation preview did not return not found.",
       );
+      const foreignCancel = await release(first.id, reservationId, reservationVersion, 404, activeJarB);
+      ensure(
+        foreignCancel.payload.error?.code === "not_found",
+        "A foreign cancellation did not remain indistinguishable from a missing reservation.",
+      );
     });
 
     await step("release and replacement are safe against stale cancellation", async () => {
-      const released = await release(first.id, reservationId);
+      const released = await release(first.id, reservationId, reservationVersion);
       ensure(released.payload.disposition === "released", "The reservation was not released.");
-      const repeated = await release(first.id, reservationId);
+      const repeated = await release(first.id, reservationId, reservationVersion);
       ensure(
         repeated.payload.disposition === "already_released",
         "Repeated release did not report its completed disposition.",
@@ -179,17 +216,19 @@ export async function runReservationSmoke({
       const replacementPreview = (await appJson(`/api/prints/${firstRefresh.id}/reservation`)).payload;
       const replacement = await reserve(firstRefresh, spool.id, replacementPreview.reservationGrams, "best_fit");
       const replacementId = replacement.payload.reservationId;
+      const replacementVersion = replacement.payload.print.version;
       ensure(
         replacementId && replacementId !== reservationId,
         "Replacement did not receive a fresh reservation identity.",
       );
-      const stale = await release(first.id, reservationId);
+      const stale = await release(first.id, reservationId, reservationVersion);
       ensure(stale.payload.disposition === "already_released", "A stale release did not remain an idempotent no-op.");
       ensure(
         (await listPrints()).find((item) => item.id === first.id)?.reservation?.id === replacementId,
         "A stale release removed the replacement reservation.",
       );
       reservationId = replacementId;
+      reservationVersion = replacementVersion;
     });
 
     await step("stale print versions conflict and a new request can reserve after release", async () => {
@@ -208,14 +247,113 @@ export async function runReservationSmoke({
         409,
       );
       ensure(staleEdit.payload.error?.code === "edit_conflict", "A stale pre-reservation print version was accepted.");
-      await release(first.id, reservationId);
+      await release(first.id, reservationId, reservationVersion);
       const currentSecond = (await listPrints()).find((item) => item.id === second.id);
       ensure(currentSecond, "The second print disappeared before replacement reservation.");
       const secondPreview = (await appJson(`/api/prints/${currentSecond.id}/reservation`)).payload;
       const secondReservation = await reserve(currentSecond, spool.id, secondPreview.reservationGrams);
       ensure(secondReservation.payload.disposition === "active", "The second print could not reserve after release.");
       reservationId = secondReservation.payload.reservationId;
+      reservationVersion = secondReservation.payload.print.version;
     });
+
+    await step(
+      "authenticated reserved edits retain identity and age before a no-fit edit releases capacity",
+      async () => {
+        const editColour = `Reservation edit smoke ${randomUUID()}`;
+        const manualSpool = await createSpool(editColour, 150);
+        const tighterFitSpool = await createSpool(editColour, 120);
+        const editedPrint = await createPrint("Reservation edit smoke print", editColour);
+        const editPreview = (await appJson(`/api/prints/${editedPrint.id}/reservation`)).payload;
+        const initialReservation = await reserve(editedPrint, manualSpool.id, editPreview.reservationGrams, "manual");
+        const activePrint = initialReservation.payload.print;
+        const originalReservationId = initialReservation.payload.reservationId;
+        ensure(typeof originalReservationId === "string", "The edit fixture did not receive a reservation ID.");
+        const token = sessionIdentity(activeJarA, "account A").session.access_token;
+        const readReservationEvidence = async () => {
+          const response = await restRequest({
+            config,
+            requestSignal,
+            token,
+            path: "/rest/v1/print_reservations",
+            query: `select=id,print_id,spool_id,created_at&print_id=eq.${editedPrint.id}`,
+            method: "GET",
+          });
+          ensure(Array.isArray(response.data), "Reservation age evidence was not returned as a row list.");
+          ensure(response.data.length <= 1, "A print had more than one active reservation evidence row.");
+          return response.data[0] ?? null;
+        };
+        const beforeEvidence = await readReservationEvidence();
+        ensure(
+          beforeEvidence?.id === originalReservationId &&
+            beforeEvidence.print_id === editedPrint.id &&
+            beforeEvidence.spool_id === manualSpool.id,
+          "The active reservation identity could not be read before editing.",
+        );
+
+        const retained = await appJson(`/api/prints/${editedPrint.id}/update`, {
+          method: "POST",
+          formEntries: [
+            ["name", editedPrint.name],
+            ["material", editedPrint.material],
+            ["colour", editedPrint.colour],
+            ["requiredGrams", "90"],
+            ["expectedVersion", String(activePrint.version)],
+          ],
+        });
+        ensure(
+          retained.payload.print?.id === editedPrint.id &&
+            retained.payload.print.version === activePrint.version + 1 &&
+            retained.payload.print.requiredGrams === 90 &&
+            retained.payload.print.reservation?.id === originalReservationId &&
+            retained.payload.print.reservation.spoolId === manualSpool.id &&
+            retained.payload.print.reservation.reservedGrams === 99 &&
+            retained.payload.recalculation?.outcome === "manual_retained",
+          "The reserved edit did not retain the eligible manual spool and reservation identity.",
+        );
+        const afterEvidence = await readReservationEvidence();
+        ensure(
+          afterEvidence?.id === beforeEvidence.id &&
+            afterEvidence.created_at === beforeEvidence.created_at &&
+            afterEvidence.spool_id === manualSpool.id,
+          "The reserved edit changed reservation identity, spool, or creation age.",
+        );
+        const editStocks = await listSpools();
+        ensure(
+          editStocks.find((item) => item.id === manualSpool.id)?.reservedGrams === 99 &&
+            editStocks.find((item) => item.id === manualSpool.id)?.availableGrams === 51 &&
+            editStocks.find((item) => item.id === tighterFitSpool.id)?.reservedGrams === 0 &&
+            editStocks.find((item) => item.id === tighterFitSpool.id)?.availableGrams === 120,
+          "Reserved edit stock totals changed outside the selected manual spool.",
+        );
+
+        const noFit = await appJson(`/api/prints/${editedPrint.id}/update`, {
+          method: "POST",
+          formEntries: [
+            ["name", retained.payload.print.name],
+            ["material", retained.payload.print.material],
+            ["colour", retained.payload.print.colour],
+            ["requiredGrams", "1000"],
+            ["expectedVersion", String(retained.payload.print.version)],
+          ],
+        });
+        ensure(
+          noFit.payload.print?.version === retained.payload.print.version + 1 &&
+            noFit.payload.print.requiredGrams === 1000 &&
+            noFit.payload.print.reservation === null &&
+            noFit.payload.recalculation?.outcome === "insufficient_material",
+          "A no-fit edit did not persist the requirement while releasing its reservation.",
+        );
+        ensure((await readReservationEvidence()) === null, "The released reservation remained in current evidence.");
+        const releasedStock = (await listSpools()).find((item) => item.id === manualSpool.id);
+        ensure(
+          releasedStock?.recordedGrams === 150 &&
+            releasedStock.reservedGrams === 0 &&
+            releasedStock.availableGrams === 150,
+          "No-fit recalculation changed recorded stock or failed to restore availability.",
+        );
+      },
+    );
 
     await step("logout and a fresh login retain reservation state", async () => {
       const signout = await appRequest("/api/auth/signout", { method: "POST", jar: activeJarA });

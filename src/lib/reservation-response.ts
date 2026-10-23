@@ -26,8 +26,16 @@ export function createReservationErrorResponse(
 
 export function mapReservationFailure(
   failure: { reason: string; error?: unknown; status?: number },
-  operation: "read" | "mutation" = "mutation",
+  operation: "read" | "mutation" | "cancellation" = "mutation",
 ): Response {
+  if (failure.reason === "edit_conflict" && operation === "cancellation") {
+    return createReservationErrorResponse(
+      "edit_conflict",
+      409,
+      "This print changed before cancellation. Refresh the print and review its current reservation before trying again.",
+      { refreshRequired: true },
+    );
+  }
   const messages: Partial<Record<string, { status: number; message: string }>> = {
     not_found: { status: 404, message: "This print or reservation is no longer available." },
     already_reserved: { status: 409, message: "This print already has an active reservation." },
@@ -60,5 +68,5 @@ export function mapReservationFailure(
         : {};
     return createReservationErrorResponse(failure.reason, result.status, result.message, extra);
   }
-  return createPrintDatabaseErrorResponse(failure.error, failure.status, operation);
+  return createPrintDatabaseErrorResponse(failure.error, failure.status, operation === "read" ? "read" : "mutation");
 }

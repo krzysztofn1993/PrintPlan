@@ -136,7 +136,10 @@ export type Database = {
       delete_spool: { Args: { p_spool_id: string }; Returns: Json };
       preview_print_reservation: { Args: { p_print_id: string }; Returns: Json };
       get_account_settings: { Args: Record<PropertyKey, never>; Returns: Json };
-      release_print_material: { Args: { p_print_id: string; p_reservation_id: string }; Returns: Json };
+      release_print_material: {
+        Args: { p_expected_version: number; p_print_id: string; p_reservation_id: string };
+        Returns: Json;
+      };
       reserve_print_material: {
         Args: {
           p_expected_version: number;

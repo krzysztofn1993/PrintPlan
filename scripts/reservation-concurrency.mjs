@@ -315,26 +315,29 @@ async function main() {
   async function reserveForSettlement(f, print = f.prints[0], requestId = f.requestId) {
     const result = await execute(f.owner, reserve(f, print, requestId, print.version));
     f.reservationId = result.reservationId;
+    f.reservationVersion = printState(await state(f), print.id).version;
     return result.reservationId;
   }
 
-  function edit(print, version = print.version + 1) {
+  function edit(print, version = print.version + 1, changes = {}) {
     return (
       "SELECT public.update_print(" +
       [
         quote(print.id),
         version,
-        quote("Edited " + print.name),
-        quote(print.material),
-        quote(print.colour),
-        print.required_grams,
+        quote(changes.name ?? "Edited " + print.name),
+        quote(changes.material ?? print.material),
+        quote(changes.colour ?? print.colour),
+        changes.requiredGrams ?? print.required_grams,
       ].join(",") +
       ");"
     );
   }
 
-  function release(reservationId, printId) {
-    return "SELECT public.release_print_material(" + quote(reservationId) + "," + quote(printId) + ");";
+  function release(reservationId, printId, expectedVersion) {
+    return (
+      "SELECT public.release_print_material(" + [quote(reservationId), quote(printId), expectedVersion].join(",") + ");"
+    );
   }
 
   function reduce(f) {
@@ -347,6 +350,22 @@ async function main() {
 
   function deletion(f, resource) {
     return "SELECT public.delete_" + resource + "(" + quote(resource === "spool" ? f.spool.id : f.prints[0].id) + ");";
+  }
+
+  function requestFingerprint(request) {
+    return Object.fromEntries(
+      [
+        "user_id",
+        "request_id",
+        "print_id",
+        "spool_id",
+        "expected_version",
+        "selection_mode",
+        "reservation_id",
+        "created_at",
+        "expected_reservation_grams",
+      ].map((field) => [field, request[field]]),
+    );
   }
 
   function expectedFailure(result, code, message) {
@@ -388,6 +407,23 @@ async function main() {
         if (afterCommit) extra = await afterCommit();
       }
       const final = await state(f);
+      for (const originalRequest of before.requests) {
+        const currentRequest = final.requests.find((request) => request.request_id === originalRequest.request_id);
+        assert.ok(currentRequest, "A competing mutation must preserve its original reservation request.");
+        assert.deepEqual(
+          requestFingerprint(currentRequest),
+          requestFingerprint(originalRequest),
+          "Original reservation request fingerprints must remain immutable.",
+        );
+      }
+      for (const reservation of final.reservations) {
+        const currentRequest = final.requests.find((request) => request.reservation_id === reservation.id);
+        assert.equal(
+          currentRequest?.allocation_spool_id,
+          reservation.spool_id,
+          "Current allocation evidence must identify the spool holding each active reservation.",
+        );
+      }
       await spec.verify(f, { final, holderState, holderReceipt, waiterReceipt, extra });
       if (!spec.allowSecondPrintChange) {
         assert.deepEqual(
@@ -482,6 +518,275 @@ async function main() {
         assert.equal(final.reservations[0].reserved_grams, 88);
         assert.equal(final.reservations[0].margin_percent, 10);
         assert.equal(printState(final, f.prints[0].id).version, 2);
+      },
+    });
+
+    const independentRecalculation = await fixture(otherOwner, "independent recalculation");
+    await resetMargin(independentRecalculation);
+    await reserveForSettlement(independentRecalculation);
+
+    await runRace("recalculation then settings save", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0]),
+      waiter: (f) => "SELECT public.save_account_safety_margin(5," + f.settingsVersion + ");",
+      async blocked(f, holder, waiter, holderBackend) {
+        const independentReceipt = await execute(otherOwner, edit(independentRecalculation.prints[0]));
+        assert.equal(independentReceipt.print.version, 3);
+        assert.equal(independentReceipt.print.reservation.id, independentRecalculation.reservationId);
+        assert.equal((await observe(holder)).state, "idle in transaction");
+        await waitForBlocked(waiter, holderBackend.pid);
+        stock(await state(independentRecalculation), 150, 88);
+        console.log("PASS  another owner recalculates independently while the first owner remains locked");
+      },
+      verify(f, { final }) {
+        stock(final, 150, 88);
+        assert.deepEqual(final.settings, { marginPercent: 5, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations[0].reserved_grams, 88);
+        assert.equal(final.reservations[0].margin_percent, 10);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+      },
+    });
+
+    await runRace("settings save then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => "SELECT public.save_account_safety_margin(5," + f.settingsVersion + ");",
+      waiter: (f) => edit(f.prints[0]),
+      verify(f, { final }) {
+        stock(final, 150, 84);
+        assert.deepEqual(final.settings, { marginPercent: 5, version: f.settingsVersion + 1 });
+        assert.equal(final.reservations[0].reserved_grams, 84);
+        assert.equal(final.reservations[0].margin_percent, 5);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+      },
+    });
+
+    await runRace("recalculation then competing reserved edit", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0], f.reservationVersion, { requiredGrams: 90 }),
+      waiter: (f) => edit(f.prints[0], f.reservationVersion, { name: "Stale competing edit" }),
+      error: ["P0001", "edit_conflict"],
+      verify(f, { final }) {
+        stock(final, 150, 99);
+        assert.equal(printState(final, f.prints[0].id).required_grams, 90);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+      },
+    });
+
+    await runRace("competing reserved edit then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0], f.reservationVersion, { name: "Winning name-only edit" }),
+      waiter: (f) => edit(f.prints[0], f.reservationVersion, { requiredGrams: 90 }),
+      error: ["P0001", "edit_conflict"],
+      verify(f, { final }) {
+        stock(final, 150, 88);
+        assert.equal(printState(final, f.prints[0].id).name, "Winning name-only edit");
+        assert.equal(printState(final, f.prints[0].id).required_grams, 80);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+      },
+    });
+
+    await runRace("recalculation then competing reserve", {
+      recordedGrams: 200,
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0], f.prints[0].version + 1, { requiredGrams: 100 }),
+      waiter: (f) => reserve(f, f.prints[1], f.replacementRequestId),
+      allowSecondPrintChange: true,
+      verify(f, { final, waiterReceipt }) {
+        stock(final, 200, 198);
+        assert.equal(printState(final, f.prints[0].id).required_grams, 100);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+        assert.equal(printState(final, f.prints[1].id).reservation_id, waiterReceipt.reservationId);
+        assert.equal(final.reservations.find((item) => item.print_id === f.prints[0].id).reserved_grams, 110);
+        assert.equal(final.reservations.find((item) => item.print_id === f.prints[1].id).reserved_grams, 88);
+      },
+    });
+
+    await runRace("competing reserve then recalculation", {
+      recordedGrams: 200,
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => reserve(f, f.prints[1], f.replacementRequestId),
+      waiter: (f) => edit(f.prints[0], f.prints[0].version + 1, { requiredGrams: 100 }),
+      allowSecondPrintChange: true,
+      verify(f, { final, holderReceipt }) {
+        stock(final, 200, 198);
+        assert.equal(printState(final, f.prints[0].id).required_grams, 100);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+        assert.equal(printState(final, f.prints[1].id).reservation_id, holderReceipt.reservationId);
+        assert.equal(final.reservations.find((item) => item.print_id === f.prints[0].id).reserved_grams, 110);
+        assert.equal(final.reservations.find((item) => item.print_id === f.prints[1].id).reserved_grams, 88);
+      },
+    });
+
+    await runRace("recalculation then versioned release", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0]),
+      waiter: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
+      error: ["P0001", "edit_conflict"],
+      verify(f, { final }) {
+        stock(final, 150, 88);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+      },
+    });
+
+    await runRace("versioned release then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
+      waiter: (f) => edit(f.prints[0]),
+      error: ["P0001", "edit_conflict"],
+      verify(f, { final, holderReceipt }) {
+        stock(final, 150, 0);
+        assert.equal(holderReceipt.disposition, "released");
+        assert.equal(printState(final, f.prints[0].id).reservation_id, null);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+      },
+    });
+
+    await runRace("recalculation then settlement", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0]),
+      waiter: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, f.reservationVersion),
+      error: ["P0001", "edit_conflict"],
+      verify(f, { final }) {
+        stock(final, 150, 88);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+        assert.equal(final.settlements.length, 0);
+      },
+    });
+
+    await runRace("settlement then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, f.reservationVersion),
+      waiter: (f) => edit(f.prints[0]),
+      error: ["P0001", "print_settled"],
+      verify(f, { final }) {
+        stock(final, 75, 0);
+        assert.equal(printState(final, f.prints[0].id).settlement_id !== null, true);
+        assert.equal(printState(final, f.prints[0].id).version, f.reservationVersion + 1);
+        assert.equal(final.settlements.length, 1);
+      },
+    });
+
+    await runRace("recalculation then stock correction", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0], f.prints[0].version + 1, { requiredGrams: 100 }),
+      waiter: (f) => correctSpool(f, 100),
+      error: ["P0001", "stock_below_reservations"],
+      verify(f, { final }) {
+        stock(final, 150, 110);
+        assert.equal(printState(final, f.prints[0].id).required_grams, 100);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, f.reservationId);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+      },
+    });
+
+    await runRace("stock correction then no-fit recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => correctSpool(f, 100),
+      waiter: (f) => edit(f.prints[0], f.prints[0].version + 1, { requiredGrams: 100 }),
+      allowSecondPrintChange: false,
+      verify(f, { final, waiterReceipt }) {
+        stock(final, 100, 0);
+        assert.equal(waiterReceipt.recalculation.outcome, "insufficient_material");
+        assert.equal(printState(final, f.prints[0].id).required_grams, 100);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, null);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+        assert.equal(final.requests[0].allocation_spool_id, f.spool.id);
+        assert.equal(final.requests[0].state, "released");
+      },
+    });
+
+    await runRace("recalculation then print deletion", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0]),
+      waiter: (f) => deletion(f, "print"),
+      allowSecondPrintChange: false,
+      verify(f, { final, waiterReceipt }) {
+        stock(final, 150, 0);
+        assert.equal(printState(final, f.prints[0].id), undefined);
+        assert.equal(waiterReceipt.releasedReservationId, f.reservationId);
+        assert.equal(waiterReceipt.releasedGrams, 88);
+        assert.equal(final.requests[0].state, "deleted");
+      },
+    });
+
+    await runRace("print deletion then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => deletion(f, "print"),
+      waiter: (f) => edit(f.prints[0]),
+      error: ["P0002", "not_found"],
+      verify(f, { final, holderReceipt }) {
+        stock(final, 150, 0);
+        assert.equal(printState(final, f.prints[0].id), undefined);
+        assert.equal(holderReceipt.releasedReservationId, f.reservationId);
+        assert.equal(final.requests[0].state, "deleted");
+      },
+    });
+
+    await runRace("recalculation then spool deletion", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => edit(f.prints[0]),
+      waiter: (f) => deletion(f, "spool"),
+      allowSecondPrintChange: true,
+      verify(f, { final, waiterReceipt }) {
+        assert.equal(final.spool, null);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, null);
+        assert.equal(printState(final, f.prints[0].id).version, 4);
+        assert.equal(waiterReceipt.cancelledReservations.length, 1);
+        assert.equal(waiterReceipt.cancelledReservations[0].reservationId, f.reservationId);
+        assert.equal(final.requests[0].state, "deleted");
+      },
+    });
+
+    await runRace("spool deletion then recalculation", {
+      async prepare(f) {
+        f.reservationId = await reserveForSettlement(f);
+      },
+      holder: (f) => deletion(f, "spool"),
+      waiter: (f) => edit(f.prints[0]),
+      error: ["P0001", "edit_conflict"],
+      allowSecondPrintChange: true,
+      verify(f, { final, holderReceipt }) {
+        assert.equal(final.spool, null);
+        assert.equal(printState(final, f.prints[0].id).reservation_id, null);
+        assert.equal(printState(final, f.prints[0].id).version, 3);
+        assert.equal(holderReceipt.cancelledReservations.length, 1);
+        assert.equal(final.requests[0].state, "deleted");
       },
     });
 
@@ -587,11 +892,16 @@ async function main() {
     await runRace("release then replacement then stale cancellation", {
       async prepare(f) {
         f.originalReservationId = (await execute(owner, reserve(f))).reservationId;
+        f.originalExpectedVersion = printState(await state(f), f.prints[0].id).version;
       },
-      holder: (f) => release(f.originalReservationId, f.prints[0].id),
+      holder: (f) => release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
       waiter: (f) => reserve(f, f.prints[0], f.replacementRequestId, 3),
       async beforeWaiterCommit(f, waiterBackend, participants) {
-        const stale = mutation(owner, release(f.originalReservationId, f.prints[0].id), true);
+        const stale = mutation(
+          owner,
+          release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
+          true,
+        );
         participants.push(stale);
         await waitForBlocked(stale, waiterBackend.pid);
         return async () => JSON.parse(succeeded(await stale.done));
@@ -621,8 +931,9 @@ async function main() {
     await runRace("release then replacement then stale settlement", {
       async prepare(f) {
         f.originalReservationId = await reserveForSettlement(f);
+        f.originalExpectedVersion = f.reservationVersion;
       },
-      holder: (f) => release(f.originalReservationId, f.prints[0].id),
+      holder: (f) => release(f.originalReservationId, f.prints[0].id, f.originalExpectedVersion),
       waiter: (f) => reserve(f, f.prints[0], f.replacementRequestId, 3),
       async beforeWaiterCommit(f, waiterBackend, participants) {
         const stale = mutation(
@@ -672,6 +983,8 @@ async function main() {
         quote(f.reservationId) +
         "," +
         quote(f.prints[0].id) +
+        "," +
+        f.reservationVersion +
         "); END $$;\n" +
         reserve(f, f.prints[0], f.replacementRequestId, 3),
       error: ["P0001", "print_settled"],
@@ -805,7 +1118,7 @@ async function main() {
         f.reservationId = await reserveForSettlement(f);
       },
       holder: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, 2),
-      waiter: (f) => release(f.reservationId, f.prints[0].id),
+      waiter: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
       verify(f, { final, waiterReceipt }) {
         stock(final, 75, 0);
         assert.equal(waiterReceipt.disposition, "already_released");
@@ -818,7 +1131,7 @@ async function main() {
       async prepare(f) {
         f.reservationId = await reserveForSettlement(f);
       },
-      holder: (f) => release(f.reservationId, f.prints[0].id),
+      holder: (f) => release(f.reservationId, f.prints[0].id, f.reservationVersion),
       waiter: (f) => settle(f, f.prints[0], f.reservationId, f.settlementRequestId, 75, 2),
       error: ["P0001", "edit_conflict"],
       verify(f, { final }) {
@@ -943,7 +1256,7 @@ async function main() {
       },
     });
 
-    assert.equal(cases, 30);
+    assert.equal(cases, 46);
   } catch (error) {
     failure = error;
   }
@@ -985,7 +1298,7 @@ main().catch((error) => {
   const details = error instanceof AggregateError ? error.errors : [error];
   console.error(
     "Reservation concurrency check failed: " +
-      details.map((item) => (item instanceof Error ? item.message : "unexpected failure")).join("; "),
+      details.map((item) => (item instanceof Error ? (item.stack ?? item.message) : "unexpected failure")).join("; "),
   );
   process.exitCode = 1;
 });

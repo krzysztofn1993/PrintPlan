@@ -58,6 +58,8 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
     availableGrams: 150,
   });
   expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.settlement?.actualGrams).toBe(0);
+  await expect(row.locator(".carbon-print-table-cell-result")).toContainText("Actual consumption");
+  await expect(row.locator(".carbon-print-table-cell-result")).toContainText("0 g consumed");
   expect(settlementPosts).toBe(1);
 
   await row.getByRole("button", { name: "Close", exact: true }).click();
