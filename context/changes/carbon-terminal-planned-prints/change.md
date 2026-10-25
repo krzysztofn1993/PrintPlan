@@ -1,7 +1,7 @@
 ---
 change_id: carbon-terminal-planned-prints
 title: Carbon Terminal planned prints
-status: planned
+status: implementing
 created: 2026-10-25
 updated: 2026-10-25
 archived_at: null

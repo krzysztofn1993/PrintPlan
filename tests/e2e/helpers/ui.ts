@@ -48,15 +48,16 @@ export async function fillPrintForm(page: Page, input: PrintInput): Promise<void
   await page.getByLabel("Required filament (g)").fill(String(input.requiredGrams));
 }
 
-export function spoolRow(page: Page, id: string) {
+export function spoolRecord(page: Page, id: string) {
   return page
     .getByRole("table", { name: "Filament stock" })
-    .getByRole("row")
-    .filter({ hasText: id.slice(0, 8) });
+    .locator(`[role="rowgroup"][aria-labelledby="spool-title-${id}"]`);
 }
 
-export function printRow(page: Page, id: string) {
-  return page.getByRole("table", { name: "Print queue" }).getByRole("row").filter({ hasText: id });
+export function printRecord(page: Page, id: string) {
+  return page
+    .getByRole("table", { name: "Print queue" })
+    .locator(`[role="rowgroup"][aria-labelledby="print-title-${id}"]`);
 }
 
 export function spoolAction(page: Page, action: "Edit" | "Delete", id: string) {

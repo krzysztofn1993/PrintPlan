@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect, type RecoveryApi } from "./fixtures";
-import { deferred, openPrints, printRow } from "./helpers/ui";
+import { deferred, openPrints, printRecord } from "./helpers/ui";
 
 async function openSettings(page: Page): Promise<void> {
   await page.goto("/dashboard/settings");
@@ -183,7 +183,7 @@ for (const selectionMode of ["best_fit", "manual"] as const) {
 
     try {
       await openPrints(page);
-      const row = printRow(page, print.id);
+      const row = printRecord(page, print.id);
       await row.getByRole("button", { name: "Reserve material" }).click();
       await expect(row.getByText(/estimates 88 g/)).toBeVisible();
       if (selectionMode === "manual") await row.locator(`input[type="radio"][value="${manual.id}"]`).check();
@@ -233,7 +233,7 @@ test("a manual spool that becomes ineligible is replaced by the new best fit", a
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await expect(row.getByText(/estimates 84 g/)).toBeVisible();
     await expect(row.locator(`input[type="radio"][value="${suggested.id}"]`)).toBeChecked();
@@ -283,7 +283,7 @@ test("10% to 9% confirms the same 88 g amount and SQL records the current percen
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await expect(row.getByText(/estimates 88 g/)).toBeVisible();
     await openSettings(secondPage);
@@ -315,7 +315,7 @@ test("a margin change away and back leaves an unchanged amount confirmable", asy
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await expect(row.getByText(/estimates 88 g/)).toBeVisible();
     await openSettings(secondPage);
@@ -366,7 +366,7 @@ test("a delayed obsolete preview cannot replace the preview after a settings cha
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await previewReady.promise;
     await row.getByRole("button", { name: "Close", exact: true }).click();
@@ -410,7 +410,7 @@ test("failed fresh preview loading can be retried after a changed margin", async
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await expect(row.getByText(/estimates 88 g/)).toBeVisible();
     await openSettings(secondPage);

@@ -5,7 +5,7 @@ import {
   openPrintCreate,
   openPrints,
   printAction,
-  printRow,
+  printRecord,
   respondToConfirm,
 } from "./helpers/ui";
 
@@ -205,8 +205,8 @@ for (const failedCollection of ["prints", "spools"] as const) {
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Retry exact edit" })).toHaveCount(0);
     await expect(page.getByLabel("Name (optional)")).toHaveValue(`${savedName}-draft-only`);
-    await expect(printRow(page, print.id)).toContainText(savedName);
-    await expect(printRow(page, print.id)).toContainText("90 g");
+    await expect(printRecord(page, print.id)).toContainText(savedName);
+    await expect(printRecord(page, print.id)).toContainText("90 g");
     expect(browserPosts).toBe(2);
     expect(commandBodies[1]).toBe(commandBodies[0]);
 
@@ -390,7 +390,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
 
     await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
     await expect(page.getByRole("status")).toContainText("saved without a reservation");
-    await expect(printRow(page, print.id).getByRole("button", { name: "Reserve material" })).toBeVisible();
+    await expect(printRecord(page, print.id).getByRole("button", { name: "Reserve material" })).toBeVisible();
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
       requiredGrams: 1000,
       version: 3,
@@ -597,7 +597,7 @@ test("a held committed print save blocks collection actions and recovers after a
     true,
     "Refreshing the list will discard unsaved form entries",
   );
-  await expect(printRow(page, persistedWhileHeld[0].id)).toBeVisible();
+  await expect(printRecord(page, persistedWhileHeld[0].id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a print" })).toBeEnabled();
   await expect(page.getByRole("heading", { name: "Add a planned print" })).toHaveCount(0);
@@ -672,7 +672,7 @@ for (const acknowledgement of ["network rejection", "unreadable successful reply
       "Refreshing the list will discard unsaved form entries",
     );
     if (acknowledgement === "unreadable successful reply") {
-      await expect(printRow(page, persisted[0].id)).toBeVisible();
+      await expect(printRecord(page, persisted[0].id)).toBeVisible();
     } else {
       expect((await recoveryApi.listPrints()).some((print) => print.name === name)).toBe(false);
     }
@@ -736,7 +736,7 @@ test("a committed print delete keeps the collection guard through a failed read 
   await page.getByRole("button", { name: "Confirm deletion" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Deletion may have completed" })).toBeVisible();
   expect(deletedId).toBe(target.id);
-  await expect(printRow(page, target.id)).toBeVisible();
+  await expect(printRecord(page, target.id)).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirm deletion" })).toBeDisabled();
   expect(browserPosts).toBe(1);
   const persisted = await recoveryApi.listPrints();
@@ -755,11 +755,11 @@ test("a committed print delete keeps the collection guard through a failed read 
   await expect(page.getByRole("alert").filter({ hasText: "Prints are temporarily unavailable." })).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toBeVisible();
   expect(browserReads).toBe(1);
-  await expect(printRow(page, target.id)).toBeVisible();
+  await expect(printRecord(page, target.id)).toBeVisible();
 
   await page.getByRole("button", { name: "Refresh and review prints" }).click();
-  await expect(printRow(page, target.id)).toHaveCount(0);
-  await expect(printRow(page, survivor.id)).toBeVisible();
+  await expect(printRecord(page, target.id)).toHaveCount(0);
+  await expect(printRecord(page, survivor.id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
   expect(browserReads).toBe(2);
   await openPrintCreate(page);
@@ -843,8 +843,8 @@ test("generic retry asks before replacing a draft after the saved print advances
     true,
     "Refreshing the list will discard unsaved form entries",
   );
-  await expect(printRow(page, initial.id)).toContainText("Latest saved print");
-  await expect(printRow(page, initial.id)).toContainText("90 g");
+  await expect(printRecord(page, initial.id)).toContainText("Latest saved print");
+  await expect(printRecord(page, initial.id)).toContainText("90 g");
   await expect(page.getByRole("heading", { name: "Edit planned print" })).toHaveCount(0);
   expect(browserReads).toBe(2);
   expect(browserPosts).toBe(0);
