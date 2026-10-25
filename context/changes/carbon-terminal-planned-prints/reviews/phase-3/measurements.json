@@ -1,0 +1,982 @@
+{
+  "revision": "677ce82",
+  "browser": "Chrome 155.0.8059.39",
+  "source": "Temporary account and generated records on authenticated built /dashboard/prints and /dashboard/spools routes; screenshots are reviewer evidence, not author acceptance.",
+  "captures": [
+    {
+      "file": "prints.default.chrome.1440.png",
+      "state": "Default mixed collection: unreserved, reserved, completed; long labels and record identities",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:35.149Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Real hydrated /dashboard/prints route with locally generated temporary account and records; no response interception."
+    },
+    {
+      "file": "prints.default.chrome.390.png",
+      "state": "Default mixed collection: unreserved, reserved, completed; long labels and record identities",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:35.433Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Real hydrated /dashboard/prints route with locally generated temporary account and records; no response interception."
+    },
+    {
+      "file": "prints.default.chrome.320.png",
+      "state": "Default mixed collection: unreserved, reserved, completed; long labels and record identities",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "320x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:35.711Z",
+      "measurement": {
+        "innerWidth": 320,
+        "innerHeight": 844,
+        "documentClientWidth": 320,
+        "documentScrollWidth": 320,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Real hydrated /dashboard/prints route with locally generated temporary account and records; no response interception."
+    },
+    {
+      "file": "prints.create-panel.chrome.1440.png",
+      "state": "Create planned print panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:36.674Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 483,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.create-panel.chrome.390.png",
+      "state": "Create planned print panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:37.666Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.edit-panel.chrome.1440.png",
+      "state": "Edit planned print open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:38.681Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 949,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.edit-panel.chrome.390.png",
+      "state": "Edit planned print open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:39.638Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 4191,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.delete-confirmation.chrome.1440.png",
+      "state": "Delete this planned print? open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:40.630Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 701,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Confirm deletion",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.delete-confirmation.chrome.390.png",
+      "state": "Delete this planned print? open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:41.540Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 3641,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Confirm deletion",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.reservation-preview.chrome.1440.png",
+      "state": "Reserve material open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:42.570Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 698,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Reserve\nmaterial",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.reservation-preview.chrome.390.png",
+      "state": "Reserve material open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:43.620Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 3337,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Reserve\nmaterial",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.reservation-management.chrome.1440.png",
+      "state": "Material reserved open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:44.549Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 846,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Manage\nreservation",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.reservation-management.chrome.390.png",
+      "state": "Material reserved open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:45.472Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 2816,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Manage\nreservation",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.settlement-input.chrome.1440.png",
+      "state": "Settle completed print open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:46.499Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 489,
+        "activeElement": {
+          "tag": "H4",
+          "label": null,
+          "text": "Settle completed print",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.settlement-input.chrome.390.png",
+      "state": "Settle completed print open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:47.438Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 2291,
+        "activeElement": {
+          "tag": "H4",
+          "label": null,
+          "text": "Settle completed print",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.settlement-review.chrome.1440.png",
+      "state": "Settlement result open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:48.618Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 400,
+        "activeElement": {
+          "tag": "H4",
+          "label": null,
+          "text": "Settlement result",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.settlement-review.chrome.390.png",
+      "state": "Settlement result open",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:49.785Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 1794,
+        "activeElement": {
+          "tag": "H4",
+          "label": null,
+          "text": "Settlement result",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "prints.reservation-preview.loading.chrome.390.png",
+      "state": "Loading reservation preview",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:50.723Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 3157,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Reserve\nmaterial",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Reservation preview GET was held by a local Playwright route and then continued to the real API; pending state only, no response fabricated."
+    },
+    {
+      "file": "prints.reservation-preview.chrome.320.png",
+      "state": "Expanded reservation preview with duplicate spool identities",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "320x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:51.108Z",
+      "measurement": {
+        "innerWidth": 320,
+        "innerHeight": 844,
+        "documentClientWidth": 320,
+        "documentScrollWidth": 320,
+        "horizontalOverflowPx": 0,
+        "scrollY": 3409,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Reserve\nmaterial",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Two eligible records share material, colour and available grams; IDs distinguish records. Real API preview."
+    },
+    {
+      "file": "spools.edit-panel.chrome.1440.png",
+      "state": "Stock edit detail panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:52.715Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 522,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "spools.delete-confirmation.chrome.1440.png",
+      "state": "Stock delete confirmation detail panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:53.029Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 61,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Confirm deletion",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "spools.edit-panel.chrome.390.png",
+      "state": "Stock edit detail panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:53.953Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 572,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 112, 88) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "spools.delete-confirmation.chrome.390.png",
+      "state": "Stock delete confirmation detail panel",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:54.287Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 581,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": null,
+          "text": "Confirm deletion",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": ""
+    },
+    {
+      "file": "states.hover.print-row-action.chrome.1440.png",
+      "state": "Hover on enabled print edit action",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:55.278Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Pointer hover captured after the actual button was hovered; no response interception."
+    },
+    {
+      "file": "states.focus-visible.print-row-action.chrome.1440.png",
+      "state": "Keyboard focus-visible on print edit action",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:56.163Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": "Edit planned print 0b83e1b2",
+          "text": "Edit",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(9, 12, 13) 0px 0px 0px 2px, rgb(240, 243, 241) 0px 0px 0px 5px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Reached with repeated Tab key presses from a freshly navigated route; active-element outline styles are recorded with measurements."
+    },
+    {
+      "file": "states.error.print-create-validation.chrome.390.png",
+      "state": "Create validation error with field guidance",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:57.231Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "INPUT",
+          "label": null,
+          "text": "",
+          "outlineStyle": "none",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 121, 127) 0px 0px 0px 2px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": false
+        }
+      },
+      "notes": "Real API validation response; not intercepted. Required field errors are shown and focus is moved to the first invalid field."
+    },
+    {
+      "file": "states.loading.print-refresh.chrome.1440.png",
+      "state": "Client refresh in progress",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:58.143Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "GET /api/prints was held by a local Playwright route and then continued to the real API; pending state only, no response fabricated."
+    },
+    {
+      "file": "states.disabled.pending-print-save.chrome.390.png",
+      "state": "Save pending; mutation controls disabled",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:59.312Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "POST /api/prints was held by a local route. The form and collection show the disabled/pending state. The route later returned a controlled 503, so no print was created."
+    },
+    {
+      "file": "states.error.controlled-print-503.chrome.390.png",
+      "state": "Controlled retryable print error",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:49:59.616Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Local route returned a controlled 503 after the pending screenshot; this is intercepted error evidence, not a live service failure."
+    },
+    {
+      "file": "states.error.conflict-retained-draft.chrome.390.png",
+      "state": "Stale edit warning with retained draft",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:00.811Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 4516,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": false
+        }
+      },
+      "notes": "A real API edit advanced the saved record while the form remained open. The stale form retains its unsaved entries; no response was intercepted."
+    },
+    {
+      "file": "states.success.no-fit-edit.chrome.1440.png",
+      "state": "Successful reserved edit with no eligible spool; print saved without reservation",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:01.886Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 497,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": "Edit planned print 961ad6c1",
+          "text": "Edit",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Real API save with no eligible spool; the successful result preserves the estimate and makes no claim that physical stock is empty."
+    },
+    {
+      "file": "states.success.no-fit-edit.chrome.390.png",
+      "state": "Successful reserved edit with no eligible spool; print saved without reservation",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:02.173Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 497,
+        "activeElement": {
+          "tag": "BUTTON",
+          "label": "Edit planned print 961ad6c1",
+          "text": "Edit",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+          "viewportVisible": false
+        }
+      },
+      "notes": "Real API save with no eligible spool; the successful result preserves the estimate and makes no claim that physical stock is empty."
+    },
+    {
+      "file": "states.uncertain-exact-edit-retry.chrome.390.png",
+      "state": "Uncertain edit with same-attempt retry control and retained form entries",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:03.400Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 1837,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": false
+        }
+      },
+      "notes": "The first real API update committed, but its response was intentionally aborted locally. The retry control shown is the exact captured command; this is intercepted lost-reply evidence."
+    },
+    {
+      "file": null,
+      "state": "Exact retry payload observation",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:03.518Z",
+      "measurement": null,
+      "notes": "The two browser POST bodies were byte-for-byte equal; no request body or user data is retained in this evidence record."
+    },
+    {
+      "file": "prints.detached-settlement-review.chrome.390.png",
+      "state": "Detached review remains available after completed print deletion",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:04.767Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 3669,
+        "activeElement": {
+          "tag": "H4",
+          "label": null,
+          "text": "Settlement result",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Real completed print deletion; its settlement receipt remains detached for this page session. Historical receipt and current stock values stay separate."
+    },
+    {
+      "file": "states.empty.prints.chrome.1440.png",
+      "state": "Empty prints collection with usable create action",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:06.857Z",
+      "measurement": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Genuinely empty print collection on a fresh temporary local account; No prints yet was visible and Add a print was verified enabled before capture."
+    },
+    {
+      "file": "states.empty.prints.chrome.390.png",
+      "state": "Empty prints collection with usable create action",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "capturedAt": "2026-10-25T07:50:07.060Z",
+      "measurement": {
+        "innerWidth": 390,
+        "innerHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "scrollY": 0,
+        "activeElement": {
+          "tag": "BODY",
+          "label": null,
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(255, 112, 88)",
+          "boxShadow": "none",
+          "viewportVisible": true
+        }
+      },
+      "notes": "Genuinely empty print collection on a fresh temporary local account; No prints yet was visible and Add a print was verified enabled before capture."
+    }
+  ],
+  "cleanup": {
+    "generatedPrintsRemaining": 0,
+    "generatedSpoolsRemaining": 0
+  }
+}
