@@ -286,9 +286,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [x] 3.1 Deploy verification passes: `npm run verify:deploy`.
-- [x] 3.2 The complete built-preview Chromium suite passes: `npm run test:e2e`.
-- [x] 3.3 Authenticated HTTP acceptance passes against a separately started built preview: `BASE_URL=http://localhost:4321 npm run smoke`.
+- [x] 3.1 Deploy verification passes: `npm run verify:deploy`. — f92b996
+- [x] 3.2 The complete built-preview Chromium suite passes: `npm run test:e2e`. — f92b996
+- [x] 3.3 Authenticated HTTP acceptance passes against a separately started built preview: `BASE_URL=http://localhost:4321 npm run smoke`. — f92b996
 
 #### Manual
 
