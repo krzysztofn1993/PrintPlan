@@ -1,5 +1,13 @@
 import { test, expect, type SpoolRecord } from "./fixtures";
-import { deferred, fillSpoolForm, openSpoolCreate, openSpools, spoolAction, spoolRecord } from "./helpers/ui";
+import {
+  deferred,
+  fillSpoolForm,
+  openSpoolCreate,
+  openSpools,
+  spoolAction,
+  spoolRecord,
+  spoolSummaryRow,
+} from "./helpers/ui";
 
 test("server validation retains stock fields, focuses material, then saves canonical values", async ({
   page,
@@ -166,7 +174,7 @@ test("a committed stock save with an unreadable reply keeps the active-form guar
     .getByRole("button", { name: "Refresh and review stock" })
     .click();
   await expect(page).toHaveURL(/\/dashboard\/spools$/);
-  await expect(spoolRecord(page, persisted[0].id)).toBeVisible();
+  await expect(spoolSummaryRow(page, persisted[0].id)).toBeVisible();
   expect((await recoveryApi.listSpools()).filter((spool) => spool.colour === colour)).toHaveLength(1);
   expect(browserPosts).toBe(1);
 });
@@ -208,7 +216,7 @@ test("a committed stock delete with an unreadable reply stays visible until refr
     "Deletion may have completed, but its cancellation details could not be read.",
   );
   expect(deletedId).toBe(target.id);
-  await expect(spoolRecord(page, target.id)).toBeVisible();
+  await expect(spoolSummaryRow(page, target.id)).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirm deletion" })).toBeDisabled();
   expect(browserPosts).toBe(1);
 
@@ -221,8 +229,8 @@ test("a committed stock delete with an unreadable reply stays visible until refr
   });
 
   await spoolRecord(page, target.id).getByRole("alert").getByRole("button", { name: "Refresh stock" }).click();
-  await expect(spoolRecord(page, target.id)).toHaveCount(0);
-  await expect(spoolRecord(page, survivor.id)).toBeVisible();
+  await expect(spoolSummaryRow(page, target.id)).toHaveCount(0);
+  await expect(spoolSummaryRow(page, survivor.id)).toBeVisible();
   const afterRefresh = await recoveryApi.listSpools();
   expect(afterRefresh.some((spool) => spool.id === target.id)).toBe(false);
   expect(afterRefresh.find((spool) => spool.id === survivor.id)).toMatchObject({
@@ -349,7 +357,7 @@ test("a committed reserved delete stays guarded until refresh and keeps survivin
 
   await deletionFeedback.getByRole("button", { name: "Refresh stock" }).click();
   await expect(targetRow).toHaveCount(0);
-  await expect(spoolRecord(page, survivor.id)).toBeVisible();
+  await expect(spoolSummaryRow(page, survivor.id)).toBeVisible();
   await expect(page.getByRole("status")).toHaveText(
     "Stock refreshed. Review the current saved spools before making another change.",
   );

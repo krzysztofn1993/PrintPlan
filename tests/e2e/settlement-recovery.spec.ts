@@ -1,5 +1,5 @@
 import { test, expect, type RecoveryApi, type SettlementCommandResult } from "./fixtures";
-import { deferred, openPrints, printRecord } from "./helpers/ui";
+import { deferred, openPrints, printRecord, printSummaryRow } from "./helpers/ui";
 
 async function createReservedPrint(recoveryApi: RecoveryApi, prefix: string, recordedGrams = 150, requiredGrams = 80) {
   const colour = recoveryApi.label(`${prefix}-colour`);
@@ -76,7 +76,7 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   await refreshedRow.getByRole("button", { name: `Delete completed print ${print.id.slice(0, 8)}` }).click();
   await expect(page.getByRole("heading", { name: "Delete this completed print?" })).toBeVisible();
   await page.getByRole("button", { name: "Confirm deletion" }).click();
-  await expect(printRecord(page, print.id)).toHaveCount(0);
+  await expect(printSummaryRow(page, print.id)).toHaveCount(0);
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     recordedGrams: 150,
     reservedGrams: 0,
@@ -517,7 +517,7 @@ test("deletion during acknowledgement recovery keeps the saved receipt accessibl
 
     await expect(page.getByRole("heading", { name: "Settlement result" })).toBeVisible();
     await expect(page.getByText("Settlement recovery", { exact: true })).toBeVisible();
-    await expect(printRecord(page, print.id)).toHaveCount(0);
+    await expect(printSummaryRow(page, print.id)).toHaveCount(0);
 
     const resultPanel = page.getByRole("region", { name: "Settlement result" });
     await expect(resultPanel.getByRole("region", { name: "Current spool stock" })).toContainText("100 g");
@@ -535,7 +535,7 @@ test("deletion during acknowledgement recovery keeps the saved receipt accessibl
     await expect(resultPanel.getByRole("region", { name: "Current spool stock" })).toContainText("90 g");
     await expect(resultPanel.getByRole("region", { name: "Stock recorded at settlement" })).toContainText("100 g");
     await expect(resultPanel.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("50 g");
-    await expect(printRecord(page, print.id)).toHaveCount(0);
+    await expect(printSummaryRow(page, print.id)).toHaveCount(0);
     expect(settlementPosts).toBe(1);
     expect(await recoveryApi.readPrintSettlement(print.id)).toMatchObject({ id: receipt?.id, actualGrams: 50 });
     expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({

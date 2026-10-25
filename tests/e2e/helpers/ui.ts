@@ -49,13 +49,29 @@ export async function fillPrintForm(page: Page, input: PrintInput): Promise<void
 }
 
 export function spoolRecord(page: Page, id: string) {
+  return spoolSummaryRow(page, id).or(spoolWorkbench(page, id));
+}
+
+export function printRecord(page: Page, id: string) {
+  return printSummaryRow(page, id).or(printWorkbench(page, id));
+}
+
+export function spoolSummaryRow(page: Page, id: string) {
   return page
     .getByRole("table", { name: "Filament stock" })
     .locator(`[role="rowgroup"][aria-labelledby="spool-title-${id}"]`);
 }
 
-export function printRecord(page: Page, id: string) {
+export function printSummaryRow(page: Page, id: string) {
   return page.getByRole("table", { name: "Prints" }).locator(`[role="rowgroup"][aria-labelledby="print-title-${id}"]`);
+}
+
+export function spoolWorkbench(page: Page, id: string) {
+  return page.locator(`#edit-spool-panel-${id}`);
+}
+
+export function printWorkbench(page: Page, id: string) {
+  return page.locator(`#edit-print-panel-${id}, #reservation-panel-${id}, #settlement-panel-${id}`);
 }
 
 export function spoolAction(page: Page, action: "Edit" | "Delete", id: string) {

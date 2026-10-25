@@ -1,6 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "./fixtures";
-import { deferred, openPrints, openSpools, printAction, printRecord, spoolAction, spoolRecord } from "./helpers/ui";
+import {
+  deferred,
+  openPrints,
+  openSpools,
+  printAction,
+  printRecord,
+  printWorkbench,
+  spoolAction,
+  spoolRecord,
+  spoolSummaryRow,
+  spoolWorkbench,
+} from "./helpers/ui";
 
 for (const lateResponse of ["success", "network failure", "already reserved"] as const) {
   test(`a late preview ${lateResponse} cannot replace another print's confirmation`, async ({ page, recoveryApi }) => {
@@ -128,7 +139,7 @@ test("reopening a print ignores its earlier preview and confirms the latest stoc
     await row.getByRole("button", { name: "Close", exact: true }).click();
     await recoveryApi.updateSpool(spool.id, { material: "PETG", colour: spool.colour, recordedGrams: 100 });
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/100 g available/)).toBeVisible();
+    await expect(printWorkbench(page, print.id).getByText(/100 g available/)).toBeVisible();
 
     releasePreview.resolve();
     await previewDelivered.promise;
@@ -143,7 +154,7 @@ test("reopening a print ignores its earlier preview and confirms the latest stoc
         }),
     );
 
-    await expect(row.getByText(/100 g available/)).toBeVisible();
+    await expect(printWorkbench(page, print.id).getByText(/100 g available/)).toBeVisible();
     await row.getByRole("button", { name: "Confirm reservation" }).click();
     await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
@@ -265,14 +276,14 @@ test("correction refresh uses current reservation totals and retains the unsaved
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Reservation amounts could not be refreshed" })).toBeVisible();
   await expect(recorded).toHaveValue("100");
-  await expect(spoolRecord(page, spool.id).getByText("112 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("112 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
   await page.unroute("**/api/spools");
 
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(recorded).toHaveValue("100");
   await expect(recorded).toHaveAttribute("min", "143");
-  await expect(spoolRecord(page, spool.id).getByText("57 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("57 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
 
   const secondCurrent = (await recoveryApi.listPrints()).find((item) => item.id === secondPrint.id);
@@ -281,7 +292,7 @@ test("correction refresh uses current reservation totals and retains the unsaved
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(recorded).toHaveValue("100");
   await expect(recorded).toHaveAttribute("min", "88");
-  await expect(spoolRecord(page, spool.id).getByText("112 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("112 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
 
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -718,7 +729,7 @@ test("deleting a spool reports every reservation and leaves its prints unreserve
   const status = page.getByRole("status");
   await expect(status).toContainText(`${namedPrint.name} (print ${namedPrint.id}) released 88 g`);
   await expect(status).toContainText(`${spool.material}, ${spool.colour} (print ${unnamedPrint.id}) released 55 g`);
-  await expect(spoolRecord(page, spool.id)).toHaveCount(0);
+  await expect(spoolSummaryRow(page, spool.id)).toHaveCount(0);
   const savedPrints = await recoveryApi.listPrints();
   expect(savedPrints.find((item) => item.id === namedPrint.id)).toMatchObject({ reservation: null });
   expect(savedPrints.find((item) => item.id === unnamedPrint.id)).toMatchObject({ reservation: null });

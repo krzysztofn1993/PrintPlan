@@ -61,13 +61,7 @@ export function ReservationPanel({
 
   if (print.reservation) {
     return (
-      <section
-        aria-labelledby={`reservation-heading-${print.id}`}
-        className="carbon-inline-panel carbon-row-inline-panel"
-      >
-        <h4 id={`reservation-heading-${print.id}`} className="font-semibold">
-          Material reserved
-        </h4>
+      <div className="min-w-0">
         <p className="mt-2 text-sm leading-relaxed">
           {print.reservation.reservedGrams} g reserved from{" "}
           {spoolForReservation
@@ -105,18 +99,12 @@ export function ReservationPanel({
             Close
           </Button>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section
-      aria-labelledby={`reservation-heading-${print.id}`}
-      className="carbon-inline-panel carbon-row-inline-panel"
-    >
-      <h4 id={`reservation-heading-${print.id}`} className="font-semibold">
-        Reserve material
-      </h4>
+    <div className="min-w-0">
       {previewLoading ? (
         <p role="status" className="mt-2 text-sm">
           Loading current stock and safety margin…
@@ -206,6 +194,6 @@ export function ReservationPanel({
           Close
         </Button>
       </div>
-    </section>
+    </div>
   );
 }

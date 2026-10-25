@@ -7,6 +7,7 @@ import type { SpoolDto } from "@/lib/spools";
 type SettlementPanelState = "editing" | "pending" | "uncertain" | "rejected" | "loading" | "receipt";
 
 interface SettlementPanelProps {
+  inWorkbench?: boolean;
   print: PrintDto;
   printAvailable: boolean;
   state: SettlementPanelState;
@@ -42,6 +43,7 @@ function receiptPrintName(receipt: SettlementReceipt) {
 }
 
 export function SettlementPanel({
+  inWorkbench = false,
   print,
   printAvailable,
   state,
@@ -69,12 +71,18 @@ export function SettlementPanel({
 }: SettlementPanelProps) {
   const completed = Boolean(receipt ?? print.settlement);
   const printName = receipt ? receiptPrintName(receipt) : describePrint(print);
+  const Panel = inWorkbench ? "div" : "section";
 
   return (
-    <section aria-labelledby={`settlement-heading-${print.id}`} className="carbon-inline-panel carbon-row-inline-panel">
-      <h4 id={`settlement-heading-${print.id}`} className="font-semibold" tabIndex={-1}>
-        {receipt ? "Settlement result" : completed ? "Review settlement" : "Settle completed print"}
-      </h4>
+    <Panel
+      aria-labelledby={inWorkbench ? undefined : `settlement-heading-${print.id}`}
+      className={inWorkbench ? "min-w-0" : "carbon-inline-panel carbon-row-inline-panel"}
+    >
+      {!inWorkbench && (
+        <h4 id={`settlement-heading-${print.id}`} className="font-semibold" tabIndex={-1}>
+          {receipt ? "Settlement result" : completed ? "Review settlement" : "Settle completed print"}
+        </h4>
+      )}
       <p className="mt-2 text-sm leading-relaxed">
         {printName}
         {receipt ? ` — settled ${new Date(receipt.settledAt).toLocaleString()}.` : "."}
@@ -353,6 +361,6 @@ export function SettlementPanel({
           Close
         </Button>
       </div>
-    </section>
+    </Panel>
   );
 }
