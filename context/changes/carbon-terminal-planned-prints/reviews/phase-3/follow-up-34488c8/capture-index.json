@@ -1,0 +1,556 @@
+{
+  "revision": "34488c8",
+  "routeSource": "built preview",
+  "evidenceOnly": true,
+  "captures": [
+    {
+      "file": "prints.default.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.default.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.default.chrome.320.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.edit-panel.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.edit-panel",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.edit-panel.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.edit-panel",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.planned-delete-confirmation.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.planned-delete-confirmation",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.planned-delete-confirmation.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.planned-delete-confirmation",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.completed-delete-warning.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.completed-delete-warning",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.completed-delete-warning.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.completed-delete-warning",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-preview.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.reservation-preview",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-preview.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.reservation-preview",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-preview.chrome.320.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.reservation-preview",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-management.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.reservation-management",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-management.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.reservation-management",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-input.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.settlement-input",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-input.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.settlement-input",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-input.chrome.320.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.settlement-input",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-confirmed.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.settlement-confirmed",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-confirmed.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.settlement-confirmed",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-confirmed.chrome.320.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.settlement-confirmed",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-review.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.settlement-review",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-review.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.settlement-review",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-review.chrome.320.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.settlement-review",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.edit-panel.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.edit-panel",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.edit-panel.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.edit-panel",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.delete-confirmation.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.delete-confirmation",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.delete-confirmation.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.delete-confirmation",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.default.chrome.1440.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.default",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.default.chrome.390.png",
+      "browser": "chrome",
+      "browserVersion": "156.0.8078.4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.default",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.default.firefox.1440.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.default.firefox.390.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.default.firefox.320.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.default",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.edit-panel.firefox.1440.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "prints.edit-panel",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.reservation-preview.firefox.390.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "prints.reservation-preview",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "prints.settlement-review.firefox.320.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "prints.settlement-review",
+      "route": "/dashboard/prints",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.default.firefox.1440.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.default",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.default.firefox.390.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.default",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.default.firefox.320.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "state": "spools.default",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.edit-panel.firefox.1440.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.edit-panel",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.edit-panel.firefox.390.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.edit-panel",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.delete-confirmation.firefox.1440.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "spools.delete-confirmation",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    },
+    {
+      "file": "spools.delete-confirmation.firefox.390.png",
+      "browser": "firefox",
+      "browserVersion": "157.0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "spools.delete-confirmation",
+      "route": "/dashboard/spools",
+      "horizontalOverflowPx": 0,
+      "transientSettlementBannerVisible": false
+    }
+  ],
+  "capturedOn": "2026-10-25",
+  "previewOrigin": "http://127.0.0.1:4324",
+  "viewportUnit": "CSS pixels"
+}

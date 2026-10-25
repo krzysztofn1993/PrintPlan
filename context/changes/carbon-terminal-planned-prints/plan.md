@@ -268,7 +268,7 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Manual
 
-- [ ] 1.4 Before/after built-route captures at 1440px and 390px confirm full-width details remain visibly associated with their owning print and stock records.
+- [x] 1.4 Before/after built-route captures at 1440px and 390px confirm full-width details remain visibly associated with their owning print and stock records. — author reports review complete; current captures: [print edit](reviews/phase-3/follow-up-34488c8/prints.edit-panel.chrome.1440.png), [stock edit](reviews/phase-3/follow-up-34488c8/spools.edit-panel.chrome.1440.png).
 
 ### Phase 2: Prints naming and contextual guidance
 
@@ -280,7 +280,7 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Manual
 
-- [ ] 2.3 Mixed-collection names, contextual consequences, distinguishable spool choices and version-free recovery guidance are clear on desktop and phone without losing warnings or full record identity.
+- [x] 2.3 Mixed-collection names, contextual consequences, distinguishable spool choices and version-free recovery guidance are clear on desktop and phone without losing warnings or full record identity. — author reports review complete; current captures are indexed in [verification.md](verification.md#follow-up-captures-after-the-workbench-layout-change-34488c8).
 
 ### Phase 3: Verification and retained review evidence
 
@@ -292,5 +292,5 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Manual
 
-- [ ] 3.4 The author accepts indexed seven-state desktop/phone evidence and Chrome/Firefox default and expanded-panel review, including stock panels, long labels and distinct historical/current quantities.
-- [ ] 3.5 Keyboard, focus restoration, one recorded screen-reader/browser combination, rendered contrast and 200% zoom/reflow checks pass for summaries, details and recovery controls.
+- [x] 3.4 The author accepts indexed seven-state desktop/phone evidence and Chrome/Firefox default and expanded-panel review, including stock panels, long labels and distinct historical/current quantities. — author reports review complete; current cross-browser captures are indexed in [verification.md](verification.md#follow-up-captures-after-the-workbench-layout-change-34488c8).
+- [x] 3.5 Keyboard, focus restoration, one recorded screen-reader/browser combination, rendered contrast and 200% zoom/reflow checks pass for summaries, details and recovery controls. — author reports these checks pass; see the attribution and evidence limits in [verification.md](verification.md#manual-review-attribution).

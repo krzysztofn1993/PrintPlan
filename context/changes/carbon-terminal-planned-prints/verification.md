@@ -1,8 +1,8 @@
 # Carbon Terminal planned prints — verification evidence
 
-Status: evidence prepared for review. The browser captures are not author acceptance.
+Status: follow-up built-route evidence is prepared at revision `34488c8`. The author reports that all manual reviews are complete; the source and limits of that report are recorded below.
 
-## Capture provenance
+## Original capture provenance (677ce82)
 
 - Built route revision: `677ce82` (`Prints naming and contextual guidance`). The checked-in application source was unchanged during capture; the local preview used the existing production build on `127.0.0.1:4322` because port 4321 was occupied by the development server.
 - Browser: Google Chrome 155.0.8059.39. The capture window was 1440 × 1000, 390 × 844, or 320 × 844 CSS pixels as listed in the evidence index. The capture scripts recorded the revision, browser, viewport, state, and horizontal overflow for each screenshot.
@@ -50,12 +50,36 @@ Additional outcome evidence preserves the workflow consequences: a [successful n
 
 The exact-retry browser observation confirms that the first edit and retry POST bodies were byte-for-byte equal; the body itself was not retained. That observation is recorded in [measurements.json](reviews/phase-3/measurements.json). The [focused state captures](reviews/phase-3/interaction-measurements.json) and [consequence captures](reviews/phase-3/consequence-measurements.json) record the additional hover and readable pending-save view.
 
-## Browser measurements and review limits
+## Browser measurements from the original capture
 
 Across 53 recorded page measurements, horizontal overflow was 0px. The separate ten-point detail geometry sample also measured 0px detail gap and no horizontal overflow. The screenshots and [measurements.json](reviews/phase-3/measurements.json), [geometry-measurements.json](reviews/phase-3/geometry-measurements.json), [interaction-measurements.json](reviews/phase-3/interaction-measurements.json), and [consequence-measurements.json](reviews/phase-3/consequence-measurements.json) record browser, viewport, revision, state, and measured widths. Focus-ring CSS values are recorded for the keyboard sample; no contrast ratio was calculated.
 
-Chrome capture evidence is prepared, but no human acceptance is recorded. Firefox was unavailable and was not installed. A screen-reader/browser combination was not available for this capture. Human keyboard traversal/focus restoration, rendered contrast, 200% zoom/reflow, and author acceptance remain pending. The viewport captures do not substitute for 200% zoom, and DOM/ARIA observations do not substitute for a screen-reader review.
+At the time of this original capture, no human acceptance was recorded, Firefox was unavailable, and no screen-reader/browser combination was available. The follow-up below supersedes the browser-availability and author-status notes for the current revision. It does not replace a human screen-reader review with screenshots or browser automation.
 
 The Phase 3 automated gates (`verify:deploy`, the complete Chromium suite, and authenticated HTTP smoke) were not run by this evidence-preparation pass; the main `/goal` run owns those gates. Screenshots and browser measurements do not imply that those gates passed.
 
-The shared dashboard record/detail rule is in [AGENTS.md](../../../AGENTS.md#structure-and-conventions). These artifacts are prepared review evidence only; do not treat them as completion of the pending manual review rows.
+The shared dashboard record/detail rule is in [AGENTS.md](../../../AGENTS.md#structure-and-conventions).
+
+## Follow-up captures after the workbench layout change (34488c8)
+
+The following images refresh the changed desktop and phone layouts. They supplement the Phase 1 before captures and the earlier seven-state evidence above; they do not overwrite historical screenshots.
+
+- Built preview from revision `34488c8` at `http://127.0.0.1:4324`; the development server on port 4321 remained running.
+- 42 full-page captures: 29 in Chrome 156.0.8078.4 and 13 in Firefox 157.0, at 1440 × 1000, 390 × 844 and 320 × 844 CSS pixels.
+- Every capture recorded 0px horizontal overflow. No captured state showed the transient “The settlement is saved. Both current collections must be read” banner.
+- A temporary local test account and records were created for the capture and removed by the fixture teardown. No password, cookie or auth-state file was retained.
+- Full per-image metadata is in [capture-index.json](reviews/phase-3/follow-up-34488c8/capture-index.json).
+
+| Surface | Chrome | Firefox |
+| --- | --- | --- |
+| Prints default | [1440px](reviews/phase-3/follow-up-34488c8/prints.default.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.default.chrome.390.png), [320px](reviews/phase-3/follow-up-34488c8/prints.default.chrome.320.png) | [1440px](reviews/phase-3/follow-up-34488c8/prints.default.firefox.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.default.firefox.390.png), [320px](reviews/phase-3/follow-up-34488c8/prints.default.firefox.320.png) |
+| Print edit | [1440px](reviews/phase-3/follow-up-34488c8/prints.edit-panel.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.edit-panel.chrome.390.png) | [1440px](reviews/phase-3/follow-up-34488c8/prints.edit-panel.firefox.1440.png) |
+| Planned and completed print deletion | [planned, 1440px](reviews/phase-3/follow-up-34488c8/prints.planned-delete-confirmation.chrome.1440.png), [planned, 390px](reviews/phase-3/follow-up-34488c8/prints.planned-delete-confirmation.chrome.390.png), [completed, 1440px](reviews/phase-3/follow-up-34488c8/prints.completed-delete-warning.chrome.1440.png), [completed, 390px](reviews/phase-3/follow-up-34488c8/prints.completed-delete-warning.chrome.390.png) | — |
+| Reservation preview and management | [preview, 1440px](reviews/phase-3/follow-up-34488c8/prints.reservation-preview.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.reservation-preview.chrome.390.png), [320px](reviews/phase-3/follow-up-34488c8/prints.reservation-preview.chrome.320.png); [management, 1440px](reviews/phase-3/follow-up-34488c8/prints.reservation-management.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.reservation-management.chrome.390.png) | [preview, 390px](reviews/phase-3/follow-up-34488c8/prints.reservation-preview.firefox.390.png) |
+| Settlement input, confirmation and review | [input, 1440px](reviews/phase-3/follow-up-34488c8/prints.settlement-input.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.settlement-input.chrome.390.png), [320px](reviews/phase-3/follow-up-34488c8/prints.settlement-input.chrome.320.png); [confirmed, 390px](reviews/phase-3/follow-up-34488c8/prints.settlement-confirmed.chrome.390.png); [review, 1440px](reviews/phase-3/follow-up-34488c8/prints.settlement-review.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/prints.settlement-review.chrome.390.png), [320px](reviews/phase-3/follow-up-34488c8/prints.settlement-review.chrome.320.png) | [review, 320px](reviews/phase-3/follow-up-34488c8/prints.settlement-review.firefox.320.png) |
+| Stock default | [1440px](reviews/phase-3/follow-up-34488c8/spools.default.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.default.chrome.390.png) | [1440px](reviews/phase-3/follow-up-34488c8/spools.default.firefox.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.default.firefox.390.png), [320px](reviews/phase-3/follow-up-34488c8/spools.default.firefox.320.png) |
+| Stock edit and delete | [edit, 1440px](reviews/phase-3/follow-up-34488c8/spools.edit-panel.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.edit-panel.chrome.390.png); [delete, 1440px](reviews/phase-3/follow-up-34488c8/spools.delete-confirmation.chrome.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.delete-confirmation.chrome.390.png) | [edit, 1440px](reviews/phase-3/follow-up-34488c8/spools.edit-panel.firefox.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.edit-panel.firefox.390.png); [delete, 1440px](reviews/phase-3/follow-up-34488c8/spools.delete-confirmation.firefox.1440.png), [390px](reviews/phase-3/follow-up-34488c8/spools.delete-confirmation.firefox.390.png) |
+
+### Manual review attribution
+
+On 2026-10-25, the author reported that the planned manual requirements had been completed and that screenshots were the remaining task. The plan checkboxes record that author report. This capture run generated the indexed images but did not repeat the human keyboard, screen-reader, contrast or 200% zoom/reflow review. The author did not provide the screen-reader/browser pairing or measurement notes in this run, so this document does not claim to have independently recorded those details.
