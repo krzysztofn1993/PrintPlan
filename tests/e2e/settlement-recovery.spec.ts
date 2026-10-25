@@ -277,8 +277,8 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     expect(originalError).toBeUndefined();
     expect(originalResult?.replayed).toBe(false);
 
-    await expect(row.getByRole("button", { name: "Retry exact settlement" })).toBeVisible();
-    await row.getByRole("button", { name: "Retry exact settlement" }).click();
+    await expect(row.getByRole("button", { name: "Retry the same settlement" })).toBeVisible();
+    await row.getByRole("button", { name: "Retry the same settlement" }).click();
     await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
     expect(settlementPosts).toBe(2);
     expect(browserReceipts).toEqual([null, null]);
