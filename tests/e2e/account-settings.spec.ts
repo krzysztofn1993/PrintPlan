@@ -13,6 +13,20 @@ function settingsPanel(page: Page) {
   return page.locator('section[aria-labelledby="account-safety-margin-heading"]');
 }
 
+async function expectReservationEstimate(
+  row: ReturnType<typeof printRecord>,
+  marginPercent: number,
+  reservationGrams: number,
+  requiredGrams: number,
+): Promise<void> {
+  await expect(
+    row.getByText(
+      `This preview uses the current ${marginPercent}% safety margin to estimate ${reservationGrams} g from the ${requiredGrams} g you entered`,
+      { exact: false },
+    ),
+  ).toBeVisible();
+}
+
 async function ensureMargin(
   recoveryApi: Pick<RecoveryApi, "getAccountSettings" | "saveAccountSettings">,
   value: number,
@@ -185,14 +199,14 @@ for (const selectionMode of ["best_fit", "manual"] as const) {
       await openPrints(page);
       const row = printRecord(page, print.id);
       await row.getByRole("button", { name: "Reserve material" }).click();
-      await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+      await expectReservationEstimate(row, 10, 88, 80);
       if (selectionMode === "manual") await row.locator(`input[type="radio"][value="${manual.id}"]`).check();
 
       await openSettings(secondPage);
       await saveFromPage(secondPage, 5);
       await row.getByRole("button", { name: "Confirm reservation" }).click();
       await expect(row.getByRole("alert")).toContainText("current account margin changed the reservation amount");
-      await expect(row.getByText(/estimates 84 g/)).toBeVisible();
+      await expectReservationEstimate(row, 5, 84, 80);
       expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
       if (selectionMode === "manual") {
         await expect(row.locator(`input[type="radio"][value="${manual.id}"]`)).toBeChecked();
@@ -235,7 +249,7 @@ test("a manual spool that becomes ineligible is replaced by the new best fit", a
     await openPrints(page);
     const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 84 g/)).toBeVisible();
+    await expectReservationEstimate(row, 5, 84, 80);
     await expect(row.locator(`input[type="radio"][value="${suggested.id}"]`)).toBeChecked();
     await row.locator(`input[type="radio"][value="${selected.id}"]`).check();
     await openSettings(secondPage);
@@ -243,7 +257,7 @@ test("a manual spool that becomes ineligible is replaced by the new best fit", a
 
     await row.getByRole("button", { name: "Confirm reservation" }).click();
     await expect(row.getByRole("alert")).toContainText("Your chosen spool is no longer eligible");
-    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    await expectReservationEstimate(row, 10, 88, 80);
     await expect(row.locator(`input[type="radio"][value="${fallback.id}"]`)).toBeChecked();
     await expect(row.locator(`input[type="radio"][value="${selected.id}"]`)).toHaveCount(0);
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
@@ -285,7 +299,7 @@ test("10% to 9% confirms the same 88 g amount and SQL records the current percen
     await openPrints(page);
     const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    await expectReservationEstimate(row, 10, 88, 80);
     await openSettings(secondPage);
     await saveFromPage(secondPage, 9);
     await row.getByRole("button", { name: "Confirm reservation" }).click();
@@ -317,7 +331,7 @@ test("a margin change away and back leaves an unchanged amount confirmable", asy
     await openPrints(page);
     const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    await expectReservationEstimate(row, 10, 88, 80);
     await openSettings(secondPage);
     await saveFromPage(secondPage, 5);
     await saveFromPage(secondPage, 10);
@@ -373,7 +387,7 @@ test("a delayed obsolete preview cannot replace the preview after a settings cha
     await openSettings(secondPage);
     await saveFromPage(secondPage, 5);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 84 g/)).toBeVisible();
+    await expectReservationEstimate(row, 5, 84, 80);
 
     releasePreview.resolve();
     await previewDelivered.promise;
@@ -387,7 +401,7 @@ test("a delayed obsolete preview cannot replace the preview after a settings cha
           });
         }),
     );
-    await expect(row.getByText(/estimates 84 g/)).toBeVisible();
+    await expectReservationEstimate(row, 5, 84, 80);
   } finally {
     releasePreview.resolve();
     await page.unroute(previewUrl);
@@ -412,7 +426,7 @@ test("failed fresh preview loading can be retried after a changed margin", async
     await openPrints(page);
     const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    await expectReservationEstimate(row, 10, 88, 80);
     await openSettings(secondPage);
     await saveFromPage(secondPage, 5);
     await page.route(`**/api/prints/${print.id}/reservation`, async (route) => {
@@ -428,7 +442,7 @@ test("failed fresh preview loading can be retried after a changed margin", async
     await expect(row.getByRole("alert")).toContainText("preview is temporarily unavailable");
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
     await row.getByRole("button", { name: "Load preview" }).click();
-    await expect(row.getByText(/estimates 84 g/)).toBeVisible();
+    await expectReservationEstimate(row, 5, 84, 80);
   } finally {
     await page.unroute(`**/api/prints/${print.id}/reservation`);
     await secondPage.close();

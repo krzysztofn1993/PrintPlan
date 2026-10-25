@@ -21,7 +21,7 @@ async function expectPanelGeometry(page: Page, record: Locator): Promise<void> {
     const geometry = await record.evaluate((recordElement) => {
       const rows = recordElement.querySelectorAll<HTMLElement>('[role="row"]');
       const panel = recordElement.querySelector<HTMLElement>(".carbon-inline-panel");
-      const toDocumentBox = (element: HTMLElement | null) => {
+      const toDocumentBox = (element: Element | null) => {
         if (!element) return null;
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x: x + window.scrollX, y: y + window.scrollY, width, height };

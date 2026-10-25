@@ -274,9 +274,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [x] 2.1 Presentation and affected print/reservation scenarios pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts tests/e2e/print-recovery.spec.ts tests/e2e/reserved-print-editing.spec.ts tests/e2e/reservation-recovery.spec.ts`.
-- [x] 2.2 Updated source passes lint: `npm run lint`.
-- [x] 2.4 Exact-command recovery scenarios pass: `npm run test:e2e -- tests/e2e/exact-command-recovery.spec.ts`.
+- [x] 2.1 Presentation and affected print/reservation scenarios pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts tests/e2e/print-recovery.spec.ts tests/e2e/reserved-print-editing.spec.ts tests/e2e/reservation-recovery.spec.ts`. — 677ce82
+- [x] 2.2 Updated source passes lint: `npm run lint`. — 677ce82
+- [x] 2.4 Exact-command recovery scenarios pass: `npm run test:e2e -- tests/e2e/exact-command-recovery.spec.ts`. — 677ce82
 
 #### Manual
 
@@ -286,9 +286,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [ ] 3.1 Deploy verification passes: `npm run verify:deploy`.
-- [ ] 3.2 The complete built-preview Chromium suite passes: `npm run test:e2e`.
-- [ ] 3.3 Authenticated HTTP acceptance passes against a separately started built preview: `BASE_URL=http://localhost:4321 npm run smoke`.
+- [x] 3.1 Deploy verification passes: `npm run verify:deploy`.
+- [x] 3.2 The complete built-preview Chromium suite passes: `npm run test:e2e`.
+- [x] 3.3 Authenticated HTTP acceptance passes against a separately started built preview: `BASE_URL=http://localhost:4321 npm run smoke`.
 
 #### Manual
 

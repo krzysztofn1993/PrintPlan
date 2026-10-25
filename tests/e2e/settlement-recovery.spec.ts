@@ -243,7 +243,7 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     releaseAcknowledgement.resolve();
     await submit;
 
-    await expect(row.getByText(/No saved receipt is visible yet/)).toBeVisible();
+    await expect(row.getByText(/No saved result is visible yet/)).toBeVisible();
     expect(browserReceipts).toEqual([null]);
     await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
     await expect(row.getByLabel("Actual consumption (g)")).toHaveValue("75");
@@ -257,7 +257,7 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     await page.getByRole("button", { name: "Refresh list", exact: true }).click();
     await refreshedReceipt;
     await page.getByRole("button", { name: "Reopen settlement panel", exact: true }).click();
-    await expect(row.getByText(/No saved receipt is visible yet/)).toBeVisible();
+    await expect(row.getByText(/No saved result is visible yet/)).toBeVisible();
     expect(browserReceipts).toEqual([null, null]);
     await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
     await expect(row.getByRole("button", { name: "Delete planned print" })).toBeDisabled();
