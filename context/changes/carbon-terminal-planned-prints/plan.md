@@ -6,6 +6,33 @@ Improve the existing mixed collection of planned and completed prints while pres
 
 Planning was approved on 2026-10-25: MEDIUM complexity, four substantive questions, and the three phases below. The author selected all four recommendations: consistent Prints naming, contextual help, short spool IDs, and plain-language messages without visible version numbers. This document authorizes no implementation by itself.
 
+## Follow-up design addendum (2026-10-25)
+
+The layout follow-up in `34488c8`, documented by the [current captures](verification.md#follow-up-captures-after-the-workbench-layout-change-34488c8) and [dashboard guidance](../../../AGENTS.md#structure-and-conventions), establishes the final presentation contract below. The author approved reconciling this plan during implementation-review triage for F2. This addendum supersedes the original Desired End State, Implementation Approach, Phase 1 consumer/geometry requirements, Phase 3 guidance and Testing Strategy wherever they require every workflow to render in a record detail row. The original requirements and Progress entries remain historical records of the completed phases.
+
+### Final placement and ownership
+
+| Surface                                                                                  | Final placement                                                                    | Association with its record                                                                                                                       |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Print and stock deletion confirmations                                                   | A separate `CollectionTableDetailRow` inside the owning `CollectionTableRecord`.   | One detail cell spans all five logical columns below the five-cell summary.                                                                       |
+| Print editing, reservation preview/management, settlement input/review and stock editing | Shared `CollectionRecordWorkbench`, before the table inside the owning collection. | A stable panel ID, labelled heading, full record identity and contextual quantities identify the record; disclosure controls reference the panel. |
+| Detached settlement recovery after a print disappears                                    | The existing recovery surface outside the table.                                   | Retained print identity and saved receipt remain available through the collection-owned recovery workflow.                                        |
+
+The header rowgroup, semantically neutral body wrapper, labelled record rowgroups and five summary cells remain required. Detail-row geometry applies to row-local deletion confirmations. Workbenches use the collection width, with form and context beside each other at the existing `64rem` breakpoint and context below the form on narrower screens. Surfaces, spacing and wrapping follow the Carbon tokens in `src/styles/global.css` and the shared presentation component in `src/components/ui/CollectionRecordWorkbench.tsx`.
+
+Collection owners retain state, fetches, mutations, guards, live regions, draft mounting/reset behavior, quantity DTO bindings and focus restoration. Moving a workflow above the table changes its presentation boundary; it does not introduce a generic workflow controller or change reservation, settlement or recovery policies.
+
+### Revised verification expectations
+
+- Retain five-cell summary and one-cell spanning-detail assertions for deletion. At 320, 390, 1279, 1280 and 1440 CSS pixels, verify that deletion details follow their summaries and remain within record bounds.
+- For workbenches at those same widths, verify placement before the table, collection-width geometry, responsive form/context arrangement and no horizontal document overflow. Heading/full-ID association, disclosure relationships and focus restoration replace the original requirement that these workflows appear directly below their summaries.
+- Scope summary assertions to summary records and workflow assertions to ID-scoped workbenches. Check names and region roles on panel roots; scope form/receipt content separately from contextual quantities. The [F1 triage verification](reviews/impl-review.md#f1-triage-verification) records the corrected recovery scenarios and complete browser suite.
+- Preserve the original defect analysis and before captures as provenance. The original all-panels-in-row geometry prescription is superseded by the two placement contracts above; current acceptance measures the actual rendered surfaces. Retain the indexed seven-state and Chrome/Firefox evidence, attribution by revision, and the separate manual accessibility requirements.
+
+### Request-ID compatibility helper
+
+`src/lib/request-id.ts` centralizes creation of reservation and settlement request IDs when `crypto.randomUUID` is unavailable. It uses that function when present and otherwise constructs a UUID v4 from `crypto.getRandomValues`. This compatibility addition preserves cryptographic randomness and the existing request-ID format. Collection owners still capture IDs for attempts and reuse them through the existing same-attempt recovery paths; API payloads and idempotency policies remain unchanged.
+
 ## Current State Analysis
 
 - The authenticated route already renders a Prints heading, shared dashboard shell and hydrated collection; its introductory paragraph explains nearly every workflow before the collection (`src/pages/dashboard/prints.astro:36`).

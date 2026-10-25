@@ -1,5 +1,5 @@
 import { test, expect, type RecoveryApi, type SettlementCommandResult } from "./fixtures";
-import { deferred, openPrints, printRecord, printSummaryRow } from "./helpers/ui";
+import { deferred, openPrints, printRecord, printSummaryRow, printWorkbench } from "./helpers/ui";
 
 async function createReservedPrint(recoveryApi: RecoveryApi, prefix: string, recordedGrams = 150, requiredGrams = 80) {
   const colour = recoveryApi.label(`${prefix}-colour`);
@@ -41,7 +41,10 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   await field.fill("0");
   await row.getByRole("button", { name: "Confirm settlement" }).click();
   await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const result = row.getByRole("region", { name: "Settlement result" });
+  const workbench = printWorkbench(page, print.id);
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const result = workbench.locator(".carbon-record-workbench-form");
   await expect(row.getByText("Saved settlement result.")).toBeVisible();
   await expect(result.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("0 g");
   const receipt = await recoveryApi.readPrintSettlement(print.id);
@@ -69,7 +72,9 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   const refreshedRow = printRecord(page, print.id);
   await refreshedRow.getByRole("button", { name: "Review settlement" }).click();
   await expect(refreshedRow.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const refreshedResult = refreshedRow.getByRole("region", { name: "Settlement result" });
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const refreshedResult = workbench.locator(".carbon-record-workbench-form");
   await expect(refreshedResult.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("0 g");
 
   await refreshedRow.getByRole("button", { name: "Close", exact: true }).click();
@@ -377,7 +382,10 @@ test("failed receipt and stock reads recover without resubmitting a confirmed se
   failNextPrintRead = true;
   await row.getByRole("button", { name: "Check saved result" }).click();
   await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const result = row.getByRole("region", { name: "Settlement result" });
+  const workbench = printWorkbench(page, print.id);
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const result = workbench.locator(".carbon-record-workbench-form");
   await expect(row.getByRole("alert").filter({ hasText: "current print list could not be read" })).toBeVisible();
   await expect(result.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("61 g");
   await expect(row.getByRole("button", { name: "Refresh current stock review" })).toBeEnabled();
@@ -432,7 +440,7 @@ test("a definitive stale-command rejection confirms no receipt and retains the u
   await expect(row.getByRole("alert").filter({ hasText: "The print changed before settlement." })).toBeVisible();
   await expect(row.getByText("This attempt was not applied.", { exact: false })).toBeVisible();
   await expect(row.getByLabel("Actual consumption (g)")).toHaveValue("52");
-  await expect(row).toContainText(changedName);
+  await expect(printSummaryRow(page, print.id)).toContainText(changedName);
   expect(await recoveryApi.readPrintSettlement(print.id)).toBeNull();
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     recordedGrams: 150,
