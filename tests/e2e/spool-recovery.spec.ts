@@ -311,7 +311,7 @@ test("a committed reserved delete stays guarded until refresh and keeps survivin
   await expect(deletionFeedback).toContainText("Deletion may have completed");
   await expect(deletionFeedback).toContainText("refreshing cannot recover the original cancellation list");
   await expect(deletionFeedback.getByRole("button", { name: "Refresh stock" })).toBeVisible();
-  await expect(deletionFeedback.getByRole("link", { name: "Manage reservations in planned prints" })).toHaveAttribute(
+  await expect(deletionFeedback.getByRole("link", { name: "Manage reservations in prints" })).toHaveAttribute(
     "href",
     "/dashboard/prints",
   );

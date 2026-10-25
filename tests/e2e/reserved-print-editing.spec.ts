@@ -25,7 +25,7 @@ test("reserved edits reuse own capacity, retain an eligible manual spool, and ke
 
   await openPrints(page);
   await page.setViewportSize({ width: 1280, height: 900 });
-  const table = page.getByRole("table", { name: "Print queue" });
+  const table = page.getByRole("table", { name: "Prints" });
   await expect(table.getByRole("columnheader", { name: "Reservation / result" })).toBeVisible();
   const row = printRecord(page, print.id);
   await expect(row.locator(".carbon-print-table-cell-material")).toContainText("PLA");
@@ -196,7 +196,7 @@ test("a second page edit makes the first page cancellation stale", async ({ page
     });
 
     await staleRow.getByRole("button", { name: "Release reservation" }).click();
-    await expect(staleRow.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
+    await expect(staleRow.getByRole("status")).toContainText("The print changed while the release was being resolved.");
     await expect(staleRow.getByRole("heading", { name: "Material reserved" })).toBeVisible();
     await expect(staleRow).toContainText("99 g reserved");
     await expect(staleRow.getByRole("button", { name: "Manage reservation" })).toBeVisible();

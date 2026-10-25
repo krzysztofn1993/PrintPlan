@@ -18,10 +18,23 @@ async function expectPanelGeometry(page: Page, record: Locator): Promise<void> {
   for (const width of panelViewports) {
     await page.setViewportSize({ width, height: pageHeight });
 
-    const recordBox = await record.boundingBox();
-    const summaryBox = await record.getByRole("row").first().boundingBox();
-    const detailBox = await detailRow.boundingBox();
-    const panelBox = await detailRow.locator(".carbon-inline-panel").boundingBox();
+    const geometry = await record.evaluate((recordElement) => {
+      const rows = recordElement.querySelectorAll<HTMLElement>('[role="row"]');
+      const panel = recordElement.querySelector<HTMLElement>(".carbon-inline-panel");
+      const toDocumentBox = (element: HTMLElement | null) => {
+        if (!element) return null;
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x: x + window.scrollX, y: y + window.scrollY, width, height };
+      };
+
+      return {
+        recordBox: toDocumentBox(recordElement),
+        summaryBox: toDocumentBox(rows.item(0)),
+        detailBox: toDocumentBox(rows.item(1)),
+        panelBox: toDocumentBox(panel),
+      };
+    });
+    const { recordBox, summaryBox, detailBox, panelBox } = geometry;
     expect(recordBox, `record should have a rendered box at ${width}px`).not.toBeNull();
     expect(summaryBox, `summary should have a rendered box at ${width}px`).not.toBeNull();
     expect(detailBox, `detail row should have a rendered box at ${width}px`).not.toBeNull();
@@ -89,6 +102,13 @@ test("print and stock details keep their record semantics, width, and reservatio
   expect(currentSettlementPrint?.reservation?.id).toBe(settlementReservationId);
 
   await openPrints(page);
+  const table = page.getByRole("table", { name: "Prints" });
+  await expect(page.getByRole("link", { name: "Prints", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("region", { name: "Prints" }).getByText("Your prints", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Required grams are an estimate before the safety margin. Creating a print does not reserve stock."),
+  ).toBeVisible();
+  await expect(table.getByRole("columnheader", { name: "Reservation / result" })).toBeVisible();
 
   const verifyDisclosure = async (record: Locator, triggerId: string, panelId: string) => {
     const trigger = record.locator(`#${triggerId}`);
@@ -121,6 +141,9 @@ test("print and stock details keep their record semantics, width, and reservatio
     `reservation-panel-${previewPrint.id}`,
   );
   await expect(previewRecord.getByRole("heading", { name: "Reserve material" })).toBeVisible();
+  await expect(previewRecord.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/dashboard/settings");
+  await expect(previewRecord).toContainText("current-margin rules");
+  await expect(previewRecord).toContainText("Held grams are not consumed.");
   await previewRecord.getByRole("button", { name: "Close" }).click();
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(`reserve-material-${previewPrint.id}`);
   await expect(reserveTrigger).toHaveAttribute("aria-expanded", "false");
@@ -161,6 +184,14 @@ test("print and stock details keep their record semantics, width, and reservatio
   ).toBeVisible();
   await completedReviewRecord.getByRole("button", { name: "Close" }).click();
   await expect(completedReviewRecord.getByRole("row")).toHaveCount(1);
+
+  await page.setViewportSize({ width: 390, height: pageHeight });
+  await expect(managedRecord.locator(".carbon-print-table-cell-result .carbon-data-table-mobile-label")).toHaveText(
+    "Reservation / result",
+  );
+  await expect(
+    completedReviewRecord.locator(".carbon-print-table-cell-result .carbon-data-table-mobile-label"),
+  ).toHaveText("Reservation / result");
 
   await openSpools(page);
   const spoolEditRecord = spoolRecord(page, spool.id);

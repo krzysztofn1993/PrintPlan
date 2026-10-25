@@ -249,7 +249,7 @@ export async function runPrintSmoke({
       const page = await appRequest("/dashboard/prints", { jar: activeJarA });
       ensure(page.status === 200, "The authenticated planned-print page did not load.");
       assertPrivateHeaders(page, "html", "Planned-print");
-      ensure(page.body.includes("No planned prints yet"), "The empty print state was not rendered by the server.");
+      ensure(page.body.includes("No prints yet"), "The empty print state was not rendered by the server.");
     });
 
     const primary = await step("unnamed print saves canonical labels without requiring stock", async () => {
@@ -458,7 +458,7 @@ export async function runPrintSmoke({
       ensure((await listPrints(activeJarB)).length === 0, "Account B could list account A's planned prints.");
       const foreignRead = await appRequest("/dashboard/prints", { jar: activeJarB });
       ensure(
-        foreignRead.status === 200 && foreignRead.body.includes("No planned prints yet"),
+        foreignRead.status === 200 && foreignRead.body.includes("No prints yet"),
         "Account B's SSR page exposed account A's prints.",
       );
       const own = await createPrint(activeJarB, accountB.id, [

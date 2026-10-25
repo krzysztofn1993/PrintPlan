@@ -519,7 +519,7 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                                 {refreshing ? "Refreshing…" : "Refresh stock"}
                               </Button>
                               <a className="carbon-feedback-link" href="/dashboard/prints">
-                                Manage reservations in planned prints
+                                Manage reservations in prints
                               </a>
                             </div>
                           )}

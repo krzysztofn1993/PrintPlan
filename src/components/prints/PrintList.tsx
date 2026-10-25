@@ -263,7 +263,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updatePrintRecovery({
         ...currentRecovery,
         phase: "read_failed",
-        message: `${printResult.message} ${currentRecovery.knownOutcome ?? "The command remains unresolved."}`,
+        message: `${printResult.message} ${currentRecovery.knownOutcome ?? "The outcome is still unresolved."}`,
       });
       setListError({
         kind: printResult.unauthenticated ? "unauthenticated" : "unavailable",
@@ -275,7 +275,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updatePrintRecovery({
         ...currentRecovery,
         phase: "read_failed",
-        message: `${spoolResult.message} ${currentRecovery.knownOutcome ?? "The command remains unresolved."}`,
+        message: `${spoolResult.message} ${currentRecovery.knownOutcome ?? "The outcome is still unresolved."}`,
       });
       setListError({
         kind: spoolResult.unauthenticated ? "unauthenticated" : "unavailable",
@@ -305,7 +305,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       reservationPrintIdRef.current = currentReleasePrint.id;
       setReservationPrintId(currentReleasePrint.id);
       setReservationNotice(
-        "Cancellation was not applied because the print changed. The current reservation is shown here; review it before cancelling again.",
+        "The print changed while the release was being resolved. The current reservation is shown here; review its details before releasing it.",
       );
       setStatusMessage("");
     } else {
@@ -323,7 +323,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       kind: "edit",
       phase: "uncertain",
       editCommand: command,
-      message: "The exact edit may have completed. Retry the same versioned command to resolve it safely.",
+      message: "Your edit may have completed. Retry this same attempt to resolve the outcome.",
     });
     setUncertaintyGuard(true);
   }
@@ -356,8 +356,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         kind: "edit",
         phase: "uncertain",
         editCommand: command,
-        message:
-          "The exact edit could not be reached. Retry the same versioned command when the connection is available.",
+        message: "Your edit may have completed. Retry this same attempt when the connection is available.",
       });
       return;
     }
@@ -379,7 +378,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
           kind: "edit",
           phase: "reconciling",
           editCommand: command,
-          message: "The exact edit is confirmed. Reading the current print and stock.",
+          message: "The same edit was confirmed. Reading the current print and stock.",
           knownOutcome: describeRecalculation(result.print, result.recalculation),
           knownPrint: result.print,
           closeEditAfterRead: true,
@@ -399,24 +398,24 @@ export function PrintList({ initialPrints }: PrintListProps) {
           ? "The print no longer exists."
           : code === "print_settled"
             ? "The print is now settled."
-            : "The submitted print version is no longer current.";
+            : "The print changed after the edit was submitted.";
       void reconcilePrintRecovery({
         kind: "edit",
         phase: "reconciling",
         editCommand: command,
         closeEditAfterRead: true,
-        message: `${reason} The original edit may have completed. Reading current print and stock; the original edit result cannot be recovered.`,
-        knownOutcome: `${reason} The original edit may have completed. The original edit result cannot be recovered.`,
+        message: `${reason} The original edit may have completed. Reading current print and stock; its saved result cannot be recovered.`,
+        knownOutcome: `${reason} The original edit may have completed. Its saved result cannot be recovered.`,
       });
       return;
     }
 
     const detail =
       response.status === 401
-        ? "Your session expired before the command could be checked. Sign in, then retry the exact edit."
+        ? "Your session expired before this edit could be checked. Sign in, then retry the same attempt."
         : response.status >= 500 || response.ok
-          ? "The edit result is still uncertain. Retry the exact same versioned command."
-          : "The command could not be validated. Keep it unchanged and retry after resolving the form or session issue.";
+          ? "The edit result is still uncertain. Retry this same attempt."
+          : "This retry was rejected because the edit could not be validated. Keep the entries unchanged; the earlier outcome is still unresolved.";
     updatePrintRecovery({ kind: "edit", phase: "uncertain", editCommand: command, message: detail });
   }
 
@@ -462,7 +461,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updateMutationPending(false);
       updatePrintRecovery({
         ...recovery,
-        message: "The exact cancellation could not be reached. Retry the same reservation and print version.",
+        message: "The release may have completed. Retry this same release when the connection is available.",
       });
       return;
     }
@@ -478,14 +477,14 @@ export function PrintList({ initialPrints }: PrintListProps) {
       const currentPrint = receipt.print;
       const knownOutcome =
         receipt.print?.reservation && receipt.print.reservation.id !== command.reservationId
-          ? "The submitted reservation is terminal; a newer reservation is active."
+          ? "The earlier reservation was released, and a newer reservation is active."
           : receipt.disposition === "released"
             ? "The reservation release is confirmed."
             : "The reservation was already released.";
       void reconcilePrintRecovery({
         kind: "release",
         phase: "reconciling",
-        message: "The exact cancellation is resolved. Reading the current print and stock.",
+        message: "The same release was confirmed. Reading the current print and stock.",
         knownOutcome,
         knownPrint: currentPrint ?? undefined,
       });
@@ -500,13 +499,13 @@ export function PrintList({ initialPrints }: PrintListProps) {
       const reason =
         response.status === 404
           ? "The print or reservation is no longer active."
-          : "The print changed before cancellation.";
+          : "The print changed, so the release result needs review.";
       void reconcilePrintRecovery({
         kind: "release",
         phase: "reconciling",
         releaseCommand: command,
-        message: `${reason} Reading current print and stock; the exact cancellation will not be advanced to a newer version.`,
-        knownOutcome: `${reason} Review the current reservation before cancelling again.`,
+        message: `${reason} Reading current print and stock. Review the current reservation before taking another action.`,
+        knownOutcome: `${reason} Review the current reservation before releasing it.`,
       });
       return;
     }
@@ -514,10 +513,10 @@ export function PrintList({ initialPrints }: PrintListProps) {
       ...recovery,
       message:
         response.status === 401
-          ? "Your session expired before cancellation could be checked. Sign in, then retry the exact cancellation."
+          ? "Your session expired before this release could be checked. Sign in, then retry the same release."
           : response.status >= 500 || response.ok
-            ? "The cancellation result is still uncertain. Retry the exact same reservation and print version."
-            : "The cancellation command could not be validated. Keep it unchanged and retry after resolving the form or session issue.",
+            ? "The release result is still uncertain. Retry this same release."
+            : "This release retry was rejected because it could not be validated. Its earlier outcome is still unresolved.",
     });
   }
 
@@ -704,7 +703,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updateSettlementWorkflow(printId, (current) => ({
         ...current,
         state: "uncertain",
-        error: "The saved settlement result could not be reached. Keep the command and try reading it again.",
+        error:
+          "The saved settlement result could not be reached. Keep this attempt unchanged and try reading it again.",
       }));
       updateSettlementGuard(true);
       return;
@@ -723,7 +723,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
           ...current,
           state: "uncertain",
           error: current.command
-            ? "No saved receipt is visible yet. An earlier request may still commit; retry the exact same command to resolve it safely."
+            ? "No saved result is visible yet. An earlier request may still complete; retry this same attempt to resolve the outcome."
             : "The completed print has no readable saved receipt yet. Try reading the result again.",
         }));
         updateSettlementGuard(true);
@@ -824,7 +824,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updateSettlementWorkflow(printId, (current) => ({
         ...current,
         state: "uncertain",
-        error: "We couldn't confirm whether settlement completed. Read the saved result before changing this command.",
+        error:
+          "We couldn't confirm whether settlement completed. Read the saved result before changing the amount or starting another attempt.",
       }));
       updateSettlementGuard(true);
       void checkSettlementStatus(printId);
@@ -854,7 +855,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         ...current,
         state: "uncertain",
         error:
-          "This print already has a saved settlement. Reading that result; the submitted amount is not treated as applied.",
+          "This print already has a saved settlement. Reading that result; this attempt's amount is not treated as applied.",
       }));
       updateSettlementGuard(true);
       void checkSettlementStatus(printId);
@@ -865,7 +866,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       updateSettlementWorkflow(printId, (current) => ({
         ...current,
         state: "uncertain",
-        error: "Your session has expired. Sign in to check whether this exact command has a saved result.",
+        error: "Your session has expired. Sign in to check whether this settlement has a saved result.",
         signInRequired: true,
       }));
       updateSettlementGuard(true);
@@ -906,8 +907,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
       state: "uncertain",
       error:
         response.status >= 500 || response.ok
-          ? "The settlement may have completed, but its result was not readable. Read the saved result before trying another command."
-          : "The settlement result is unclear. Read the saved result before changing this command.",
+          ? "Settlement may have completed, but its result could not be read. Read the saved result before another attempt."
+          : "The settlement result is unclear. Read the saved result before changing this amount.",
     }));
     updateSettlementGuard(true);
     void checkSettlementStatus(printId);
@@ -1493,7 +1494,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         kind: "release",
         phase: "uncertain",
         releaseCommand: command,
-        message: "The cancellation outcome may be uncertain. Retry the exact reservation and print version.",
+        message: "The release may have completed. Retry this same release to resolve the outcome.",
       });
       setUncertaintyGuard(true);
       setReservationPending(false);
@@ -1540,13 +1541,13 @@ export function PrintList({ initialPrints }: PrintListProps) {
       const reason =
         response.status === 404
           ? "The print or reservation is no longer active."
-          : "The print changed before cancellation.";
+          : "The print changed before this release could be applied.";
       void reconcilePrintRecovery({
         kind: "release",
         phase: "reconciling",
         releaseCommand: command,
-        message: `${reason} Reading current print and stock; cancellation will not be advanced to a newer version.`,
-        knownOutcome: `${reason} Review the current reservation before cancelling again.`,
+        message: `${reason} Reading current print and stock. Review the current reservation before taking another action.`,
+        knownOutcome: `${reason} Review the current reservation before releasing it.`,
       });
       return;
     }
@@ -1557,10 +1558,10 @@ export function PrintList({ initialPrints }: PrintListProps) {
       releaseCommand: command,
       message:
         response.status === 401
-          ? "Your session expired before cancellation could be checked. Sign in, then retry the exact cancellation."
+          ? "Your session expired before this release could be checked. Sign in, then retry the same release."
           : response.status >= 500 || response.ok
-            ? "The cancellation result is uncertain. Retry the exact same reservation and print version."
-            : "The cancellation command could not be validated. Keep it unchanged and retry after resolving the session or validation issue.",
+            ? "The release result is uncertain. Retry this same release."
+            : "This release was rejected because it could not be validated. Review the current print and reservation before trying again.",
     });
     setUncertaintyGuard(true);
   }
@@ -1727,7 +1728,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     <section aria-labelledby="prints-list-heading" className="carbon-collection">
       <div className="carbon-collection-header">
         <div className="carbon-collection-heading">
-          <p className="carbon-label">Your queue</p>
+          <p className="carbon-label">Your prints</p>
           <h2 id="prints-list-heading" className="mt-1 text-xl font-semibold" tabIndex={-1}>
             Prints
           </h2>
@@ -1792,9 +1793,9 @@ export function PrintList({ initialPrints }: PrintListProps) {
                 : printRecovery?.phase === "read_failed"
                   ? "Retry current print and stock reads"
                   : printRecovery?.kind === "edit"
-                    ? "Retry exact edit"
+                    ? "Retry the same edit"
                     : printRecovery?.kind === "release"
-                      ? "Retry exact cancellation"
+                      ? "Retry the same release"
                       : refreshing
                         ? "Refreshing…"
                         : "Refresh and review prints"}
@@ -1808,7 +1809,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
           <p>
             {blockingSettlement.receipt
               ? "The settlement is saved. Both current collections must be read before another print change is allowed."
-              : "A settlement command may have completed. Read its saved result or retry the exact same command before starting another change."}
+              : "A settlement may have completed. Read its saved result or retry the same attempt before starting another change."}
           </p>
           <div className="carbon-feedback-actions">
             <Button
@@ -1825,7 +1826,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
                 onClick={() => void submitSettlement(blockingSettlement.print.id, true)}
                 disabled={mutationPending || refreshing}
               >
-                Retry exact settlement
+                Retry the same settlement
               </Button>
             )}
             {settlementPanelPrintId !== blockingSettlement.print.id && (
@@ -1893,20 +1894,20 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
       {prints.length === 0 ? (
         <div className="carbon-empty-state">
-          <h3 className="text-lg font-medium">No planned prints yet</h3>
+          <h3 className="text-lg font-medium">No prints yet</h3>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Add a print to record its material, colour, and required filament.
           </p>
         </div>
       ) : (
         <CollectionTable
-          label="Print queue"
+          label="Prints"
           actionColumn="standard"
           columns={[
             { label: "Print" },
             { label: "Material" },
             { label: "Required" },
-            { label: "Reserved", ariaLabel: "Reservation / result" },
+            { label: "Reservation / result" },
             { label: "Actions" },
           ]}
         >

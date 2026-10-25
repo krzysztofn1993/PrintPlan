@@ -55,9 +55,7 @@ export function spoolRecord(page: Page, id: string) {
 }
 
 export function printRecord(page: Page, id: string) {
-  return page
-    .getByRole("table", { name: "Print queue" })
-    .locator(`[role="rowgroup"][aria-labelledby="print-title-${id}"]`);
+  return page.getByRole("table", { name: "Prints" }).locator(`[role="rowgroup"][aria-labelledby="print-title-${id}"]`);
 }
 
 export function spoolAction(page: Page, action: "Edit" | "Delete", id: string) {

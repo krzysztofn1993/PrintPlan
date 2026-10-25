@@ -262,9 +262,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [x] 1.1 Presentation regressions pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts`.
-- [x] 1.2 Existing print, stock and settlement recovery pass: `npm run test:e2e -- tests/e2e/print-recovery.spec.ts tests/e2e/spool-recovery.spec.ts tests/e2e/settlement-recovery.spec.ts`.
-- [x] 1.3 Lint passes: `npm run lint`.
+- [x] 1.1 Presentation regressions pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts`. — 3cb7a54
+- [x] 1.2 Existing print, stock and settlement recovery pass: `npm run test:e2e -- tests/e2e/print-recovery.spec.ts tests/e2e/spool-recovery.spec.ts tests/e2e/settlement-recovery.spec.ts`. — 3cb7a54
+- [x] 1.3 Lint passes: `npm run lint`. — 3cb7a54
 
 #### Manual
 
@@ -274,9 +274,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [ ] 2.1 Presentation and affected print/reservation scenarios pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts tests/e2e/print-recovery.spec.ts tests/e2e/reserved-print-editing.spec.ts tests/e2e/reservation-recovery.spec.ts`.
-- [ ] 2.2 Updated source passes lint: `npm run lint`.
-- [ ] 2.4 Exact-command recovery scenarios pass: `npm run test:e2e -- tests/e2e/exact-command-recovery.spec.ts`.
+- [x] 2.1 Presentation and affected print/reservation scenarios pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts tests/e2e/print-recovery.spec.ts tests/e2e/reserved-print-editing.spec.ts tests/e2e/reservation-recovery.spec.ts`.
+- [x] 2.2 Updated source passes lint: `npm run lint`.
+- [x] 2.4 Exact-command recovery scenarios pass: `npm run test:e2e -- tests/e2e/exact-command-recovery.spec.ts`.
 
 #### Manual
 
