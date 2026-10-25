@@ -1,10 +1,10 @@
 ---
 change_id: carbon-terminal-planned-prints
 title: Carbon Terminal planned prints
-status: impl_reviewed
+status: archived
 created: 2026-10-25
 updated: 2026-10-25
-archived_at: null
+archived_at: 2026-10-25T20:40:01Z
 ---
 
 ## Notes
