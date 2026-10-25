@@ -18,6 +18,16 @@ interface CollectionTableRowProps {
   children: ReactNode;
 }
 
+interface CollectionTableRecordProps {
+  labelledBy: string;
+  children: ReactNode;
+}
+
+interface CollectionTableDetailRowProps {
+  labelledBy: string;
+  children: ReactNode;
+}
+
 interface CollectionTableCellProps {
   label?: string;
   mobileFullWidth?: boolean;
@@ -43,9 +53,15 @@ export function CollectionTable({ label, columns, actionColumn = "standard", chi
           ))}
         </div>
       </div>
-      <div className="carbon-data-table-rows" role="rowgroup">
-        {children}
-      </div>
+      <div className="carbon-data-table-rows">{children}</div>
+    </div>
+  );
+}
+
+export function CollectionTableRecord({ labelledBy, children }: CollectionTableRecordProps) {
+  return (
+    <div role="rowgroup" aria-labelledby={labelledBy} className="carbon-data-table-record">
+      {children}
     </div>
   );
 }
@@ -55,6 +71,16 @@ export function CollectionTableRow({ labelledBy, children }: CollectionTableRowP
     <article role="row" aria-labelledby={labelledBy} className="carbon-data-table-row">
       {children}
     </article>
+  );
+}
+
+export function CollectionTableDetailRow({ labelledBy, children }: CollectionTableDetailRowProps) {
+  return (
+    <div role="row" aria-labelledby={labelledBy} className="carbon-data-table-detail-row">
+      <div role="cell" aria-colspan={5} className="carbon-data-table-detail-cell">
+        {children}
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { fillPrintForm, openPrints, printAction, printRow } from "./helpers/ui";
+import { fillPrintForm, openPrints, printAction, printRecord } from "./helpers/ui";
 
 test("reserved edits reuse own capacity, retain an eligible manual spool, and keep reservation age", async ({
   page,
@@ -27,7 +27,7 @@ test("reserved edits reuse own capacity, retain an eligible manual spool, and ke
   await page.setViewportSize({ width: 1280, height: 900 });
   const table = page.getByRole("table", { name: "Print queue" });
   await expect(table.getByRole("columnheader", { name: "Reservation / result" })).toBeVisible();
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await expect(row.locator(".carbon-print-table-cell-material")).toContainText("PLA");
   await expect(row.locator(".carbon-print-table-cell-material")).toContainText(colour);
   await expect(row.locator(".carbon-print-table-cell-required")).toContainText("80 g");
@@ -147,7 +147,7 @@ test("a no-fit edit saves the requirements and leaves the print unreserved", asy
 
   await expect(page.getByRole("status")).toContainText("saved without a reservation");
   await expect(page.getByRole("status")).not.toContainText("error");
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await expect(row.locator(".carbon-print-table-cell-result")).toContainText("No active reservation");
   await expect(row.getByRole("button", { name: "Reserve material" })).toBeVisible();
   expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
@@ -180,7 +180,7 @@ test("a second page edit makes the first page cancellation stale", async ({ page
 
   try {
     await openPrints(page);
-    const staleRow = printRow(page, print.id);
+    const staleRow = printRecord(page, print.id);
     await staleRow.getByRole("button", { name: "Manage reservation" }).click();
     const reviewed = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
     if (!reviewed?.reservation) throw new Error("The reserved print could not be reviewed.");

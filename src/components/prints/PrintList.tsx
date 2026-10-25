@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { CollectionTable, CollectionTableCell, CollectionTableRow } from "@/components/ui/CollectionTable";
+import {
+  CollectionTable,
+  CollectionTableCell,
+  CollectionTableDetailRow,
+  CollectionTableRecord,
+  CollectionTableRow,
+} from "@/components/ui/CollectionTable";
 import { Button } from "@/components/ui/button";
 import { PrintForm, type PrintUpdateCommand } from "@/components/prints/PrintForm";
 import { ReservationPanel } from "@/components/prints/ReservationPanel";
@@ -204,7 +210,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     if (!target) return;
     document.getElementById(target)?.focus();
     focusTarget.current = null;
-  }, [createOpen, editingPrintId, deletePrintId, prints, settlementPanelPrintId]);
+  }, [createOpen, editingPrintId, deletePrintId, prints, reservationPrintId, settlementPanelPrintId]);
 
   function updateMutationPending(pending: boolean) {
     mutationPendingRef.current = pending;
@@ -923,7 +929,12 @@ export function PrintList({ initialPrints }: PrintListProps) {
     setReservationPreviewLoading(false);
   }
 
-  function closeReservation() {
+  function closeReservation({ restoreFocus = false }: { restoreFocus?: boolean } = {}) {
+    const closingPrintId = reservationPrintIdRef.current;
+    if (restoreFocus && closingPrintId) {
+      const currentPrint = prints.find((print) => print.id === closingPrintId);
+      focusTarget.current = `${currentPrint?.reservation ? "manage-reservation" : "reserve-material"}-${closingPrintId}`;
+    }
     invalidateReservationPreview();
     reservationPrintIdRef.current = null;
     setReservationPrintId(null);
@@ -1660,53 +1671,55 @@ export function PrintList({ initialPrints }: PrintListProps) {
 
   function renderSettlementPanel(print: PrintDto, workflow: SettlementWorkflow) {
     return (
-      <SettlementPanel
-        print={print}
-        printAvailable={workflow.printAvailable}
-        state={workflow.state}
-        draftText={workflow.draftText}
-        receipt={workflow.receipt}
-        reservedSpool={workflow.reservedSpool}
-        currentSpool={workflow.currentSpool}
-        currentSpoolDeleted={workflow.currentSpoolDeleted}
-        error={workflow.error}
-        fieldError={workflow.fieldError}
-        signInRequired={workflow.signInRequired}
-        settlementBlocked={settlementGuard || uncertaintyGuard}
-        reconciliationPending={workflow.reconciliation === "pending"}
-        canConfirm={
-          !workflow.command &&
-          Boolean(print.reservation) &&
-          !print.settlement &&
-          (workflow.state === "editing" || workflow.state === "rejected") &&
-          !mutationPending &&
-          !refreshing &&
-          !uncertaintyGuard &&
-          !settlementGuard
-        }
-        canReplay={Boolean(workflow.command && workflow.state === "uncertain" && !mutationPending && !refreshing)}
-        canCheckStatus={workflow.state === "uncertain" && !mutationPending && !refreshing}
-        canRetryReconciliation={workflow.reconciliation === "failed" && !mutationPending && !refreshing}
-        attemptNote={workflow.attemptNote}
-        onDraftChange={(value) => {
-          updateSettlementDraft(print.id, value);
-        }}
-        onConfirm={() => {
-          void submitSettlement(print.id);
-        }}
-        onReplay={() => {
-          void submitSettlement(print.id, true);
-        }}
-        onCheckStatus={() => {
-          void checkSettlementStatus(print.id);
-        }}
-        onRetryReconciliation={() => {
-          void retrySettlementRecovery(print.id);
-        }}
-        onClose={() => {
-          closeSettlement(print.id);
-        }}
-      />
+      <div id={`settlement-panel-${print.id}`}>
+        <SettlementPanel
+          print={print}
+          printAvailable={workflow.printAvailable}
+          state={workflow.state}
+          draftText={workflow.draftText}
+          receipt={workflow.receipt}
+          reservedSpool={workflow.reservedSpool}
+          currentSpool={workflow.currentSpool}
+          currentSpoolDeleted={workflow.currentSpoolDeleted}
+          error={workflow.error}
+          fieldError={workflow.fieldError}
+          signInRequired={workflow.signInRequired}
+          settlementBlocked={settlementGuard || uncertaintyGuard}
+          reconciliationPending={workflow.reconciliation === "pending"}
+          canConfirm={
+            !workflow.command &&
+            Boolean(print.reservation) &&
+            !print.settlement &&
+            (workflow.state === "editing" || workflow.state === "rejected") &&
+            !mutationPending &&
+            !refreshing &&
+            !uncertaintyGuard &&
+            !settlementGuard
+          }
+          canReplay={Boolean(workflow.command && workflow.state === "uncertain" && !mutationPending && !refreshing)}
+          canCheckStatus={workflow.state === "uncertain" && !mutationPending && !refreshing}
+          canRetryReconciliation={workflow.reconciliation === "failed" && !mutationPending && !refreshing}
+          attemptNote={workflow.attemptNote}
+          onDraftChange={(value) => {
+            updateSettlementDraft(print.id, value);
+          }}
+          onConfirm={() => {
+            void submitSettlement(print.id);
+          }}
+          onReplay={() => {
+            void submitSettlement(print.id, true);
+          }}
+          onCheckStatus={() => {
+            void checkSettlementStatus(print.id);
+          }}
+          onRetryReconciliation={() => {
+            void retrySettlementRecovery(print.id);
+          }}
+          onClose={() => {
+            closeSettlement(print.id);
+          }}
+        />
+      </div>
     );
   }
 
@@ -1906,219 +1919,236 @@ export function PrintList({ initialPrints }: PrintListProps) {
               mutationPending || refreshing || uncertaintyGuard || settlementGuard || settlementPanelPrintId !== null;
             const summary = describePrint(print);
             return (
-              <CollectionTableRow key={print.id} labelledBy={`print-title-${print.id}`}>
-                <CollectionTableCell label="Print" mobileFullWidth className="carbon-row-main">
-                  {print.settlement && <p className="carbon-label">Completed print</p>}
-                  <h3 id={`print-title-${print.id}`} className="carbon-row-title mt-1 text-lg font-semibold">
-                    {summary}
-                  </h3>
-                  <p className="text-muted-foreground mt-2 text-xs break-all">
-                    Print{" "}
-                    <code className="font-mono" title={print.id}>
-                      <span aria-hidden="true">{shortId(print.id)}…</span>
-                      <span className="sr-only">{print.id}</span>
-                    </code>
-                  </p>
-                </CollectionTableCell>
-
-                <CollectionTableCell label="Material / colour" className="carbon-print-table-cell-material">
-                  <p className="carbon-row-secondary text-sm">
-                    {print.material} · {print.colour}
-                  </p>
-                </CollectionTableCell>
-
-                <CollectionTableCell label="Required estimate" className="carbon-print-table-cell-required">
-                  <p className="carbon-value text-lg">{print.requiredGrams} g</p>
-                </CollectionTableCell>
-
-                <CollectionTableCell
-                  label="Reservation / result"
-                  mobileFullWidth
-                  className="carbon-print-table-cell-result"
-                >
-                  {print.reservation ? (
-                    <p className="carbon-value text-lg">
-                      {print.reservation.reservedGrams} g<span className="sr-only"> reserved</span>
+              <CollectionTableRecord key={print.id} labelledBy={`print-title-${print.id}`}>
+                <CollectionTableRow labelledBy={`print-title-${print.id}`}>
+                  <CollectionTableCell label="Print" mobileFullWidth className="carbon-row-main">
+                    {print.settlement && <p className="carbon-label">Completed print</p>}
+                    <h3 id={`print-title-${print.id}`} className="carbon-row-title mt-1 text-lg font-semibold">
+                      {summary}
+                    </h3>
+                    <p className="text-muted-foreground mt-2 text-xs break-all">
+                      Print{" "}
+                      <code className="font-mono" title={print.id}>
+                        <span aria-hidden="true">{shortId(print.id)}…</span>
+                        <span className="sr-only">{print.id}</span>
+                      </code>
                     </p>
-                  ) : print.settlement ? (
-                    <>
-                      <p className="carbon-label">Actual consumption</p>
-                      <p className="carbon-value text-lg">{print.settlement.actualGrams} g consumed</p>
-                    </>
-                  ) : (
-                    <p className="carbon-row-secondary text-sm">No active reservation</p>
-                  )}
-                </CollectionTableCell>
+                  </CollectionTableCell>
 
-                {!isEditing && !isDeleting && (
-                  <CollectionTableCell label="Actions" mobileFullWidth className="carbon-print-table-cell-actions">
-                    <div className="carbon-row-actions carbon-data-table-actions">
-                      {print.settlement ? (
-                        <Button
-                          id={`review-settlement-${print.id}`}
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={actionsDisabled}
-                          onClick={() => {
-                            openSettlement(print);
-                          }}
-                        >
-                          <span>Review</span>
-                          <span className="sr-only"> settlement</span>
-                        </Button>
-                      ) : (
-                        <>
-                          {print.reservation && (
-                            <Button
-                              id={`settle-print-${print.id}`}
-                              type="button"
-                              size="sm"
-                              disabled={actionsDisabled}
-                              onClick={() => {
-                                openSettlement(print);
-                              }}
-                            >
-                              <span>Settle</span>
-                              <span className="sr-only"> print</span>
-                            </Button>
-                          )}
+                  <CollectionTableCell label="Material / colour" className="carbon-print-table-cell-material">
+                    <p className="carbon-row-secondary text-sm">
+                      {print.material} · {print.colour}
+                    </p>
+                  </CollectionTableCell>
+
+                  <CollectionTableCell label="Required estimate" className="carbon-print-table-cell-required">
+                    <p className="carbon-value text-lg">{print.requiredGrams} g</p>
+                  </CollectionTableCell>
+
+                  <CollectionTableCell
+                    label="Reservation / result"
+                    mobileFullWidth
+                    className="carbon-print-table-cell-result"
+                  >
+                    {print.reservation ? (
+                      <p className="carbon-value text-lg">
+                        {print.reservation.reservedGrams} g<span className="sr-only"> reserved</span>
+                      </p>
+                    ) : print.settlement ? (
+                      <>
+                        <p className="carbon-label">Actual consumption</p>
+                        <p className="carbon-value text-lg">{print.settlement.actualGrams} g consumed</p>
+                      </>
+                    ) : (
+                      <p className="carbon-row-secondary text-sm">No active reservation</p>
+                    )}
+                  </CollectionTableCell>
+
+                  <CollectionTableCell
+                    label={!isEditing && !isDeleting ? "Actions" : undefined}
+                    mobileFullWidth={!isEditing && !isDeleting}
+                    className={!isEditing && !isDeleting ? "carbon-print-table-cell-actions" : "sr-only"}
+                  >
+                    {!isEditing && !isDeleting && (
+                      <div className="carbon-row-actions carbon-data-table-actions">
+                        {print.settlement ? (
                           <Button
-                            id={`${print.reservation ? "manage-reservation" : "reserve-material"}-${print.id}`}
-                            type="button"
-                            size="sm"
-                            variant={print.reservation ? "outline" : "default"}
-                            disabled={actionsDisabled}
-                            onClick={() => {
-                              openReservation(print);
-                            }}
-                          >
-                            {print.reservation ? (
-                              <>
-                                <span>Manage</span>
-                                <span className="sr-only"> reservation</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>Reserve</span>
-                                <span className="sr-only"> material</span>
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            id={`edit-print-${print.id}`}
+                            id={`review-settlement-${print.id}`}
                             type="button"
                             size="sm"
                             variant="outline"
                             disabled={actionsDisabled}
+                            aria-expanded={settlementPanelOpen}
+                            aria-controls={`settlement-panel-${print.id}`}
                             onClick={() => {
-                              openEdit(print.id);
+                              openSettlement(print);
                             }}
-                            aria-label={`Edit planned print ${shortId(print.id)}`}
                           >
-                            Edit
+                            <span>Review</span>
+                            <span className="sr-only"> settlement</span>
                           </Button>
-                        </>
-                      )}
-                      <Button
-                        id={`delete-print-${print.id}`}
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={actionsDisabled}
-                        onClick={() => {
-                          openDelete(print.id);
-                        }}
-                        aria-label={`Delete ${print.settlement ? "completed" : "planned"} print ${shortId(print.id)}`}
-                      >
-                        Delete
-                      </Button>
-                    </div>
+                        ) : (
+                          <>
+                            {print.reservation && (
+                              <Button
+                                id={`settle-print-${print.id}`}
+                                type="button"
+                                size="sm"
+                                disabled={actionsDisabled}
+                                aria-expanded={settlementPanelOpen}
+                                aria-controls={`settlement-panel-${print.id}`}
+                                onClick={() => {
+                                  openSettlement(print);
+                                }}
+                              >
+                                <span>Settle</span>
+                                <span className="sr-only"> print</span>
+                              </Button>
+                            )}
+                            <Button
+                              id={`${print.reservation ? "manage-reservation" : "reserve-material"}-${print.id}`}
+                              type="button"
+                              size="sm"
+                              variant={print.reservation ? "outline" : "default"}
+                              disabled={actionsDisabled}
+                              aria-expanded={reservationPrintId === print.id}
+                              aria-controls={`reservation-panel-${print.id}`}
+                              onClick={() => {
+                                openReservation(print);
+                              }}
+                            >
+                              {print.reservation ? (
+                                <>
+                                  <span>Manage</span>
+                                  <span className="sr-only"> reservation</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Reserve</span>
+                                  <span className="sr-only"> material</span>
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              id={`edit-print-${print.id}`}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={actionsDisabled}
+                              onClick={() => {
+                                openEdit(print.id);
+                              }}
+                              aria-label={`Edit planned print ${shortId(print.id)}`}
+                            >
+                              Edit
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          id={`delete-print-${print.id}`}
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={actionsDisabled}
+                          onClick={() => {
+                            openDelete(print.id);
+                          }}
+                          aria-label={`Delete ${print.settlement ? "completed" : "planned"} print ${shortId(print.id)}`}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
                   </CollectionTableCell>
-                )}
+                </CollectionTableRow>
 
                 {isEditing && (
-                  <CollectionTableCell
-                    mobileFullWidth
-                    ariaColSpan={5}
-                    className="carbon-inline-panel carbon-row-inline-panel carbon-data-table-panel"
-                  >
-                    <h4 className="mb-4 text-base font-semibold">Edit planned print</h4>
-                    <PrintForm
-                      key={`${print.id}-${editFormResetVersion}`}
-                      mode="edit"
-                      print={print}
-                      mutationPending={mutationPending}
-                      mutationGuarded={uncertaintyGuard}
-                      onPendingChange={updateMutationPending}
-                      onSaved={(saved) => {
-                        savePrint(saved, "edit");
-                      }}
-                      onCancel={() => {
-                        closeEdit(print.id);
-                      }}
-                      onUncertain={(command) => {
-                        if (command) beginUncertainEdit(command);
-                        else handleUncertainMutation();
-                      }}
-                      onRefreshLatest={() => refreshList({ conflictId: print.id })}
-                    />
-                  </CollectionTableCell>
+                  <CollectionTableDetailRow labelledBy={`edit-print-heading-${print.id}`}>
+                    <section
+                      id={`edit-print-panel-${print.id}`}
+                      aria-labelledby={`edit-print-heading-${print.id}`}
+                      className="carbon-inline-panel"
+                    >
+                      <h4 id={`edit-print-heading-${print.id}`} className="mb-4 text-base font-semibold">
+                        Edit planned print
+                      </h4>
+                      <PrintForm
+                        key={`${print.id}-${editFormResetVersion}`}
+                        mode="edit"
+                        print={print}
+                        mutationPending={mutationPending}
+                        mutationGuarded={uncertaintyGuard}
+                        onPendingChange={updateMutationPending}
+                        onSaved={(saved) => {
+                          savePrint(saved, "edit");
+                        }}
+                        onCancel={() => {
+                          closeEdit(print.id);
+                        }}
+                        onUncertain={(command) => {
+                          if (command) beginUncertainEdit(command);
+                          else handleUncertainMutation();
+                        }}
+                        onRefreshLatest={() => refreshList({ conflictId: print.id })}
+                      />
+                    </section>
+                  </CollectionTableDetailRow>
                 )}
 
                 {isDeleting && (
-                  <CollectionTableCell
-                    mobileFullWidth
-                    ariaColSpan={5}
-                    className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel carbon-data-table-panel"
-                    ariaLabelledBy={`delete-confirmation-${print.id}`}
-                  >
-                    <h4 id={`delete-confirmation-${print.id}`} className="font-semibold">
-                      Delete this {print.settlement ? "completed" : "planned"} print?
-                    </h4>
-                    <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm leading-relaxed">
-                      {print.settlement
-                        ? `Deleting ${summary} will not reverse its saved ${print.settlement.actualGrams} g consumption or restore stock. `
-                        : `Confirm deletion of ${summary}. `}
-                      Full print ID: <code className="font-mono break-all">{print.id}</code>
-                    </p>
-                    {deleteError && (
-                      <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
-                        <p>{deleteError.message}</p>
-                        {deleteError.kind === "unauthenticated" && (
-                          <a className="carbon-feedback-link" href="/auth/signin">
-                            Sign in
-                          </a>
-                        )}
+                  <CollectionTableDetailRow labelledBy={`delete-confirmation-${print.id}`}>
+                    <section
+                      id={`delete-print-panel-${print.id}`}
+                      aria-labelledby={`delete-confirmation-${print.id}`}
+                      className="carbon-inline-panel carbon-inline-panel-warning"
+                    >
+                      <h4 id={`delete-confirmation-${print.id}`} className="font-semibold">
+                        Delete this {print.settlement ? "completed" : "planned"} print?
+                      </h4>
+                      <p className="carbon-row-secondary text-muted-foreground mt-2 text-sm leading-relaxed">
+                        {print.settlement
+                          ? `Deleting ${summary} will not reverse its saved ${print.settlement.actualGrams} g consumption or restore stock. `
+                          : `Confirm deletion of ${summary}. `}
+                        Full print ID: <code className="font-mono break-all">{print.id}</code>
+                      </p>
+                      {deleteError && (
+                        <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
+                          <p>{deleteError.message}</p>
+                          {deleteError.kind === "unauthenticated" && (
+                            <a className="carbon-feedback-link" href="/auth/signin">
+                              Sign in
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      <div className="carbon-form-actions mt-4">
+                        <Button
+                          id={`confirm-delete-${print.id}`}
+                          type="button"
+                          variant="destructive"
+                          onClick={() => {
+                            void confirmDelete(print);
+                          }}
+                          disabled={mutationPending || refreshing || uncertaintyGuard || settlementGuard}
+                        >
+                          {deletePending ? "Deleting…" : "Confirm deletion"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            closeDelete(print.id);
+                          }}
+                          disabled={mutationPending || refreshing}
+                        >
+                          Cancel
+                        </Button>
                       </div>
-                    )}
-                    <div className="carbon-form-actions mt-4">
-                      <Button
-                        id={`confirm-delete-${print.id}`}
-                        type="button"
-                        variant="destructive"
-                        onClick={() => {
-                          void confirmDelete(print);
-                        }}
-                        disabled={mutationPending || refreshing || uncertaintyGuard || settlementGuard}
-                      >
-                        {deletePending ? "Deleting…" : "Confirm deletion"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          closeDelete(print.id);
-                        }}
-                        disabled={mutationPending || refreshing}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                    <p role="status" aria-live="polite" className="sr-only">
-                      {deletePending ? `Deleting ${summary}.` : ""}
-                    </p>
-                  </CollectionTableCell>
+                      <p role="status" aria-live="polite" className="sr-only">
+                        {deletePending ? `Deleting ${summary}.` : ""}
+                      </p>
+                    </section>
+                  </CollectionTableDetailRow>
                 )}
 
                 {reservationPrintId === print.id &&
@@ -2126,36 +2156,40 @@ export function PrintList({ initialPrints }: PrintListProps) {
                   !isDeleting &&
                   !print.settlement &&
                   !settlementPanelOpen && (
-                    <CollectionTableCell mobileFullWidth ariaColSpan={5} className="carbon-data-table-panel">
-                      <ReservationPanel
-                        print={print}
-                        preview={reservationPreview?.printId === print.id ? reservationPreview : null}
-                        previewLoading={reservationPreviewLoading}
-                        selectedSpoolId={selectedSpoolId}
-                        pending={reservationPending || uncertaintyGuard || settlementGuard}
-                        error={reservationError}
-                        notice={reservationNotice}
-                        onSelectSpool={(spoolId) => {
-                          setSelectedSpoolId(spoolId);
-                          setReservationSelectionMode("manual");
-                        }}
-                        onReserve={() => void confirmReservation(print)}
-                        onCancelReservation={() => void releaseReservation(print)}
-                        onRefreshPreview={() => void loadReservationPreview(print.id)}
-                        onClose={closeReservation}
-                        spoolForReservation={reservationPreview?.eligibleSpools.find(
-                          (spool) => spool.id === print.reservation?.spoolId,
-                        )}
-                      />
-                    </CollectionTableCell>
+                    <CollectionTableDetailRow labelledBy={`reservation-heading-${print.id}`}>
+                      <div id={`reservation-panel-${print.id}`}>
+                        <ReservationPanel
+                          print={print}
+                          preview={reservationPreview?.printId === print.id ? reservationPreview : null}
+                          previewLoading={reservationPreviewLoading}
+                          selectedSpoolId={selectedSpoolId}
+                          pending={reservationPending || uncertaintyGuard || settlementGuard}
+                          error={reservationError}
+                          notice={reservationNotice}
+                          onSelectSpool={(spoolId) => {
+                            setSelectedSpoolId(spoolId);
+                            setReservationSelectionMode("manual");
+                          }}
+                          onReserve={() => void confirmReservation(print)}
+                          onCancelReservation={() => void releaseReservation(print)}
+                          onRefreshPreview={() => void loadReservationPreview(print.id)}
+                          onClose={() => {
+                            closeReservation({ restoreFocus: true });
+                          }}
+                          spoolForReservation={reservationPreview?.eligibleSpools.find(
+                            (spool) => spool.id === print.reservation?.spoolId,
+                          )}
+                        />
+                      </div>
+                    </CollectionTableDetailRow>
                   )}
 
                 {settlementPanelOpen && !isEditing && !isDeleting && (
-                  <CollectionTableCell mobileFullWidth ariaColSpan={5} className="carbon-data-table-panel">
+                  <CollectionTableDetailRow labelledBy={`settlement-heading-${print.id}`}>
                     {renderSettlementPanel(print, settlementWorkflow)}
-                  </CollectionTableCell>
+                  </CollectionTableDetailRow>
                 )}
-              </CollectionTableRow>
+              </CollectionTableRecord>
             );
           })}
         </CollectionTable>
@@ -2191,6 +2225,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
                   editingPrintId !== null ||
                   deletePrintId !== null
                 }
+                aria-expanded={settlementPanelPrintId === workflow.print.id}
+                aria-controls={`settlement-panel-${workflow.print.id}`}
                 onClick={() => {
                   openSettlement(workflow.print);
                 }}

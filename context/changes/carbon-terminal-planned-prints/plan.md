@@ -262,9 +262,9 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 #### Automated
 
-- [ ] 1.1 Presentation regressions pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts`.
-- [ ] 1.2 Existing print, stock and settlement recovery pass: `npm run test:e2e -- tests/e2e/print-recovery.spec.ts tests/e2e/spool-recovery.spec.ts tests/e2e/settlement-recovery.spec.ts`.
-- [ ] 1.3 Lint passes: `npm run lint`.
+- [x] 1.1 Presentation regressions pass: `npm run test:e2e -- tests/e2e/collection-table-presentation.spec.ts`.
+- [x] 1.2 Existing print, stock and settlement recovery pass: `npm run test:e2e -- tests/e2e/print-recovery.spec.ts tests/e2e/spool-recovery.spec.ts tests/e2e/settlement-recovery.spec.ts`.
+- [x] 1.3 Lint passes: `npm run lint`.
 
 #### Manual
 
