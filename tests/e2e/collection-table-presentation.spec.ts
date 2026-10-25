@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { openPrints, openSpools, printRecord, spoolRecord } from "./helpers/ui";
+import { openPrints, openSpools, printRecord, printSummaryRow, spoolRecord, spoolWorkbench } from "./helpers/ui";
 
 const panelViewports = [320, 390, 1279, 1280, 1440] as const;
 const pageHeight = 1000;
@@ -52,6 +52,58 @@ async function expectPanelGeometry(page: Page, record: Locator): Promise<void> {
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(documentWidth, `the document should not overflow horizontally at ${width}px`).toBeLessThanOrEqual(width);
+  }
+}
+
+async function expectWorkbenchGeometry(page: Page, workbench: Locator): Promise<void> {
+  for (const width of panelViewports) {
+    await page.setViewportSize({ width, height: pageHeight });
+
+    const geometry = await workbench.evaluate((panelElement) => {
+      const collection = panelElement.closest<HTMLElement>(".carbon-collection");
+      const table = collection?.querySelector<HTMLElement>('[role="table"]');
+      const grid = panelElement.querySelector<HTMLElement>(".carbon-record-workbench-grid");
+      const form = panelElement.querySelector<HTMLElement>(".carbon-record-workbench-form");
+      const context = panelElement.querySelector<HTMLElement>(".carbon-record-workbench-context");
+      const toDocumentBox = (element: Element | null | undefined) => {
+        if (!element) return null;
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x: x + window.scrollX, y: y + window.scrollY, width, height };
+      };
+
+      return {
+        panelBox: toDocumentBox(panelElement),
+        collectionBox: toDocumentBox(collection),
+        tableBox: toDocumentBox(table),
+        formBox: toDocumentBox(form),
+        contextBox: toDocumentBox(context),
+        columns: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+
+    const { panelBox, collectionBox, tableBox, formBox, contextBox, columns, documentWidth } = geometry;
+    expect(panelBox, `workbench should render at ${width}px`).not.toBeNull();
+    expect(collectionBox, `collection should render at ${width}px`).not.toBeNull();
+    expect(tableBox, `table should render at ${width}px`).not.toBeNull();
+    expect(formBox, `form should render at ${width}px`).not.toBeNull();
+    expect(contextBox, `context should render at ${width}px`).not.toBeNull();
+    if (!panelBox || !collectionBox || !tableBox || !formBox || !contextBox) continue;
+
+    expect(panelBox.y, `workbench should sit above the table at ${width}px`).toBeLessThan(tableBox.y);
+    expect(
+      panelBox.width / collectionBox.width,
+      `workbench should use the collection width at ${width}px`,
+    ).toBeGreaterThan(0.85);
+    expect(documentWidth, `the document should not overflow horizontally at ${width}px`).toBeLessThanOrEqual(width);
+    if (width < 1024) {
+      expect(columns, `workbench should stack on mobile at ${width}px`).toBe(1);
+      expect(contextBox.y, `context should follow the form on mobile at ${width}px`).toBeGreaterThanOrEqual(
+        formBox.y + formBox.height - 1,
+      );
+    } else {
+      expect(columns, `workbench should place context beside the form at ${width}px`).toBe(2);
+    }
   }
 }
 
@@ -116,16 +168,21 @@ test("print and stock details keep their record semantics, width, and reservatio
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(trigger).toHaveAttribute("aria-controls", panelId);
     await expect(page.locator(`#${panelId}`)).toBeVisible();
-    await expectPanelGeometry(page, record);
+    await expectWorkbenchGeometry(page, page.locator(`#${panelId}`));
     return trigger;
   };
 
   const editRecord = printRecord(page, editPrint.id);
   await editRecord.locator(`#edit-print-${editPrint.id}`).click();
-  await expect(editRecord.getByRole("heading", { name: "Edit planned print" })).toBeVisible();
-  await expectPanelGeometry(page, editRecord);
-  await editRecord.getByRole("button", { name: "Cancel" }).click();
-  await expect(editRecord.getByRole("row")).toHaveCount(1);
+  const printWorkbench = page.locator(`#edit-print-panel-${editPrint.id}`);
+  await expect(printWorkbench.getByRole("heading", { name: "Edit planned print" })).toBeVisible();
+  await expect(printWorkbench.getByRole("complementary", { name: "Current print quantities" })).toContainText(
+    "Required estimate",
+  );
+  await expectWorkbenchGeometry(page, printWorkbench);
+  await printWorkbench.getByRole("button", { name: "Cancel" }).click();
+  await expect(printSummaryRow(page, editPrint.id).getByRole("row")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(`edit-print-${editPrint.id}`);
 
   const deleteRecord = printRecord(page, deletePrint.id);
   await deleteRecord.locator(`#delete-print-${deletePrint.id}`).click();
@@ -140,14 +197,15 @@ test("print and stock details keep their record semantics, width, and reservatio
     `reserve-material-${previewPrint.id}`,
     `reservation-panel-${previewPrint.id}`,
   );
-  await expect(previewRecord.getByRole("heading", { name: "Reserve material" })).toBeVisible();
-  await expect(previewRecord.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/dashboard/settings");
-  await expect(previewRecord).toContainText("current-margin rules");
-  await expect(previewRecord).toContainText("Held grams are not consumed.");
-  await previewRecord.getByRole("button", { name: "Close" }).click();
+  const previewWorkbench = page.locator(`#reservation-panel-${previewPrint.id}`);
+  await expect(previewWorkbench.getByRole("heading", { name: "Reserve material" })).toBeVisible();
+  await expect(previewWorkbench.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/dashboard/settings");
+  await expect(previewWorkbench).toContainText("current-margin rules");
+  await expect(previewWorkbench).toContainText("Held grams are not consumed.");
+  await previewWorkbench.getByRole("button", { name: "Close" }).click();
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(`reserve-material-${previewPrint.id}`);
   await expect(reserveTrigger).toHaveAttribute("aria-expanded", "false");
-  await expect(previewRecord.getByRole("row")).toHaveCount(1);
+  await expect(printSummaryRow(page, previewPrint.id).getByRole("row")).toHaveCount(1);
 
   const managedRecord = printRecord(page, managedPrint.id);
   const manageTrigger = await verifyDisclosure(
@@ -155,13 +213,14 @@ test("print and stock details keep their record semantics, width, and reservatio
     `manage-reservation-${managedPrint.id}`,
     `reservation-panel-${managedPrint.id}`,
   );
-  await expect(managedRecord.getByRole("heading", { name: "Material reserved" })).toBeVisible();
-  await managedRecord.getByRole("button", { name: "Close" }).click();
+  const manageWorkbench = page.locator(`#reservation-panel-${managedPrint.id}`);
+  await expect(manageWorkbench.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+  await manageWorkbench.getByRole("button", { name: "Close" }).click();
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.id))
     .toBe(`manage-reservation-${managedPrint.id}`);
   await expect(manageTrigger).toHaveAttribute("aria-expanded", "false");
-  await expect(managedRecord.getByRole("row")).toHaveCount(1);
+  await expect(printSummaryRow(page, managedPrint.id).getByRole("row")).toHaveCount(1);
 
   const settlementInputRecord = printRecord(page, settlementInputPrint.id);
   await verifyDisclosure(
@@ -169,9 +228,10 @@ test("print and stock details keep their record semantics, width, and reservatio
     `settle-print-${settlementInputPrint.id}`,
     `settlement-panel-${settlementInputPrint.id}`,
   );
-  await expect(settlementInputRecord.getByRole("heading", { name: "Settle completed print" })).toBeVisible();
-  await settlementInputRecord.getByRole("button", { name: "Cancel" }).click();
-  await expect(settlementInputRecord.getByRole("row")).toHaveCount(1);
+  const settlementWorkbench = page.locator(`#settlement-panel-${settlementInputPrint.id}`);
+  await expect(settlementWorkbench.getByRole("heading", { name: "Settle completed print" })).toBeVisible();
+  await settlementWorkbench.getByRole("button", { name: "Cancel" }).click();
+  await expect(printSummaryRow(page, settlementInputPrint.id).getByRole("row")).toHaveCount(1);
 
   const completedReviewRecord = printRecord(page, completedReviewPrint.id);
   await verifyDisclosure(
@@ -179,11 +239,12 @@ test("print and stock details keep their record semantics, width, and reservatio
     `review-settlement-${completedReviewPrint.id}`,
     `settlement-panel-${completedReviewPrint.id}`,
   );
+  const completedReviewWorkbench = page.locator(`#settlement-panel-${completedReviewPrint.id}`);
   await expect(
-    completedReviewRecord.getByRole("heading", { name: /Settlement result|Review settlement/ }),
+    completedReviewWorkbench.getByRole("heading", { name: /Settlement result|Review settlement/ }),
   ).toBeVisible();
-  await completedReviewRecord.getByRole("button", { name: "Close" }).click();
-  await expect(completedReviewRecord.getByRole("row")).toHaveCount(1);
+  await completedReviewWorkbench.getByRole("button", { name: "Close" }).click();
+  await expect(printSummaryRow(page, completedReviewPrint.id).getByRole("row")).toHaveCount(1);
 
   await page.setViewportSize({ width: 390, height: pageHeight });
   await expect(managedRecord.locator(".carbon-print-table-cell-result .carbon-data-table-mobile-label")).toHaveText(
@@ -196,10 +257,15 @@ test("print and stock details keep their record semantics, width, and reservatio
   await openSpools(page);
   const spoolEditRecord = spoolRecord(page, spool.id);
   await spoolEditRecord.locator(`#edit-spool-${spool.id}`).click();
-  await expect(spoolEditRecord.getByRole("heading", { name: "Correct this spool" })).toBeVisible();
-  await expectPanelGeometry(page, spoolEditRecord);
-  await spoolEditRecord.getByRole("button", { name: "Cancel" }).click();
+  const spoolEditWorkbench = spoolWorkbench(page, spool.id);
+  await expect(spoolEditWorkbench.getByRole("heading", { name: "Correct this spool" })).toBeVisible();
+  await expect(spoolEditWorkbench.getByRole("complementary", { name: "Current spool quantities" })).toContainText(
+    "Recorded stock",
+  );
+  await expectWorkbenchGeometry(page, spoolEditWorkbench);
+  await spoolEditWorkbench.getByRole("button", { name: "Cancel" }).click();
   await expect(spoolEditRecord.getByRole("row")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(`edit-spool-${spool.id}`);
 
   const spoolDeleteRecord = spoolRecord(page, spareSpool.id);
   await spoolDeleteRecord.locator(`#delete-spool-${spareSpool.id}`).click();

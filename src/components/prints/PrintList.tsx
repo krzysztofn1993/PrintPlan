@@ -6,6 +6,7 @@ import {
   CollectionTableRecord,
   CollectionTableRow,
 } from "@/components/ui/CollectionTable";
+import { CollectionRecordWorkbench } from "@/components/ui/CollectionRecordWorkbench";
 import { Button } from "@/components/ui/button";
 import { PrintForm, type PrintUpdateCommand } from "@/components/prints/PrintForm";
 import { ReservationPanel } from "@/components/prints/ReservationPanel";
@@ -14,6 +15,7 @@ import { readPrintDto } from "@/lib/print-dto";
 import { readPrintUpdateDto, type PrintRecalculationDto, type PrintUpdateDto } from "@/lib/print-update-dto";
 import type { PrintDto } from "@/lib/prints";
 import { MAX_EXPECTED_RESERVATION_GRAMS } from "@/lib/reservation-validation";
+import { createRequestId } from "@/lib/request-id";
 import type { ReservationPreview } from "@/lib/reservations";
 import { MAX_ACTUAL_GRAMS } from "@/lib/settlement-validation";
 import { readSettlementReceipt, type SettlementReceipt } from "@/lib/settlement-dto";
@@ -787,7 +789,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
       }
       command = {
         printId,
-        requestId: crypto.randomUUID(),
+        requestId: createRequestId(),
         expectedVersion: print.version,
         reservationId: print.reservation.id,
         actualGrams,
@@ -1341,6 +1343,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
     closeReservation();
     reservationPrintIdRef.current = print.id;
     setReservationPrintId(print.id);
+    focusTarget.current = `reservation-heading-${print.id}`;
     if (!print.reservation) void loadReservationPreview(print.id);
   }
 
@@ -1367,7 +1370,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: new URLSearchParams({
-          requestId: crypto.randomUUID(),
+          requestId: createRequestId(),
           expectedVersion: String(preview.expectedVersion),
           expectedReservationGrams: String(preview.reservationGrams),
           spoolId: selectedSpoolId,
@@ -1669,58 +1672,129 @@ export function PrintList({ initialPrints }: PrintListProps) {
       !prints.some((print) => print.id === workflow.print.id) &&
       (Boolean(workflow.receipt) || Boolean(workflow.print.settlement) || settlementPanelPrintId === workflow.print.id),
   );
+  const editingPrint = prints.find((print) => print.id === editingPrintId);
+  const reservationPrint = prints.find((print) => print.id === reservationPrintId);
+  const reservationPreviewForPrint = reservationPreview?.printId === reservationPrint?.id ? reservationPreview : null;
+  const reservationSpoolForReservation = reservationPrint?.reservation
+    ? reservationPreviewForPrint?.eligibleSpools.find((spool) => spool.id === reservationPrint.reservation?.spoolId)
+    : undefined;
+  const selectedReservationSpool = reservationPreviewForPrint?.eligibleSpools.find(
+    (spool) => spool.id === selectedSpoolId,
+  );
+  const settlementPrint = prints.find((print) => print.id === settlementPanelPrintId);
+  const activeSettlementWorkflow = settlementPanelPrintId ? settlementWorkflows[settlementPanelPrintId] : undefined;
 
-  function renderSettlementPanel(print: PrintDto, workflow: SettlementWorkflow) {
+  function renderSettlementPanel(print: PrintDto, workflow: SettlementWorkflow, inWorkbench = false) {
+    const panel = (
+      <SettlementPanel
+        inWorkbench={inWorkbench}
+        print={print}
+        printAvailable={workflow.printAvailable}
+        state={workflow.state}
+        draftText={workflow.draftText}
+        receipt={workflow.receipt}
+        reservedSpool={workflow.reservedSpool}
+        currentSpool={workflow.currentSpool}
+        currentSpoolDeleted={workflow.currentSpoolDeleted}
+        error={workflow.error}
+        fieldError={workflow.fieldError}
+        signInRequired={workflow.signInRequired}
+        settlementBlocked={settlementGuard || uncertaintyGuard}
+        reconciliationPending={workflow.reconciliation === "pending"}
+        canConfirm={
+          !workflow.command &&
+          Boolean(print.reservation) &&
+          !print.settlement &&
+          (workflow.state === "editing" || workflow.state === "rejected") &&
+          !mutationPending &&
+          !refreshing &&
+          !uncertaintyGuard &&
+          !settlementGuard
+        }
+        canReplay={Boolean(workflow.command && workflow.state === "uncertain" && !mutationPending && !refreshing)}
+        canCheckStatus={workflow.state === "uncertain" && !mutationPending && !refreshing}
+        canRetryReconciliation={workflow.reconciliation === "failed" && !mutationPending && !refreshing}
+        attemptNote={workflow.attemptNote}
+        onDraftChange={(value) => {
+          updateSettlementDraft(print.id, value);
+        }}
+        onConfirm={() => {
+          void submitSettlement(print.id);
+        }}
+        onReplay={() => {
+          void submitSettlement(print.id, true);
+        }}
+        onCheckStatus={() => {
+          void checkSettlementStatus(print.id);
+        }}
+        onRetryReconciliation={() => {
+          void retrySettlementRecovery(print.id);
+        }}
+        onClose={() => {
+          closeSettlement(print.id);
+        }}
+      />
+    );
+    return inWorkbench ? panel : <div id={`settlement-panel-${print.id}`}>{panel}</div>;
+  }
+
+  function settlementPanelTitle(print: PrintDto, workflow: SettlementWorkflow): string {
+    return workflow.receipt ? "Settlement result" : print.settlement ? "Review settlement" : "Settle completed print";
+  }
+
+  function renderSettlementWorkbench(print: PrintDto, workflow: SettlementWorkflow) {
     return (
-      <div id={`settlement-panel-${print.id}`}>
-        <SettlementPanel
-          print={print}
-          printAvailable={workflow.printAvailable}
-          state={workflow.state}
-          draftText={workflow.draftText}
-          receipt={workflow.receipt}
-          reservedSpool={workflow.reservedSpool}
-          currentSpool={workflow.currentSpool}
-          currentSpoolDeleted={workflow.currentSpoolDeleted}
-          error={workflow.error}
-          fieldError={workflow.fieldError}
-          signInRequired={workflow.signInRequired}
-          settlementBlocked={settlementGuard || uncertaintyGuard}
-          reconciliationPending={workflow.reconciliation === "pending"}
-          canConfirm={
-            !workflow.command &&
-            Boolean(print.reservation) &&
-            !print.settlement &&
-            (workflow.state === "editing" || workflow.state === "rejected") &&
-            !mutationPending &&
-            !refreshing &&
-            !uncertaintyGuard &&
-            !settlementGuard
-          }
-          canReplay={Boolean(workflow.command && workflow.state === "uncertain" && !mutationPending && !refreshing)}
-          canCheckStatus={workflow.state === "uncertain" && !mutationPending && !refreshing}
-          canRetryReconciliation={workflow.reconciliation === "failed" && !mutationPending && !refreshing}
-          attemptNote={workflow.attemptNote}
-          onDraftChange={(value) => {
-            updateSettlementDraft(print.id, value);
-          }}
-          onConfirm={() => {
-            void submitSettlement(print.id);
-          }}
-          onReplay={() => {
-            void submitSettlement(print.id, true);
-          }}
-          onCheckStatus={() => {
-            void checkSettlementStatus(print.id);
-          }}
-          onRetryReconciliation={() => {
-            void retrySettlementRecovery(print.id);
-          }}
-          onClose={() => {
-            closeSettlement(print.id);
-          }}
-        />
-      </div>
+      <CollectionRecordWorkbench
+        id={`settlement-panel-${print.id}`}
+        labelledBy={`settlement-heading-${print.id}`}
+        eyebrow={workflow.receipt || print.settlement ? "Settlement review" : "Settlement"}
+        title={settlementPanelTitle(print, workflow)}
+        record={
+          <>
+            {describePrint(print)} · Print <code title={print.id}>{print.id}</code>
+          </>
+        }
+        contextLabel="Current settlement quantities"
+        context={
+          <>
+            <h4 className="text-sm font-semibold">Settlement quantities</h4>
+            <dl>
+              <div>
+                <dt className="text-sm">Required estimate</dt>
+                <dd>{print.requiredGrams} g</dd>
+              </div>
+              <div>
+                <dt className="text-sm">Reservation</dt>
+                <dd>
+                  {workflow.receipt
+                    ? `${workflow.receipt.releasedGrams} g released`
+                    : print.reservation
+                      ? `${print.reservation.reservedGrams} g`
+                      : "None"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm">Actual consumption</dt>
+                <dd>
+                  {workflow.receipt
+                    ? `${workflow.receipt.actualGrams} g`
+                    : print.settlement
+                      ? `${print.settlement.actualGrams} g`
+                      : workflow.draftText
+                        ? `${workflow.draftText} g entered`
+                        : "Not entered"}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-xs leading-relaxed">
+              The required amount is an estimate. Settlement records actual consumption separately and releases the
+              reservation.
+            </p>
+          </>
+        }
+      >
+        {renderSettlementPanel(print, workflow, true)}
+      </CollectionRecordWorkbench>
     );
   }
 
@@ -1804,7 +1878,7 @@ export function PrintList({ initialPrints }: PrintListProps) {
         </div>
       )}
 
-      {settlementGuard && blockingSettlement && (
+      {settlementGuard && blockingSettlement && settlementPanelPrintId !== blockingSettlement.print.id && (
         <div role="alert" className="carbon-feedback carbon-feedback-warning">
           <p>
             {blockingSettlement.receipt
@@ -1892,6 +1966,149 @@ export function PrintList({ initialPrints }: PrintListProps) {
         </section>
       )}
 
+      {editingPrint && (
+        <CollectionRecordWorkbench
+          id={`edit-print-panel-${editingPrint.id}`}
+          labelledBy={`edit-print-heading-${editingPrint.id}`}
+          eyebrow="Editing record"
+          title="Edit planned print"
+          record={
+            <>
+              {describePrint(editingPrint)} · Print <code title={editingPrint.id}>{editingPrint.id}</code>
+            </>
+          }
+          contextLabel="Current print quantities"
+          context={
+            <>
+              <h4 className="text-sm font-semibold">Current quantities</h4>
+              <dl>
+                <div>
+                  <dt className="text-sm">Required estimate</dt>
+                  <dd>{editingPrint.requiredGrams} g</dd>
+                </div>
+                <div>
+                  <dt className="text-sm">Active reservation</dt>
+                  <dd>{editingPrint.reservation ? `${editingPrint.reservation.reservedGrams} g` : "None"}</dd>
+                </div>
+              </dl>
+              <p className="text-xs leading-relaxed">
+                Required grams are an estimate. Reserved stock remains separate and is not consumed by editing.
+              </p>
+            </>
+          }
+        >
+          <PrintForm
+            key={`${editingPrint.id}-${editFormResetVersion}`}
+            mode="edit"
+            print={editingPrint}
+            mutationPending={mutationPending}
+            mutationGuarded={uncertaintyGuard}
+            onPendingChange={updateMutationPending}
+            onSaved={(saved) => {
+              savePrint(saved, "edit");
+            }}
+            onCancel={() => {
+              closeEdit(editingPrint.id);
+            }}
+            onUncertain={(command) => {
+              if (command) beginUncertainEdit(command);
+              else handleUncertainMutation();
+            }}
+            onRefreshLatest={() => refreshList({ conflictId: editingPrint.id })}
+          />
+        </CollectionRecordWorkbench>
+      )}
+
+      {reservationPrint &&
+        !reservationPrint.settlement &&
+        editingPrintId !== reservationPrint.id &&
+        deletePrintId !== reservationPrint.id &&
+        settlementPanelPrintId !== reservationPrint.id && (
+          <CollectionRecordWorkbench
+            id={`reservation-panel-${reservationPrint.id}`}
+            labelledBy={`reservation-heading-${reservationPrint.id}`}
+            eyebrow={reservationPrint.reservation ? "Active reservation" : "Reservation preview"}
+            title={reservationPrint.reservation ? "Material reserved" : "Reserve material"}
+            record={
+              <>
+                {describePrint(reservationPrint)} · Print <code title={reservationPrint.id}>{reservationPrint.id}</code>
+              </>
+            }
+            contextLabel="Current reservation quantities"
+            context={
+              <>
+                <h4 className="text-sm font-semibold">Reservation details</h4>
+                <dl>
+                  <div>
+                    <dt className="text-sm">Required estimate</dt>
+                    <dd>{reservationPrint.requiredGrams} g</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm">{reservationPrint.reservation ? "Reserved now" : "Preview amount"}</dt>
+                    <dd>
+                      {reservationPrint.reservation
+                        ? `${reservationPrint.reservation.reservedGrams} g`
+                        : reservationPreviewForPrint
+                          ? `${reservationPreviewForPrint.reservationGrams} g`
+                          : reservationPreviewLoading
+                            ? "Loading…"
+                            : "Not available"}
+                    </dd>
+                  </div>
+                  {reservationPrint.reservation ? (
+                    <div>
+                      <dt className="text-sm">Spool record</dt>
+                      <dd>
+                        <code>{reservationPrint.reservation.spoolId}</code>
+                      </dd>
+                    </div>
+                  ) : (
+                    <div>
+                      <dt className="text-sm">Selected spool</dt>
+                      <dd>
+                        {selectedReservationSpool
+                          ? `${selectedReservationSpool.material} · ${selectedReservationSpool.availableGrams} g available`
+                          : "Choose a spool"}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                <p className="text-xs leading-relaxed">
+                  A reservation holds stock for this print. It does not change recorded stock or mean that filament has
+                  been consumed.
+                </p>
+              </>
+            }
+          >
+            <ReservationPanel
+              print={reservationPrint}
+              preview={reservationPreviewForPrint}
+              previewLoading={reservationPreviewLoading}
+              selectedSpoolId={selectedSpoolId}
+              pending={reservationPending || uncertaintyGuard || settlementGuard}
+              error={reservationError}
+              notice={reservationNotice}
+              onSelectSpool={(spoolId) => {
+                setSelectedSpoolId(spoolId);
+                setReservationSelectionMode("manual");
+              }}
+              onReserve={() => void confirmReservation(reservationPrint)}
+              onCancelReservation={() => void releaseReservation(reservationPrint)}
+              onRefreshPreview={() => void loadReservationPreview(reservationPrint.id)}
+              onClose={() => {
+                closeReservation({ restoreFocus: true });
+              }}
+              spoolForReservation={reservationSpoolForReservation}
+            />
+          </CollectionRecordWorkbench>
+        )}
+
+      {settlementPrint &&
+        activeSettlementWorkflow &&
+        editingPrintId !== settlementPrint.id &&
+        deletePrintId !== settlementPrint.id &&
+        renderSettlementWorkbench(settlementPrint, activeSettlementWorkflow)}
+
       {prints.length === 0 ? (
         <div className="carbon-empty-state">
           <h3 className="text-lg font-medium">No prints yet</h3>
@@ -1914,7 +2131,6 @@ export function PrintList({ initialPrints }: PrintListProps) {
           {prints.map((print) => {
             const isEditing = editingPrintId === print.id;
             const isDeleting = deletePrintId === print.id;
-            const settlementWorkflow = settlementWorkflows[print.id];
             const settlementPanelOpen = settlementPanelPrintId === print.id;
             const actionsDisabled =
               mutationPending || refreshing || uncertaintyGuard || settlementGuard || settlementPanelPrintId !== null;
@@ -2036,6 +2252,8 @@ export function PrintList({ initialPrints }: PrintListProps) {
                               size="sm"
                               variant="outline"
                               disabled={actionsDisabled}
+                              aria-expanded={isEditing}
+                              aria-controls={`edit-print-panel-${print.id}`}
                               onClick={() => {
                                 openEdit(print.id);
                               }}
@@ -2062,39 +2280,6 @@ export function PrintList({ initialPrints }: PrintListProps) {
                     )}
                   </CollectionTableCell>
                 </CollectionTableRow>
-
-                {isEditing && (
-                  <CollectionTableDetailRow labelledBy={`edit-print-heading-${print.id}`}>
-                    <section
-                      id={`edit-print-panel-${print.id}`}
-                      aria-labelledby={`edit-print-heading-${print.id}`}
-                      className="carbon-inline-panel"
-                    >
-                      <h4 id={`edit-print-heading-${print.id}`} className="mb-4 text-base font-semibold">
-                        Edit planned print
-                      </h4>
-                      <PrintForm
-                        key={`${print.id}-${editFormResetVersion}`}
-                        mode="edit"
-                        print={print}
-                        mutationPending={mutationPending}
-                        mutationGuarded={uncertaintyGuard}
-                        onPendingChange={updateMutationPending}
-                        onSaved={(saved) => {
-                          savePrint(saved, "edit");
-                        }}
-                        onCancel={() => {
-                          closeEdit(print.id);
-                        }}
-                        onUncertain={(command) => {
-                          if (command) beginUncertainEdit(command);
-                          else handleUncertainMutation();
-                        }}
-                        onRefreshLatest={() => refreshList({ conflictId: print.id })}
-                      />
-                    </section>
-                  </CollectionTableDetailRow>
-                )}
 
                 {isDeleting && (
                   <CollectionTableDetailRow labelledBy={`delete-confirmation-${print.id}`}>
@@ -2149,45 +2334,6 @@ export function PrintList({ initialPrints }: PrintListProps) {
                         {deletePending ? `Deleting ${summary}.` : ""}
                       </p>
                     </section>
-                  </CollectionTableDetailRow>
-                )}
-
-                {reservationPrintId === print.id &&
-                  !isEditing &&
-                  !isDeleting &&
-                  !print.settlement &&
-                  !settlementPanelOpen && (
-                    <CollectionTableDetailRow labelledBy={`reservation-heading-${print.id}`}>
-                      <div id={`reservation-panel-${print.id}`}>
-                        <ReservationPanel
-                          print={print}
-                          preview={reservationPreview?.printId === print.id ? reservationPreview : null}
-                          previewLoading={reservationPreviewLoading}
-                          selectedSpoolId={selectedSpoolId}
-                          pending={reservationPending || uncertaintyGuard || settlementGuard}
-                          error={reservationError}
-                          notice={reservationNotice}
-                          onSelectSpool={(spoolId) => {
-                            setSelectedSpoolId(spoolId);
-                            setReservationSelectionMode("manual");
-                          }}
-                          onReserve={() => void confirmReservation(print)}
-                          onCancelReservation={() => void releaseReservation(print)}
-                          onRefreshPreview={() => void loadReservationPreview(print.id)}
-                          onClose={() => {
-                            closeReservation({ restoreFocus: true });
-                          }}
-                          spoolForReservation={reservationPreview?.eligibleSpools.find(
-                            (spool) => spool.id === print.reservation?.spoolId,
-                          )}
-                        />
-                      </div>
-                    </CollectionTableDetailRow>
-                  )}
-
-                {settlementPanelOpen && !isEditing && !isDeleting && (
-                  <CollectionTableDetailRow labelledBy={`settlement-heading-${print.id}`}>
-                    {renderSettlementPanel(print, settlementWorkflow)}
                   </CollectionTableDetailRow>
                 )}
               </CollectionTableRecord>

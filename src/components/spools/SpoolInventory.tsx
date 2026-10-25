@@ -6,6 +6,7 @@ import {
   CollectionTableRecord,
   CollectionTableRow,
 } from "@/components/ui/CollectionTable";
+import { CollectionRecordWorkbench } from "@/components/ui/CollectionRecordWorkbench";
 import { Button } from "@/components/ui/button";
 import { SpoolForm } from "@/components/spools/SpoolForm";
 import { readSpoolDto } from "@/lib/spool-dto";
@@ -194,6 +195,8 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     }
   }
 
+  const editingSpool = spools.find((spool) => spool.id === editingSpoolId);
+
   async function confirmDelete(spool: SpoolDto) {
     if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setDeleteError(null);
@@ -362,6 +365,62 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         </section>
       )}
 
+      {editingSpool && (
+        <CollectionRecordWorkbench
+          id={`edit-spool-panel-${editingSpool.id}`}
+          labelledBy={`edit-spool-heading-${editingSpool.id}`}
+          eyebrow="Correcting stock"
+          title="Correct this spool"
+          record={
+            <>
+              {editingSpool.material} · {editingSpool.colour} · Spool{" "}
+              <code title={editingSpool.id}>{editingSpool.id}</code>
+            </>
+          }
+          contextLabel="Current spool quantities"
+          context={
+            <>
+              <h4 className="text-sm font-semibold">Current stock</h4>
+              <dl>
+                <div>
+                  <dt className="text-sm">Recorded stock</dt>
+                  <dd>{editingSpool.recordedGrams} g</dd>
+                </div>
+                <div>
+                  <dt className="text-sm">Reserved</dt>
+                  <dd>{editingSpool.reservedGrams} g</dd>
+                </div>
+                <div>
+                  <dt className="text-sm">Available</dt>
+                  <dd>{editingSpool.availableGrams} g</dd>
+                </div>
+              </dl>
+              <p className="text-xs leading-relaxed">
+                These amounts belong to this spool. Matching material and colour labels do not combine spools.
+              </p>
+            </>
+          }
+        >
+          <SpoolForm
+            key={editingSpool.id}
+            mode="edit"
+            spool={editingSpool}
+            mutationPending={mutationPending}
+            onPendingChange={updateMutationPending}
+            onSaved={(saved) => {
+              saveSpool(saved, "edit");
+            }}
+            onCancel={() => {
+              closeEdit(editingSpool.id);
+            }}
+            onUncertain={handleUncertainMutation}
+            onRefreshLatest={refreshStock}
+            onRefreshCorrection={() => refreshStock("correction")}
+            mutationGuarded={uncertaintyGuard}
+          />
+        </CollectionRecordWorkbench>
+      )}
+
       {spools.length === 0 ? (
         <div className="carbon-empty-state">
           <h3 className="text-card-foreground text-lg font-medium">No spools yet</h3>
@@ -429,6 +488,8 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                           type="button"
                           size="sm"
                           variant="outline"
+                          aria-expanded={isEditing}
+                          aria-controls={`edit-spool-panel-${spool.id}`}
                           disabled={mutationPending || refreshing || uncertaintyGuard}
                           onClick={() => {
                             openEdit(spool.id);
@@ -454,37 +515,6 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
                     )}
                   </CollectionTableCell>
                 </CollectionTableRow>
-
-                {isEditing && (
-                  <CollectionTableDetailRow labelledBy={`edit-spool-heading-${spool.id}`}>
-                    <section
-                      id={`edit-spool-panel-${spool.id}`}
-                      aria-labelledby={`edit-spool-heading-${spool.id}`}
-                      className="carbon-inline-panel"
-                    >
-                      <h4 id={`edit-spool-heading-${spool.id}`} className="mb-4 text-base font-medium">
-                        Correct this spool
-                      </h4>
-                      <SpoolForm
-                        key={spool.id}
-                        mode="edit"
-                        spool={spool}
-                        mutationPending={mutationPending}
-                        onPendingChange={updateMutationPending}
-                        onSaved={(saved) => {
-                          saveSpool(saved, "edit");
-                        }}
-                        onCancel={() => {
-                          closeEdit(spool.id);
-                        }}
-                        onUncertain={handleUncertainMutation}
-                        onRefreshLatest={refreshStock}
-                        onRefreshCorrection={() => refreshStock("correction")}
-                        mutationGuarded={uncertaintyGuard}
-                      />
-                    </section>
-                  </CollectionTableDetailRow>
-                )}
 
                 {isDeleting && (
                   <CollectionTableDetailRow labelledBy={`delete-confirmation-${spool.id}`}>
