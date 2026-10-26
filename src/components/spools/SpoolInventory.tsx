@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CollectionTable, CollectionTableCell, CollectionTableRow } from "@/components/ui/CollectionTable";
+import {
+  CollectionTable,
+  CollectionTableCell,
+  CollectionTableDetailRow,
+  CollectionTableRecord,
+  CollectionTableRow,
+} from "@/components/ui/CollectionTable";
+import { CollectionRecordWorkbench } from "@/components/ui/CollectionRecordWorkbench";
 import { Button } from "@/components/ui/button";
 import { SpoolForm } from "@/components/spools/SpoolForm";
 import { readSpoolDto } from "@/lib/spool-dto";
@@ -188,6 +195,8 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
     }
   }
 
+  const editingSpool = spools.find((spool) => spool.id === editingSpoolId);
+
   async function confirmDelete(spool: SpoolDto) {
     if (mutationPendingRef.current || refreshingRef.current || uncertaintyGuard) return;
     setDeleteError(null);
@@ -356,6 +365,62 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
         </section>
       )}
 
+      {editingSpool && (
+        <CollectionRecordWorkbench
+          id={`edit-spool-panel-${editingSpool.id}`}
+          labelledBy={`edit-spool-heading-${editingSpool.id}`}
+          eyebrow="Correcting stock"
+          title="Correct this spool"
+          record={
+            <>
+              {editingSpool.material} · {editingSpool.colour} · Spool{" "}
+              <code title={editingSpool.id}>{editingSpool.id}</code>
+            </>
+          }
+          contextLabel="Current spool quantities"
+          context={
+            <>
+              <h4 className="text-sm font-semibold">Current stock</h4>
+              <dl>
+                <div>
+                  <dt className="text-sm">Recorded stock</dt>
+                  <dd>{editingSpool.recordedGrams} g</dd>
+                </div>
+                <div>
+                  <dt className="text-sm">Reserved</dt>
+                  <dd>{editingSpool.reservedGrams} g</dd>
+                </div>
+                <div>
+                  <dt className="text-sm">Available</dt>
+                  <dd>{editingSpool.availableGrams} g</dd>
+                </div>
+              </dl>
+              <p className="text-xs leading-relaxed">
+                These amounts belong to this spool. Matching material and colour labels do not combine spools.
+              </p>
+            </>
+          }
+        >
+          <SpoolForm
+            key={editingSpool.id}
+            mode="edit"
+            spool={editingSpool}
+            mutationPending={mutationPending}
+            onPendingChange={updateMutationPending}
+            onSaved={(saved) => {
+              saveSpool(saved, "edit");
+            }}
+            onCancel={() => {
+              closeEdit(editingSpool.id);
+            }}
+            onUncertain={handleUncertainMutation}
+            onRefreshLatest={refreshStock}
+            onRefreshCorrection={() => refreshStock("correction")}
+            mutationGuarded={uncertaintyGuard}
+          />
+        </CollectionRecordWorkbench>
+      )}
+
       {spools.length === 0 ? (
         <div className="carbon-empty-state">
           <h3 className="text-card-foreground text-lg font-medium">No spools yet</h3>
@@ -381,160 +446,142 @@ export function SpoolInventory({ initialSpools }: SpoolInventoryProps) {
             const shortId = spool.id.slice(0, 8);
 
             return (
-              <CollectionTableRow key={spool.id} labelledBy={`spool-title-${spool.id}`}>
-                <CollectionTableCell label="Filament" mobileFullWidth className="carbon-row-main">
-                  <h3
-                    id={`spool-title-${spool.id}`}
-                    className="carbon-row-title text-card-foreground text-lg font-semibold"
-                  >
-                    {spool.material}{" "}
-                    <span aria-hidden="true" className="text-muted-foreground">
-                      ·
-                    </span>{" "}
-                    {spool.colour}
-                  </h3>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Spool <code className="font-mono">{shortId}</code>
-                  </p>
-                </CollectionTableCell>
-
-                <CollectionTableCell label="Recorded">
-                  <p className="carbon-value text-foreground text-lg">{spool.recordedGrams} g</p>
-                </CollectionTableCell>
-
-                <CollectionTableCell label="Reserved">
-                  <p className="carbon-value text-foreground text-lg">{spool.reservedGrams} g</p>
-                </CollectionTableCell>
-
-                <CollectionTableCell label="Available">
-                  <p className="carbon-value text-foreground text-lg">{spool.availableGrams} g</p>
-                </CollectionTableCell>
-
-                {!isEditing && !isDeleting && (
-                  <CollectionTableCell label="Actions" mobileFullWidth>
-                    <div className="carbon-row-actions carbon-data-table-actions">
-                      <Button
-                        id={`edit-spool-${spool.id}`}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={mutationPending || refreshing || uncertaintyGuard}
-                        onClick={() => {
-                          openEdit(spool.id);
-                        }}
-                        aria-label={`Edit spool ${shortId}`}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        id={`delete-spool-${spool.id}`}
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={mutationPending || refreshing || uncertaintyGuard}
-                        onClick={() => {
-                          openDelete(spool.id);
-                        }}
-                        aria-label={`Delete spool ${shortId}`}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </CollectionTableCell>
-                )}
-
-                {isEditing && (
-                  <CollectionTableCell
-                    mobileFullWidth
-                    ariaColSpan={5}
-                    className="carbon-inline-panel carbon-row-inline-panel carbon-data-table-panel"
-                  >
-                    <h4 className="mb-4 text-base font-medium">Correct this spool</h4>
-                    <SpoolForm
-                      key={spool.id}
-                      mode="edit"
-                      spool={spool}
-                      mutationPending={mutationPending}
-                      onPendingChange={updateMutationPending}
-                      onSaved={(saved) => {
-                        saveSpool(saved, "edit");
-                      }}
-                      onCancel={() => {
-                        closeEdit(spool.id);
-                      }}
-                      onUncertain={handleUncertainMutation}
-                      onRefreshLatest={refreshStock}
-                      onRefreshCorrection={() => refreshStock("correction")}
-                      mutationGuarded={uncertaintyGuard}
-                    />
-                  </CollectionTableCell>
-                )}
-
-                {isDeleting && (
-                  <CollectionTableCell
-                    mobileFullWidth
-                    ariaColSpan={5}
-                    className="carbon-inline-panel carbon-inline-panel-warning carbon-row-inline-panel carbon-data-table-panel"
-                    ariaLabelledBy={`delete-confirmation-${spool.id}`}
-                  >
-                    <h4 id={`delete-confirmation-${spool.id}`} className="font-semibold">
-                      Delete this spool?
-                    </h4>
-                    <p className="carbon-row-secondary mt-2 text-sm leading-relaxed">
-                      Confirm deletion of {describeSpool(spool)}. Full spool ID:{" "}
-                      <code className="break-all">{spool.id}</code>
+              <CollectionTableRecord key={spool.id} labelledBy={`spool-title-${spool.id}`}>
+                <CollectionTableRow labelledBy={`spool-title-${spool.id}`}>
+                  <CollectionTableCell label="Filament" mobileFullWidth className="carbon-row-main">
+                    <h3
+                      id={`spool-title-${spool.id}`}
+                      className="carbon-row-title text-card-foreground text-lg font-semibold"
+                    >
+                      {spool.material}{" "}
+                      <span aria-hidden="true" className="text-muted-foreground">
+                        ·
+                      </span>{" "}
+                      {spool.colour}
+                    </h3>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Spool <code className="font-mono">{shortId}</code>
                     </p>
-                    {deleteError && (
-                      <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
-                        <p>{deleteError.message}</p>
-                        {deleteError.kind === "unauthenticated" && (
-                          <a className="carbon-feedback-link" href="/auth/signin">
-                            Sign in
-                          </a>
-                        )}
-                        {deleteError.kind === "uncertain" && (
-                          <div className="carbon-feedback-actions">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => void refreshStock()}
-                              disabled={mutationPending || refreshing}
-                            >
-                              {refreshing ? "Refreshing…" : "Refresh stock"}
-                            </Button>
-                            <a className="carbon-feedback-link" href="/dashboard/prints">
-                              Manage reservations in planned prints
-                            </a>
-                          </div>
-                        )}
+                  </CollectionTableCell>
+
+                  <CollectionTableCell label="Recorded">
+                    <p className="carbon-value text-foreground text-lg">{spool.recordedGrams} g</p>
+                  </CollectionTableCell>
+
+                  <CollectionTableCell label="Reserved">
+                    <p className="carbon-value text-foreground text-lg">{spool.reservedGrams} g</p>
+                  </CollectionTableCell>
+
+                  <CollectionTableCell label="Available">
+                    <p className="carbon-value text-foreground text-lg">{spool.availableGrams} g</p>
+                  </CollectionTableCell>
+
+                  <CollectionTableCell
+                    label={!isEditing && !isDeleting ? "Actions" : undefined}
+                    mobileFullWidth={!isEditing && !isDeleting}
+                    className={isEditing || isDeleting ? "sr-only" : undefined}
+                  >
+                    {!isEditing && !isDeleting && (
+                      <div className="carbon-row-actions carbon-data-table-actions">
+                        <Button
+                          id={`edit-spool-${spool.id}`}
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          aria-expanded={isEditing}
+                          aria-controls={`edit-spool-panel-${spool.id}`}
+                          disabled={mutationPending || refreshing || uncertaintyGuard}
+                          onClick={() => {
+                            openEdit(spool.id);
+                          }}
+                          aria-label={`Edit spool ${shortId}`}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          id={`delete-spool-${spool.id}`}
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={mutationPending || refreshing || uncertaintyGuard}
+                          onClick={() => {
+                            openDelete(spool.id);
+                          }}
+                          aria-label={`Delete spool ${shortId}`}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     )}
-                    <div className="carbon-form-actions mt-4">
-                      <Button
-                        id={`confirm-delete-${spool.id}`}
-                        type="button"
-                        variant="destructive"
-                        onClick={() => void confirmDelete(spool)}
-                        disabled={
-                          mutationPending || refreshing || uncertaintyGuard || deleteError?.kind === "uncertain"
-                        }
-                      >
-                        {deletePending ? "Deleting…" : "Confirm deletion"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          closeDelete(spool.id);
-                        }}
-                        disabled={mutationPending}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
                   </CollectionTableCell>
+                </CollectionTableRow>
+
+                {isDeleting && (
+                  <CollectionTableDetailRow labelledBy={`delete-confirmation-${spool.id}`}>
+                    <section
+                      id={`delete-spool-panel-${spool.id}`}
+                      aria-labelledby={`delete-confirmation-${spool.id}`}
+                      className="carbon-inline-panel carbon-inline-panel-warning"
+                    >
+                      <h4 id={`delete-confirmation-${spool.id}`} className="font-semibold">
+                        Delete this spool?
+                      </h4>
+                      <p className="carbon-row-secondary mt-2 text-sm leading-relaxed">
+                        Confirm deletion of {describeSpool(spool)}. Full spool ID:{" "}
+                        <code className="break-all">{spool.id}</code>
+                      </p>
+                      {deleteError && (
+                        <div role="alert" className="carbon-feedback carbon-feedback-error mt-3">
+                          <p>{deleteError.message}</p>
+                          {deleteError.kind === "unauthenticated" && (
+                            <a className="carbon-feedback-link" href="/auth/signin">
+                              Sign in
+                            </a>
+                          )}
+                          {deleteError.kind === "uncertain" && (
+                            <div className="carbon-feedback-actions">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void refreshStock()}
+                                disabled={mutationPending || refreshing}
+                              >
+                                {refreshing ? "Refreshing…" : "Refresh stock"}
+                              </Button>
+                              <a className="carbon-feedback-link" href="/dashboard/prints">
+                                Manage reservations in prints
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="carbon-form-actions mt-4">
+                        <Button
+                          id={`confirm-delete-${spool.id}`}
+                          type="button"
+                          variant="destructive"
+                          onClick={() => void confirmDelete(spool)}
+                          disabled={
+                            mutationPending || refreshing || uncertaintyGuard || deleteError?.kind === "uncertain"
+                          }
+                        >
+                          {deletePending ? "Deleting…" : "Confirm deletion"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            closeDelete(spool.id);
+                          }}
+                          disabled={mutationPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </section>
+                  </CollectionTableDetailRow>
                 )}
-              </CollectionTableRow>
+              </CollectionTableRecord>
             );
           })}
         </CollectionTable>

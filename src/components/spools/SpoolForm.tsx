@@ -399,7 +399,7 @@ export function SpoolForm({
                 Refresh reservation amounts
               </Button>
               <a className="carbon-feedback-link" href="/dashboard/prints">
-                Manage reservations in planned prints
+                Manage reservations in prints
               </a>
             </div>
           )}

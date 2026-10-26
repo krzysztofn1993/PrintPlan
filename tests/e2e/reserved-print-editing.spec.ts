@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { fillPrintForm, openPrints, printAction, printRow } from "./helpers/ui";
+import { fillPrintForm, openPrints, printAction, printRecord, printSummaryRow, printWorkbench } from "./helpers/ui";
 
 test("reserved edits reuse own capacity, retain an eligible manual spool, and keep reservation age", async ({
   page,
@@ -25,9 +25,9 @@ test("reserved edits reuse own capacity, retain an eligible manual spool, and ke
 
   await openPrints(page);
   await page.setViewportSize({ width: 1280, height: 900 });
-  const table = page.getByRole("table", { name: "Print queue" });
+  const table = page.getByRole("table", { name: "Prints" });
   await expect(table.getByRole("columnheader", { name: "Reservation / result" })).toBeVisible();
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await expect(row.locator(".carbon-print-table-cell-material")).toContainText("PLA");
   await expect(row.locator(".carbon-print-table-cell-material")).toContainText(colour);
   await expect(row.locator(".carbon-print-table-cell-required")).toContainText("80 g");
@@ -63,7 +63,7 @@ test("reserved edits reuse own capacity, retain an eligible manual spool, and ke
     reservedGrams: 0,
     availableGrams: 120,
   });
-  await expect(row).toContainText("90 g");
+  await expect(printSummaryRow(page, print.id)).toContainText("90 g");
 });
 
 test("a manual fallback stays automatic on the next reserved edit", async ({ page, recoveryApi }) => {
@@ -147,7 +147,7 @@ test("a no-fit edit saves the requirements and leaves the print unreserved", asy
 
   await expect(page.getByRole("status")).toContainText("saved without a reservation");
   await expect(page.getByRole("status")).not.toContainText("error");
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await expect(row.locator(".carbon-print-table-cell-result")).toContainText("No active reservation");
   await expect(row.getByRole("button", { name: "Reserve material" })).toBeVisible();
   expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
@@ -180,7 +180,7 @@ test("a second page edit makes the first page cancellation stale", async ({ page
 
   try {
     await openPrints(page);
-    const staleRow = printRow(page, print.id);
+    const staleRow = printRecord(page, print.id);
     await staleRow.getByRole("button", { name: "Manage reservation" }).click();
     const reviewed = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
     if (!reviewed?.reservation) throw new Error("The reserved print could not be reviewed.");
@@ -196,9 +196,12 @@ test("a second page edit makes the first page cancellation stale", async ({ page
     });
 
     await staleRow.getByRole("button", { name: "Release reservation" }).click();
-    await expect(staleRow.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
-    await expect(staleRow.getByRole("heading", { name: "Material reserved" })).toBeVisible();
-    await expect(staleRow).toContainText("99 g reserved");
+    const reservationWorkbench = printWorkbench(page, print.id);
+    await expect(reservationWorkbench.getByRole("status")).toContainText(
+      "The print changed while the release was being resolved.",
+    );
+    await expect(reservationWorkbench.getByRole("heading", { name: "Material reserved" })).toBeVisible();
+    await expect(reservationWorkbench).toContainText("99 g reserved");
     await expect(staleRow.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     const current = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
     expect(current).toMatchObject({

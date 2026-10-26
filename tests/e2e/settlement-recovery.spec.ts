@@ -1,5 +1,5 @@
 import { test, expect, type RecoveryApi, type SettlementCommandResult } from "./fixtures";
-import { deferred, openPrints, printRow } from "./helpers/ui";
+import { deferred, openPrints, printRecord, printSummaryRow, printWorkbench } from "./helpers/ui";
 
 async function createReservedPrint(recoveryApi: RecoveryApi, prefix: string, recordedGrams = 150, requiredGrams = 80) {
   const colour = recoveryApi.label(`${prefix}-colour`);
@@ -22,7 +22,7 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   let settlementPosts = 0;
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   const field = row.getByLabel("Actual consumption (g)");
   await page.route(`**/api/prints/${print.id}/settlement`, async (route) => {
@@ -41,7 +41,10 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   await field.fill("0");
   await row.getByRole("button", { name: "Confirm settlement" }).click();
   await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const result = row.getByRole("region", { name: "Settlement result" });
+  const workbench = printWorkbench(page, print.id);
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const result = workbench.locator(".carbon-record-workbench-form");
   await expect(row.getByText("Saved settlement result.")).toBeVisible();
   await expect(result.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("0 g");
   const receipt = await recoveryApi.readPrintSettlement(print.id);
@@ -66,17 +69,19 @@ test("zero-gram settlement validates input and remains reviewable after refresh 
   const review = row.getByRole("button", { name: "Review settlement" });
   await expect(review).toBeFocused();
   await page.reload();
-  const refreshedRow = printRow(page, print.id);
+  const refreshedRow = printRecord(page, print.id);
   await refreshedRow.getByRole("button", { name: "Review settlement" }).click();
   await expect(refreshedRow.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const refreshedResult = refreshedRow.getByRole("region", { name: "Settlement result" });
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const refreshedResult = workbench.locator(".carbon-record-workbench-form");
   await expect(refreshedResult.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("0 g");
 
   await refreshedRow.getByRole("button", { name: "Close", exact: true }).click();
   await refreshedRow.getByRole("button", { name: `Delete completed print ${print.id.slice(0, 8)}` }).click();
   await expect(page.getByRole("heading", { name: "Delete this completed print?" })).toBeVisible();
   await page.getByRole("button", { name: "Confirm deletion" }).click();
-  await expect(printRow(page, print.id)).toHaveCount(0);
+  await expect(printSummaryRow(page, print.id)).toHaveCount(0);
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     recordedGrams: 150,
     reservedGrams: 0,
@@ -97,14 +102,14 @@ test("deleting a completed print without first reviewing it preserves access to 
   });
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("50");
   await row.getByRole("button", { name: "Confirm settlement" }).click();
   await expect(row.getByRole("region", { name: "Current spool stock" })).toContainText("100 g");
 
   await page.reload();
-  const refreshedRow = printRow(page, print.id);
+  const refreshedRow = printRecord(page, print.id);
   await refreshedRow.getByRole("button", { name: `Delete completed print ${print.id.slice(0, 8)}` }).click();
   await page.getByRole("button", { name: "Confirm deletion" }).click();
   await expect(refreshedRow).toHaveCount(0);
@@ -142,7 +147,7 @@ test("exceeded estimate cancels the other reservation and shows saved and curren
   const otherReservationId = await recoveryApi.reserveMaterial(other, spool.id, "best_fit");
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("151");
   await row.getByRole("button", { name: "Confirm settlement" }).click();
@@ -187,7 +192,7 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
   let replayResult: SettlementCommandResult | undefined;
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("75");
   await page.route(`**/api/prints/${print.id}/settlement`, async (route) => {
@@ -243,7 +248,7 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     releaseAcknowledgement.resolve();
     await submit;
 
-    await expect(row.getByText(/No saved receipt is visible yet/)).toBeVisible();
+    await expect(row.getByText(/No saved result is visible yet/)).toBeVisible();
     expect(browserReceipts).toEqual([null]);
     await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
     await expect(row.getByLabel("Actual consumption (g)")).toHaveValue("75");
@@ -257,7 +262,7 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     await page.getByRole("button", { name: "Refresh list", exact: true }).click();
     await refreshedReceipt;
     await page.getByRole("button", { name: "Reopen settlement panel", exact: true }).click();
-    await expect(row.getByText(/No saved receipt is visible yet/)).toBeVisible();
+    await expect(row.getByText(/No saved result is visible yet/)).toBeVisible();
     expect(browserReceipts).toEqual([null, null]);
     await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
     await expect(row.getByRole("button", { name: "Delete planned print" })).toBeDisabled();
@@ -277,8 +282,8 @@ test("a held settlement blocks duplicate actions, a null receipt is not rollback
     expect(originalError).toBeUndefined();
     expect(originalResult?.replayed).toBe(false);
 
-    await expect(row.getByRole("button", { name: "Retry exact settlement" })).toBeVisible();
-    await row.getByRole("button", { name: "Retry exact settlement" }).click();
+    await expect(row.getByRole("button", { name: "Retry the same settlement" })).toBeVisible();
+    await row.getByRole("button", { name: "Retry the same settlement" }).click();
     await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
     expect(settlementPosts).toBe(2);
     expect(browserReceipts).toEqual([null, null]);
@@ -316,7 +321,7 @@ test("failed receipt and stock reads recover without resubmitting a confirmed se
   let failedSpoolReads = 0;
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("61");
   await page.route(`**/api/prints/${print.id}/settlement`, async (route) => {
@@ -377,7 +382,10 @@ test("failed receipt and stock reads recover without resubmitting a confirmed se
   failNextPrintRead = true;
   await row.getByRole("button", { name: "Check saved result" }).click();
   await expect(row.getByRole("heading", { name: "Settlement result" })).toBeVisible();
-  const result = row.getByRole("region", { name: "Settlement result" });
+  const workbench = printWorkbench(page, print.id);
+  await expect(workbench).toHaveRole("region");
+  await expect(workbench).toHaveAccessibleName("Settlement result");
+  const result = workbench.locator(".carbon-record-workbench-form");
   await expect(row.getByRole("alert").filter({ hasText: "current print list could not be read" })).toBeVisible();
   await expect(result.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("61 g");
   await expect(row.getByRole("button", { name: "Refresh current stock review" })).toBeEnabled();
@@ -415,7 +423,7 @@ test("a definitive stale-command rejection confirms no receipt and retains the u
   const { spool, print } = await createReservedPrint(recoveryApi, "settlement-stale-command");
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("52");
   const current = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
@@ -432,7 +440,7 @@ test("a definitive stale-command rejection confirms no receipt and retains the u
   await expect(row.getByRole("alert").filter({ hasText: "The print changed before settlement." })).toBeVisible();
   await expect(row.getByText("This attempt was not applied.", { exact: false })).toBeVisible();
   await expect(row.getByLabel("Actual consumption (g)")).toHaveValue("52");
-  await expect(row).toContainText(changedName);
+  await expect(printSummaryRow(page, print.id)).toContainText(changedName);
   expect(await recoveryApi.readPrintSettlement(print.id)).toBeNull();
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
     recordedGrams: 150,
@@ -446,7 +454,7 @@ test("expired settlement session preserves the draft and offers sign-in guidance
   let settlementPosts = 0;
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("43");
   await page.route(`**/api/prints/${print.id}/settlement`, async (route) => {
@@ -486,7 +494,7 @@ test("deletion during acknowledgement recovery keeps the saved receipt accessibl
   let settlementPosts = 0;
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Settle print" }).click();
   await row.getByLabel("Actual consumption (g)").fill("50");
   await page.route(`**/api/prints/${print.id}/settlement`, async (route) => {
@@ -517,7 +525,7 @@ test("deletion during acknowledgement recovery keeps the saved receipt accessibl
 
     await expect(page.getByRole("heading", { name: "Settlement result" })).toBeVisible();
     await expect(page.getByText("Settlement recovery", { exact: true })).toBeVisible();
-    await expect(printRow(page, print.id)).toHaveCount(0);
+    await expect(printSummaryRow(page, print.id)).toHaveCount(0);
 
     const resultPanel = page.getByRole("region", { name: "Settlement result" });
     await expect(resultPanel.getByRole("region", { name: "Current spool stock" })).toContainText("100 g");
@@ -535,7 +543,7 @@ test("deletion during acknowledgement recovery keeps the saved receipt accessibl
     await expect(resultPanel.getByRole("region", { name: "Current spool stock" })).toContainText("90 g");
     await expect(resultPanel.getByRole("region", { name: "Stock recorded at settlement" })).toContainText("100 g");
     await expect(resultPanel.getByText("Actual consumption", { exact: true }).locator("..")).toContainText("50 g");
-    await expect(printRow(page, print.id)).toHaveCount(0);
+    await expect(printSummaryRow(page, print.id)).toHaveCount(0);
     expect(settlementPosts).toBe(1);
     expect(await recoveryApi.readPrintSettlement(print.id)).toMatchObject({ id: receipt?.id, actualGrams: 50 });
     expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({

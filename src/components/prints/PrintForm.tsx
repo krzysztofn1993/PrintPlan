@@ -149,7 +149,7 @@ export function PrintForm({
       setRequestError({
         kind: "uncertain",
         message: command
-          ? "We couldn't confirm whether this exact edit completed. Keep this draft while the collection resolves it."
+          ? "Your edit may have completed. Keep these entries while the collection resolves it."
           : "We couldn't confirm whether the save completed. Refresh the print list and review it before trying again.",
       });
       updatePending(false);
@@ -182,7 +182,7 @@ export function PrintForm({
       setRequestError({
         kind: "uncertain",
         message: command
-          ? "The edit may have completed, but its committed result could not be read. Keep this draft while the collection resolves it."
+          ? "Your edit may have completed, but its result could not be read. Keep these entries while the collection resolves it."
           : "The save may have completed, but its result could not be read. Refresh the print list before trying again.",
       });
       updatePending(false);
@@ -194,7 +194,7 @@ export function PrintForm({
       setRequestError({
         kind: "uncertain",
         message: command
-          ? "The edit outcome may be uncertain. Keep this draft while the collection resolves it."
+          ? "The edit outcome is uncertain. Keep these entries while the collection resolves it."
           : "The save outcome may be uncertain. Refresh the print list and review it before trying again.",
       });
     } else if (response.status === 422) {
@@ -346,8 +346,7 @@ export function PrintForm({
 
       {mode === "edit" && print && (
         <p className="text-muted-foreground text-xs break-all">
-          Editing print <code className="font-mono">{print.id}</code> · version{" "}
-          <code className="font-mono">{print.version}</code>
+          Editing print <code className="font-mono">{print.id}</code>
         </p>
       )}
 

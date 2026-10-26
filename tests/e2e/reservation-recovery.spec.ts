@@ -1,6 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "./fixtures";
-import { deferred, openPrints, openSpools, printAction, printRow, spoolAction, spoolRow } from "./helpers/ui";
+import {
+  deferred,
+  openPrints,
+  openSpools,
+  printAction,
+  printRecord,
+  printWorkbench,
+  spoolAction,
+  spoolRecord,
+  spoolSummaryRow,
+  spoolWorkbench,
+} from "./helpers/ui";
 
 for (const lateResponse of ["success", "network failure", "already reserved"] as const) {
   test(`a late preview ${lateResponse} cannot replace another print's confirmation`, async ({ page, recoveryApi }) => {
@@ -48,11 +59,14 @@ for (const lateResponse of ["success", "network failure", "already reserved"] as
     try {
       await openPrints(page);
       await expect(page.locator('astro-island[component-export="PrintList"]:not([ssr])')).toHaveCount(1);
-      await printRow(page, first.id).getByRole("button", { name: "Reserve material" }).click();
+      await printRecord(page, first.id).getByRole("button", { name: "Reserve material" }).click();
       await previewReady.promise;
-      const row = printRow(page, second.id);
+      const row = printRecord(page, second.id);
+      const preview = printWorkbench(page, second.id);
       await row.getByRole("button", { name: "Reserve material" }).click();
-      await expect(row.getByText(/estimates 110 g/)).toBeVisible();
+      await expect(preview).toHaveRole("region");
+      await expect(preview).toHaveAccessibleName("Reserve material");
+      await expect(preview).toContainText("estimate 110 g from the 100 g you entered");
 
       releasePreview.resolve();
       await previewDelivered.promise;
@@ -67,7 +81,9 @@ for (const lateResponse of ["success", "network failure", "already reserved"] as
           }),
       );
 
-      await expect(row.getByText(/estimates 110 g/)).toBeVisible();
+      await expect(preview).toHaveRole("region");
+      await expect(preview).toHaveAccessibleName("Reserve material");
+      await expect(preview).toContainText("estimate 110 g from the 100 g you entered");
       await expect(row.getByRole("alert")).toHaveCount(0);
       await row.getByRole("button", { name: "Confirm reservation" }).click();
       await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
@@ -118,13 +134,14 @@ test("reopening a print ignores its earlier preview and confirms the latest stoc
   try {
     await openPrints(page);
     await expect(page.locator('astro-island[component-export="PrintList"]:not([ssr])')).toHaveCount(1);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
+    const spoolChoices = printWorkbench(page, print.id).getByRole("group", { name: "Choose a spool" });
     await row.getByRole("button", { name: "Reserve material" }).click();
     await previewReady.promise;
     await row.getByRole("button", { name: "Close", exact: true }).click();
     await recoveryApi.updateSpool(spool.id, { material: "PETG", colour: spool.colour, recordedGrams: 100 });
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/100 g available/)).toBeVisible();
+    await expect(spoolChoices.getByText(/100 g available/)).toBeVisible();
 
     releasePreview.resolve();
     await previewDelivered.promise;
@@ -139,7 +156,7 @@ test("reopening a print ignores its earlier preview and confirms the latest stoc
         }),
     );
 
-    await expect(row.getByText(/100 g available/)).toBeVisible();
+    await expect(spoolChoices.getByText(/100 g available/)).toBeVisible();
     await row.getByRole("button", { name: "Confirm reservation" }).click();
     await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
@@ -176,7 +193,7 @@ test("reserved stock corrections reject below reservations and accept equality",
   const feedback = page.getByRole("alert").filter({ hasText: "Recorded stock cannot be reduced" });
   await expect(feedback).toBeVisible();
   await expect(feedback).not.toContainText("88 g");
-  await expect(feedback.getByRole("link", { name: "Manage reservations in planned prints" })).toHaveAttribute(
+  await expect(feedback.getByRole("link", { name: "Manage reservations in prints" })).toHaveAttribute(
     "href",
     "/dashboard/prints",
   );
@@ -189,7 +206,7 @@ test("reserved stock corrections reject below reservations and accept equality",
 
   await recorded.fill("88");
   await page.getByRole("button", { name: "Save changes" }).click();
-  const row = spoolRow(page, spool.id);
+  const row = spoolRecord(page, spool.id);
   await expect(row.getByRole("cell").nth(1)).toContainText("88 g");
   await expect(row.getByText("0 g")).toBeVisible();
   expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
@@ -261,14 +278,14 @@ test("correction refresh uses current reservation totals and retains the unsaved
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Reservation amounts could not be refreshed" })).toBeVisible();
   await expect(recorded).toHaveValue("100");
-  await expect(spoolRow(page, spool.id).getByText("112 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("112 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
   await page.unroute("**/api/spools");
 
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(recorded).toHaveValue("100");
   await expect(recorded).toHaveAttribute("min", "143");
-  await expect(spoolRow(page, spool.id).getByText("57 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("57 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
 
   const secondCurrent = (await recoveryApi.listPrints()).find((item) => item.id === secondPrint.id);
@@ -277,11 +294,11 @@ test("correction refresh uses current reservation totals and retains the unsaved
   await page.getByRole("button", { name: "Refresh reservation amounts" }).click();
   await expect(recorded).toHaveValue("100");
   await expect(recorded).toHaveAttribute("min", "88");
-  await expect(spoolRow(page, spool.id).getByText("112 g")).toBeVisible();
+  await expect(spoolWorkbench(page, spool.id).getByText("112 g")).toBeVisible();
   expect(correctionPosts).toBe(1);
 
   await page.getByRole("button", { name: "Save changes" }).click();
-  const row = spoolRow(page, spool.id);
+  const row = spoolRecord(page, spool.id);
   await expect(row.getByText("100 g")).toBeVisible();
   await expect(row.getByText("12 g")).toBeVisible();
   expect(correctionPosts).toBe(2);
@@ -397,7 +414,7 @@ for (const matchingField of ["Material", "Colour"] as const) {
     });
 
     await page.getByRole("button", { name: "Save changes" }).click();
-    const row = spoolRow(page, spool.id);
+    const row = spoolRecord(page, spool.id);
     await expect(row.getByText("100 g")).toBeVisible();
     await expect(row.getByText("12 g")).toBeVisible();
     expect((await recoveryApi.listSpools()).find((item) => item.id === spool.id)).toMatchObject({
@@ -424,9 +441,12 @@ test("best-fit reservation and release preserve recorded spool stock", async ({ 
   });
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Reserve material" }).click();
-  await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+  const preview = printWorkbench(page, print.id);
+  await expect(preview).toHaveRole("region");
+  await expect(preview).toHaveAccessibleName("Reserve material");
+  await expect(preview).toContainText("estimate 88 g from the 80 g you entered");
   await expect(row.getByText(/Choices include only spools with matching material and colour/)).toBeVisible();
   await expect(row.getByRole("radio")).toHaveCount(1);
   await row.getByRole("button", { name: "Confirm reservation" }).click();
@@ -453,6 +473,110 @@ test("best-fit reservation and release preserve recorded spool stock", async ({ 
   });
 });
 
+test("identically described spools remain distinguishable when choosing the non-suggested record", async ({
+  page,
+  recoveryApi,
+}) => {
+  const colour = recoveryApi.label("identical-spool-choice");
+  const first = await recoveryApi.createSpool({ material: "PETG", colour, recordedGrams: 180 });
+  const second = await recoveryApi.createSpool({ material: "PETG", colour, recordedGrams: 180 });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("identical-spool-print"),
+    material: "PETG",
+    colour,
+    requiredGrams: 80,
+  });
+  const preview = await recoveryApi.previewReservation(print.id);
+  expect(preview.eligibleSpools.map((spool) => spool.id)).toEqual(expect.arrayContaining([first.id, second.id]));
+  expect(preview.suggestedSpoolId).toBeTruthy();
+  const selectedSpoolId = [first.id, second.id].find((id) => id !== preview.suggestedSpoolId);
+  if (!selectedSpoolId) throw new Error("The preview did not suggest one of the identical spool records.");
+
+  await openPrints(page);
+  const row = printRecord(page, print.id);
+  await row.getByRole("button", { name: "Reserve material" }).click();
+  await expect(row.getByRole("radio")).toHaveCount(2);
+  await expect(row.getByText(`Spool ${selectedSpoolId.slice(0, 8)}…`)).toBeVisible();
+  await row.locator(`input[type="radio"][value="${selectedSpoolId}"]`).check();
+
+  let reservationBody = "";
+  await page.route(`**/api/prints/${print.id}/reservation/reserve`, async (route) => {
+    reservationBody = route.request().postData() ?? "";
+    await route.continue();
+  });
+  await row.getByRole("button", { name: "Confirm reservation" }).click();
+  await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
+
+  const submitted = new URLSearchParams(reservationBody);
+  expect(submitted.get("spoolId")).toBe(selectedSpoolId);
+  expect(submitted.get("selectionMode")).toBe("manual");
+  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toMatchObject({
+    spoolId: selectedSpoolId,
+  });
+  expect(await recoveryApi.readReservation(print.id)).toMatchObject({ spoolId: selectedSpoolId });
+});
+
+test("preview-only controlled response extends colliding spool ID prefixes without submitting fabricated IDs", async ({
+  page,
+  recoveryApi,
+}) => {
+  const spool = await recoveryApi.createSpool({
+    material: "PLA",
+    colour: recoveryApi.label("spool-prefix-collision"),
+    recordedGrams: 180,
+  });
+  const print = await recoveryApi.createPrint({
+    name: recoveryApi.label("spool-prefix-collision-print"),
+    material: spool.material,
+    colour: spool.colour,
+    requiredGrams: 80,
+  });
+  const suggestedId = "a17c930f-0000-4000-8000-000000000001";
+  const alternateId = "a17c930f-1000-4000-8000-000000000002";
+  let reservationPosts = 0;
+
+  await page.route(`**/api/prints/${print.id}/reservation`, async (route) => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    const payload = (await response.json()) as {
+      eligibleSpools: Record<string, unknown>[];
+      suggestedSpoolId: string | null;
+    };
+    expect(payload.eligibleSpools.length).toBeGreaterThan(0);
+    const baseSpool = payload.eligibleSpools[0];
+    payload.eligibleSpools = [
+      { ...baseSpool, id: suggestedId },
+      { ...baseSpool, id: alternateId },
+    ];
+    payload.suggestedSpoolId = suggestedId;
+    await route.fulfill({ response, body: JSON.stringify(payload) });
+  });
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith(`/api/prints/${print.id}/reservation/reserve`)) {
+      reservationPosts += 1;
+    }
+  });
+
+  await openPrints(page);
+  const row = printRecord(page, print.id);
+  await row.getByRole("button", { name: "Reserve material" }).click();
+  const suggested = row.locator(`label:has(input[value="${suggestedId}"])`);
+  const alternate = row.locator(`label:has(input[value="${alternateId}"])`);
+  await expect(suggested).toContainText("Spool a17c930f0…");
+  await expect(alternate).toContainText("Spool a17c930f1…");
+  await expect(suggested.locator("code")).toHaveAttribute("title", `Full spool ID: ${suggestedId}`);
+  await expect(alternate.locator("code")).toHaveAttribute("title", `Full spool ID: ${alternateId}`);
+  await expect(row.getByRole("radio", { name: new RegExp(suggestedId) })).toBeVisible();
+  await expect(row.getByRole("radio", { name: new RegExp(alternateId) })).toBeVisible();
+  await alternate.getByRole("radio").check();
+  await expect(alternate.getByRole("radio")).toBeChecked();
+  await expect(suggested.getByRole("radio")).not.toBeChecked();
+  await expect(row.getByRole("button", { name: "Confirm reservation" })).toBeVisible();
+
+  expect(reservationPosts).toBe(0);
+  expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)?.reservation).toBeNull();
+});
+
 test("a changed best fit needs a new confirmation, manual choice works, and spool deletion reports cancellation", async ({
   page,
   recoveryApi,
@@ -470,7 +594,7 @@ test("a changed best fit needs a new confirmation, manual choice works, and spoo
   });
 
   await openPrints(page);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   await row.getByRole("button", { name: "Reserve material" }).click();
   await recoveryApi.updateSpool(second.id, { material: "PETG", colour, recordedGrams: 100 });
   await row.getByRole("button", { name: "Confirm reservation" }).click();
@@ -519,11 +643,14 @@ test("a changed best fit needs a new confirmation, manual choice works, and spoo
   });
 
   await openSpools(page);
-  const reservedSpool = spoolRow(page, fallback.id);
+  const reservedSpool = spoolRecord(page, fallback.id);
   await spoolAction(page, "Edit", fallback.id).click();
-  await expect(reservedSpool.getByLabel("Material")).toBeDisabled();
-  await expect(reservedSpool.getByLabel("Colour")).toBeDisabled();
-  await expect(reservedSpool.getByLabel("Recorded stock (g)")).toHaveAttribute("min", "91");
+  const reservedSpoolForm = spoolWorkbench(page, fallback.id);
+  await expect(reservedSpoolForm).toHaveRole("region");
+  await expect(reservedSpoolForm).toHaveAccessibleName("Correct this spool");
+  await expect(reservedSpoolForm.getByLabel("Material")).toBeDisabled();
+  await expect(reservedSpoolForm.getByLabel("Colour")).toBeDisabled();
+  await expect(reservedSpoolForm.getByLabel("Recorded stock (g)")).toHaveAttribute("min", "91");
   await page.getByRole("button", { name: "Cancel", exact: true }).last().click();
 
   await spoolAction(page, "Delete", fallback.id).click();
@@ -607,7 +734,7 @@ test("deleting a spool reports every reservation and leaves its prints unreserve
   const status = page.getByRole("status");
   await expect(status).toContainText(`${namedPrint.name} (print ${namedPrint.id}) released 88 g`);
   await expect(status).toContainText(`${spool.material}, ${spool.colour} (print ${unnamedPrint.id}) released 55 g`);
-  await expect(spoolRow(page, spool.id)).toHaveCount(0);
+  await expect(spoolSummaryRow(page, spool.id)).toHaveCount(0);
   const savedPrints = await recoveryApi.listPrints();
   expect(savedPrints.find((item) => item.id === namedPrint.id)).toMatchObject({ reservation: null });
   expect(savedPrints.find((item) => item.id === unnamedPrint.id)).toMatchObject({ reservation: null });
@@ -642,7 +769,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
     let cancelPosts = 0;
 
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
     await page.route(`**/api/prints/${print.id}/reservation/reserve`, async (route) => {
       reservePosts += 1;
@@ -695,7 +822,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
       await route.fulfill({ response: committed, body: "unreadable release receipt" });
     });
     await row.getByRole("button", { name: "Release reservation" }).click();
-    await expect(page.getByRole("alert")).toContainText("cancellation result is uncertain");
+    await expect(page.getByRole("alert")).toContainText("The release result is uncertain");
     expect(cancelPosts).toBe(1);
 
     let failedReads = 0;
@@ -711,7 +838,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
       }
       await route.continue();
     });
-    await page.getByRole("button", { name: "Retry exact cancellation" }).click();
+    await page.getByRole("button", { name: "Retry the same release" }).click();
     await expect(
       page
         .getByRole("alert")
@@ -762,7 +889,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
     if (!reviewedPrint?.reservation) throw new Error("The active reservation could not be read.");
 
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Manage reservation" }).click();
     let cancelPosts = 0;
     let submittedVersion: string | null = null;
@@ -794,7 +921,9 @@ for (const failedCollection of ["prints", "spools"] as const) {
       await route.continue();
     });
     await row.getByRole("button", { name: "Release reservation" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "The print changed before cancellation" })).toContainText(
+    await expect(
+      page.getByRole("alert").filter({ hasText: "The print changed before this release could be applied" }),
+    ).toContainText(
       failedCollection === "spools"
         ? "current spool inventory could not be read"
         : "current print list could not be read",
@@ -802,7 +931,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
     await expect(row.getByRole("button", { name: "Manage reservation" })).toBeDisabled();
     await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
-    await expect(row.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
+    await expect(row.getByRole("status")).toContainText("The print changed while the release was being resolved.");
     await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
     await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     await page.unroute(`**/api/${failedCollection}`);
@@ -847,7 +976,7 @@ for (const competingOutcome of ["exact retry wins", "recalculation makes it stal
     let originalCommand = "";
     try {
       await openPrints(page);
-      const row = printRow(page, print.id);
+      const row = printRecord(page, print.id);
       await row.getByRole("button", { name: "Manage reservation" }).click();
       await page.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
         if (route.request().method() !== "POST") {
@@ -872,10 +1001,10 @@ for (const competingOutcome of ["exact retry wins", "recalculation makes it stal
       expect(readStatuses).toEqual([200, 200]);
       await expect(row.getByRole("button", { name: "Manage reservation" })).toBeDisabled();
       await expect(row.getByRole("button", { name: "Releasing…" })).toBeDisabled();
-      await expect(page.getByRole("button", { name: "Retry exact cancellation" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Retry the same release" })).toHaveCount(0);
 
       await openPrints(competingPage);
-      const competingRow = printRow(competingPage, print.id);
+      const competingRow = printRecord(competingPage, print.id);
       if (competingOutcome === "exact retry wins") {
         let retryCommand = "";
         await competingPage.route(`**/api/prints/${print.id}/reservation/cancel`, async (route) => {
@@ -912,7 +1041,7 @@ for (const competingOutcome of ["exact retry wins", "recalculation makes it stal
         });
       } else {
         expect(late).toMatchObject({ status: 409, body: { error: { code: "edit_conflict" } } });
-        await expect(row.getByRole("status")).toContainText("Cancellation was not applied because the print changed.");
+        await expect(row.getByRole("status")).toContainText("The print changed while the release was being resolved.");
         await expect(row.getByRole("heading", { name: "Material reserved" })).toBeVisible();
         const final = (await recoveryApi.listPrints()).find((item) => item.id === print.id);
         expect(final).toMatchObject({
@@ -1080,7 +1209,7 @@ test("reservation selection, confirmation, and release are reachable with the ke
 
   await openPrints(page);
   await expect(page.locator('astro-island[component-export="PrintList"]:not([ssr])')).toHaveCount(1);
-  const row = printRow(page, print.id);
+  const row = printRecord(page, print.id);
   const reserve = row.getByRole("button", { name: "Reserve material" });
   await reserve.focus();
   await expect(reserve).toBeFocused();
@@ -1133,9 +1262,12 @@ test("saving a lower margin leaves an existing 88 g reservation unchanged", asyn
 
   try {
     await openPrints(page);
-    const row = printRow(page, print.id);
+    const row = printRecord(page, print.id);
     await row.getByRole("button", { name: "Reserve material" }).click();
-    await expect(row.getByText(/estimates 88 g/)).toBeVisible();
+    const preview = printWorkbench(page, print.id);
+    await expect(preview).toHaveRole("region");
+    await expect(preview).toHaveAccessibleName("Reserve material");
+    await expect(preview).toContainText("estimate 88 g from the 80 g you entered");
     await row.getByRole("button", { name: "Confirm reservation" }).click();
     await expect(row.getByRole("button", { name: "Manage reservation" })).toBeVisible();
     await row.getByRole("button", { name: "Manage reservation" }).click();

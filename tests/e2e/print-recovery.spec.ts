@@ -5,7 +5,8 @@ import {
   openPrintCreate,
   openPrints,
   printAction,
-  printRow,
+  printRecord,
+  printSummaryRow,
   respondToConfirm,
 } from "./helpers/ui";
 
@@ -60,6 +61,7 @@ test("a real stale print edit keeps its draft and requires consent before readin
   });
   let browserPosts = 0;
   let browserReads = 0;
+  let updateRequestBody = "";
 
   await openPrints(page);
   await printAction(page, "Edit", initial.id).click();
@@ -71,7 +73,10 @@ test("a real stale print edit keeps its draft and requires consent before readin
     requiredGrams: 100,
   });
   await page.route(`**/api/prints/${initial.id}/update`, async (route) => {
-    if (route.request().method() === "POST") browserPosts += 1;
+    if (route.request().method() === "POST") {
+      browserPosts += 1;
+      updateRequestBody = route.request().postData() ?? "";
+    }
     await route.continue();
   });
   await page.route("**/api/prints", async (route) => {
@@ -90,7 +95,7 @@ test("a real stale print edit keeps its draft and requires consent before readin
     page.getByRole("alert").filter({ hasText: "Another save changed this print after you opened it." }),
   ).toBeVisible();
   await expect(page.getByLabel("Required filament (g)")).toHaveValue("100");
-  await expect(page.getByText(/version 1/)).toBeVisible();
+  await expect(page.getByText(/version \d+/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
 
   const draftName = recoveryApi.label("print-stale-edited-draft");
@@ -109,13 +114,14 @@ test("a real stale print edit keeps its draft and requires consent before readin
   await expect(page.getByLabel("Name (optional)")).toHaveValue(draftName);
   await expect(page.getByLabel("Required filament (g)")).toHaveValue("100");
 
+  expect(new URLSearchParams(updateRequestBody).get("expectedVersion")).toBe(String(initial.version));
   await respondToConfirm(
     page,
     () => page.getByRole("button", { name: "Read latest print" }).click(),
     true,
     "Reading the latest print will discard",
   );
-  await expect(page.getByText(/version 2/)).toBeVisible();
+  await expect(page.getByText(/version \d+/)).toHaveCount(0);
   await expect(page.getByLabel("Name (optional)")).toHaveValue("Fresh 90 g winner");
   await expect(page.getByLabel("Required filament (g)")).toHaveValue("90");
   await expect(page.getByLabel("Material")).toHaveValue("PETG");
@@ -182,15 +188,17 @@ for (const failedCollection of ["prints", "spools"] as const) {
     const savedName = recoveryApi.label("captured-edit-command");
     await fillPrintForm(page, { name: savedName, material: "PLA", colour: spool.colour, requiredGrams: 90 });
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "exact edit may have completed" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Retry exact edit" })).toBeVisible();
+    await expect(
+      printRecord(page, print.id).getByRole("alert").filter({ hasText: "Your edit may have completed" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Retry the same edit" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add a print" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
 
     await page.getByLabel("Name (optional)").fill(`${savedName}-draft-only`);
     await page.getByLabel("Required filament (g)").fill("91");
     await expect(page.getByLabel("Name (optional)")).toHaveValue(`${savedName}-draft-only`);
-    await page.getByRole("button", { name: "Retry exact edit" }).click();
+    await page.getByRole("button", { name: "Retry the same edit" }).click();
     await expect(
       page
         .getByRole("alert")
@@ -203,10 +211,10 @@ for (const failedCollection of ["prints", "spools"] as const) {
         .first(),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Retry exact edit" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Retry the same edit" })).toHaveCount(0);
     await expect(page.getByLabel("Name (optional)")).toHaveValue(`${savedName}-draft-only`);
-    await expect(printRow(page, print.id)).toContainText(savedName);
-    await expect(printRow(page, print.id)).toContainText("90 g");
+    await expect(printSummaryRow(page, print.id)).toContainText(savedName);
+    await expect(printSummaryRow(page, print.id)).toContainText("90 g");
     expect(browserPosts).toBe(2);
     expect(commandBodies[1]).toBe(commandBodies[0]);
 
@@ -284,21 +292,23 @@ for (const failedCollection of ["prints", "spools"] as const) {
     });
 
     const savedName = recoveryApi.label("committed-before-lost-reply");
-    const recoverySummary = "The submitted print version is no longer current. The original edit may have completed.";
+    const recoverySummary = "The print changed after the edit was submitted. The original edit may have completed.";
     await fillPrintForm(page, { name: savedName, material: spool.material, colour: spool.colour, requiredGrams: 90 });
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "exact edit may have completed" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Retry exact edit" })).toBeVisible();
+    await expect(
+      printRecord(page, print.id).getByRole("alert").filter({ hasText: "Your edit may have completed" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Retry the same edit" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Retry exact edit" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "original edit result cannot be recovered" })).toContainText(
+    await page.getByRole("button", { name: "Retry the same edit" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Its saved result cannot be recovered" })).toContainText(
       failedCollection === "spools"
         ? "current spool inventory could not be read"
         : "current print list could not be read",
     );
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Add a print" })).toBeDisabled();
-    await expect(page.getByRole("alert").filter({ hasText: "original edit result cannot be recovered" })).toContainText(
+    await expect(page.getByRole("alert").filter({ hasText: "Its saved result cannot be recovered" })).toContainText(
       recoverySummary,
     );
     expect(browserPosts).toBe(2);
@@ -312,7 +322,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
 
     await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
     await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toHaveCount(0);
-    await expect(page.getByRole("status")).toContainText("original edit result cannot be recovered");
+    await expect(page.getByRole("status")).toContainText("Its saved result cannot be recovered");
     await expect(page.getByRole("status")).toContainText(recoverySummary);
     await expect(page.getByRole("status")).not.toContainText("manual spool was retained");
     expect(browserPosts).toBe(2);
@@ -376,8 +386,10 @@ for (const failedCollection of ["prints", "spools"] as const) {
 
     await page.getByLabel("Required filament (g)").fill("1000");
     await page.getByRole("button", { name: "Save changes", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "exact edit may have completed" })).toBeVisible();
-    await page.getByRole("button", { name: "Retry exact edit" }).click();
+    await expect(
+      printRecord(page, print.id).getByRole("alert").filter({ hasText: "Your edit may have completed" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Retry the same edit" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "saved without a reservation" })).toContainText(
       failedCollection === "spools"
         ? "current spool inventory could not be read"
@@ -390,7 +402,7 @@ for (const failedCollection of ["prints", "spools"] as const) {
 
     await page.getByRole("button", { name: "Retry current print and stock reads" }).click();
     await expect(page.getByRole("status")).toContainText("saved without a reservation");
-    await expect(printRow(page, print.id).getByRole("button", { name: "Reserve material" })).toBeVisible();
+    await expect(printRecord(page, print.id).getByRole("button", { name: "Reserve material" })).toBeVisible();
     expect((await recoveryApi.listPrints()).find((item) => item.id === print.id)).toMatchObject({
       requiredGrams: 1000,
       version: 3,
@@ -597,7 +609,7 @@ test("a held committed print save blocks collection actions and recovers after a
     true,
     "Refreshing the list will discard unsaved form entries",
   );
-  await expect(printRow(page, persistedWhileHeld[0].id)).toBeVisible();
+  await expect(printSummaryRow(page, persistedWhileHeld[0].id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a print" })).toBeEnabled();
   await expect(page.getByRole("heading", { name: "Add a planned print" })).toHaveCount(0);
@@ -672,7 +684,7 @@ for (const acknowledgement of ["network rejection", "unreadable successful reply
       "Refreshing the list will discard unsaved form entries",
     );
     if (acknowledgement === "unreadable successful reply") {
-      await expect(printRow(page, persisted[0].id)).toBeVisible();
+      await expect(printSummaryRow(page, persisted[0].id)).toBeVisible();
     } else {
       expect((await recoveryApi.listPrints()).some((print) => print.name === name)).toBe(false);
     }
@@ -736,7 +748,7 @@ test("a committed print delete keeps the collection guard through a failed read 
   await page.getByRole("button", { name: "Confirm deletion" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Deletion may have completed" })).toBeVisible();
   expect(deletedId).toBe(target.id);
-  await expect(printRow(page, target.id)).toBeVisible();
+  await expect(printSummaryRow(page, target.id)).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirm deletion" })).toBeDisabled();
   expect(browserPosts).toBe(1);
   const persisted = await recoveryApi.listPrints();
@@ -755,11 +767,11 @@ test("a committed print delete keeps the collection guard through a failed read 
   await expect(page.getByRole("alert").filter({ hasText: "Prints are temporarily unavailable." })).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toBeVisible();
   expect(browserReads).toBe(1);
-  await expect(printRow(page, target.id)).toBeVisible();
+  await expect(printSummaryRow(page, target.id)).toBeVisible();
 
   await page.getByRole("button", { name: "Refresh and review prints" }).click();
-  await expect(printRow(page, target.id)).toHaveCount(0);
-  await expect(printRow(page, survivor.id)).toBeVisible();
+  await expect(printSummaryRow(page, target.id)).toHaveCount(0);
+  await expect(printSummaryRow(page, survivor.id)).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "A previous change may have completed" })).toHaveCount(0);
   expect(browserReads).toBe(2);
   await openPrintCreate(page);
@@ -843,8 +855,8 @@ test("generic retry asks before replacing a draft after the saved print advances
     true,
     "Refreshing the list will discard unsaved form entries",
   );
-  await expect(printRow(page, initial.id)).toContainText("Latest saved print");
-  await expect(printRow(page, initial.id)).toContainText("90 g");
+  await expect(printSummaryRow(page, initial.id)).toContainText("Latest saved print");
+  await expect(printSummaryRow(page, initial.id)).toContainText("90 g");
   await expect(page.getByRole("heading", { name: "Edit planned print" })).toHaveCount(0);
   expect(browserReads).toBe(2);
   expect(browserPosts).toBe(0);

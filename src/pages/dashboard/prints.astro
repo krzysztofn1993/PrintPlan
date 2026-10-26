@@ -34,18 +34,9 @@ if (authUnavailable || !supabase) {
 ---
 
 <DashboardShell title="Prints" heading="Prints">
-  <p slot="eyebrow">Planned and completed prints</p>
+  <p slot="eyebrow">Your prints</p>
   <p slot="description">
-    Keep planned prints and completed prints together. Required grams are an estimate; reserved grams are held for a
-    planned print and are not consumed. Preview the reservation amount, then confirm it using the current account safety
-    margin. If the margin changes the amount before confirmation, review a fresh preview. Change your margin in{" "}
-    <a class="carbon-feedback-link" href="/dashboard/settings">
-      Settings
-    </a>
-    . Releasing a reservation returns those grams to availability without consuming recorded stock. When a print is
-    complete, enter actual grams to release its exact reservation and deduct that amount from recorded stock. Settlement
-    may cancel newer reservations on the same spool when the remaining stock cannot cover them. Completed prints stay
-    here for review and can be deleted without refunding consumed stock.
+    Required grams are an estimate before the safety margin. Creating a print does not reserve stock.
   </p>
 
   {pageError ? (

@@ -1,0 +1,76 @@
+{
+  "revision": "677ce82",
+  "browser": "Chrome 155.0.8059.39",
+  "captures": [
+    {
+      "file": "states.hover.toolbar-add-print.chrome.1440.png",
+      "state": "Hover on toolbar action",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 1440,
+        "viewportHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "activeTag": "BODY",
+        "activeLabel": null,
+        "activeOutline": {
+          "style": "none",
+          "width": "3px",
+          "color": "rgb(255, 112, 88)",
+          "boxShadow": "none"
+        }
+      },
+      "notes": "Enabled toolbar control after the pointer entered its hit area; no interception."
+    },
+    {
+      "file": "states.hover.destructive-confirmation.chrome.1440.png",
+      "state": "Hover on destructive confirmation",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 1440,
+        "viewportHeight": 1000,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "activeTag": "BUTTON",
+        "activeLabel": null,
+        "activeOutline": {
+          "style": "none",
+          "width": "3px",
+          "color": "rgb(255, 112, 88)",
+          "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px"
+        }
+      },
+      "notes": "Warning panel and destructive action hovered; the action was not activated."
+    },
+    {
+      "file": "states.disabled.pending-save-controls.chrome.390.png",
+      "state": "Held save with disabled controls shown at readable viewport scale",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "activeTag": "BODY",
+        "activeLabel": null,
+        "activeOutline": {
+          "style": "none",
+          "width": "3px",
+          "color": "rgb(255, 112, 88)",
+          "boxShadow": "none"
+        }
+      },
+      "notes": "POST /api/prints was held locally. Saving… is disabled; form fields and Cancel are disabled while the request is pending. The route was then answered with controlled 503 and created no print."
+    }
+  ],
+  "generatedAccountAndRecordsCleanup": "verified by API reads before temporary account deletion; no credentials, cookies, or fixture ledger retained"
+}

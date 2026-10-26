@@ -1,0 +1,437 @@
+{
+  "revision": "677ce82",
+  "browser": "Chrome 155.0.8059.39",
+  "method": "Real authenticated built routes; DOM boxes for summary/detail/panel collected together in one browser evaluation per viewport. Values are viewport-relative CSS pixels.",
+  "measurements": [
+    {
+      "view": "print edit detail",
+      "viewport": "320x844",
+      "recordBox": {
+        "x": 29,
+        "y": 809.46875,
+        "width": 262,
+        "height": 1150.1875,
+        "bottom": 1959.65625,
+        "right": 291
+      },
+      "summaryBox": {
+        "x": 30,
+        "y": 810.46875,
+        "width": 260,
+        "height": 267.1875,
+        "bottom": 1077.65625,
+        "right": 290
+      },
+      "detailBox": {
+        "x": 30,
+        "y": 1077.65625,
+        "width": 260,
+        "height": 881,
+        "bottom": 1958.65625,
+        "right": 290
+      },
+      "panelBox": {
+        "x": 46,
+        "y": 1078.65625,
+        "width": 228,
+        "height": 864,
+        "bottom": 1942.65625,
+        "right": 274
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.8702,
+      "viewportWidth": 320,
+      "documentWidth": 320,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "print edit detail",
+      "viewport": "390x844",
+      "recordBox": {
+        "x": 29,
+        "y": 709.375,
+        "width": 332,
+        "height": 979.390625,
+        "bottom": 1688.765625,
+        "right": 361
+      },
+      "summaryBox": {
+        "x": 30,
+        "y": 710.375,
+        "width": 330,
+        "height": 230.390625,
+        "bottom": 940.765625,
+        "right": 360
+      },
+      "detailBox": {
+        "x": 30,
+        "y": 940.765625,
+        "width": 330,
+        "height": 747,
+        "bottom": 1687.765625,
+        "right": 360
+      },
+      "panelBox": {
+        "x": 46,
+        "y": 941.765625,
+        "width": 298,
+        "height": 730,
+        "bottom": 1671.765625,
+        "right": 344
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.8976,
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "print edit detail",
+      "viewport": "1279x1000",
+      "recordBox": {
+        "x": 302.578125,
+        "y": 438.8125,
+        "width": 937.84375,
+        "height": 679.734375,
+        "bottom": 1118.546875,
+        "right": 1240.421875
+      },
+      "summaryBox": {
+        "x": 303.578125,
+        "y": 439.8125,
+        "width": 935.84375,
+        "height": 218.390625,
+        "bottom": 658.203125,
+        "right": 1239.421875
+      },
+      "detailBox": {
+        "x": 303.578125,
+        "y": 658.203125,
+        "width": 935.84375,
+        "height": 459.34375,
+        "bottom": 1117.546875,
+        "right": 1239.421875
+      },
+      "panelBox": {
+        "x": 319.578125,
+        "y": 659.203125,
+        "width": 903.84375,
+        "height": 442.34375,
+        "bottom": 1101.546875,
+        "right": 1223.421875
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.9637,
+      "viewportWidth": 1279,
+      "documentWidth": 1279,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "print edit detail",
+      "viewport": "1280x1000",
+      "recordBox": {
+        "x": 290.59375,
+        "y": 492.453125,
+        "width": 962.8125,
+        "height": 591.375,
+        "bottom": 1083.828125,
+        "right": 1253.40625
+      },
+      "summaryBox": {
+        "x": 290.59375,
+        "y": 492.453125,
+        "width": 962.8125,
+        "height": 116,
+        "bottom": 608.453125,
+        "right": 1253.40625
+      },
+      "detailBox": {
+        "x": 290.59375,
+        "y": 608.453125,
+        "width": 962.8125,
+        "height": 475.375,
+        "bottom": 1083.828125,
+        "right": 1253.40625
+      },
+      "panelBox": {
+        "x": 306.59375,
+        "y": 625.453125,
+        "width": 930.8125,
+        "height": 442.375,
+        "bottom": 1067.828125,
+        "right": 1237.40625
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 16,
+      "panelRightInsetPx": 16,
+      "panelWidthRatio": 0.9668,
+      "viewportWidth": 1280,
+      "documentWidth": 1280,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "print edit detail",
+      "viewport": "1440x1000",
+      "recordBox": {
+        "x": 293.796875,
+        "y": 482.0625,
+        "width": 1116.40625,
+        "height": 529.1875,
+        "bottom": 1011.25,
+        "right": 1410.203125
+      },
+      "summaryBox": {
+        "x": 293.796875,
+        "y": 482.0625,
+        "width": 1116.40625,
+        "height": 88,
+        "bottom": 570.0625,
+        "right": 1410.203125
+      },
+      "detailBox": {
+        "x": 293.796875,
+        "y": 570.0625,
+        "width": 1116.40625,
+        "height": 441.1875,
+        "bottom": 1011.25,
+        "right": 1410.203125
+      },
+      "panelBox": {
+        "x": 309.796875,
+        "y": 587.0625,
+        "width": 1084.40625,
+        "height": 408.1875,
+        "bottom": 995.25,
+        "right": 1394.203125
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 16,
+      "panelRightInsetPx": 16,
+      "panelWidthRatio": 0.9713,
+      "viewportWidth": 1440,
+      "documentWidth": 1440,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "spool edit detail",
+      "viewport": "320x844",
+      "recordBox": {
+        "x": 29,
+        "y": 918.640625,
+        "width": 262,
+        "height": 1010.390625,
+        "bottom": 1929.03125,
+        "right": 291
+      },
+      "summaryBox": {
+        "x": 30,
+        "y": 919.640625,
+        "width": 260,
+        "height": 250.390625,
+        "bottom": 1170.03125,
+        "right": 290
+      },
+      "detailBox": {
+        "x": 30,
+        "y": 1170.03125,
+        "width": 260,
+        "height": 758,
+        "bottom": 1928.03125,
+        "right": 290
+      },
+      "panelBox": {
+        "x": 46,
+        "y": 1171.03125,
+        "width": 228,
+        "height": 741,
+        "bottom": 1912.03125,
+        "right": 274
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.8702,
+      "viewportWidth": 320,
+      "documentWidth": 320,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "spool edit detail",
+      "viewport": "390x844",
+      "recordBox": {
+        "x": 29,
+        "y": 740.953125,
+        "width": 332,
+        "height": 851.890625,
+        "bottom": 1592.84375,
+        "right": 361
+      },
+      "summaryBox": {
+        "x": 30,
+        "y": 741.953125,
+        "width": 330,
+        "height": 222.390625,
+        "bottom": 964.34375,
+        "right": 360
+      },
+      "detailBox": {
+        "x": 30,
+        "y": 964.34375,
+        "width": 330,
+        "height": 627.5,
+        "bottom": 1591.84375,
+        "right": 360
+      },
+      "panelBox": {
+        "x": 46,
+        "y": 965.34375,
+        "width": 298,
+        "height": 610.5,
+        "bottom": 1575.84375,
+        "right": 344
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.8976,
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "spool edit detail",
+      "viewport": "1279x1000",
+      "recordBox": {
+        "x": 302.578125,
+        "y": 388.203125,
+        "width": 937.84375,
+        "height": 664.234375,
+        "bottom": 1052.4375,
+        "right": 1240.421875
+      },
+      "summaryBox": {
+        "x": 303.578125,
+        "y": 389.203125,
+        "width": 935.84375,
+        "height": 222.390625,
+        "bottom": 611.59375,
+        "right": 1239.421875
+      },
+      "detailBox": {
+        "x": 303.578125,
+        "y": 611.59375,
+        "width": 935.84375,
+        "height": 439.84375,
+        "bottom": 1051.4375,
+        "right": 1239.421875
+      },
+      "panelBox": {
+        "x": 319.578125,
+        "y": 612.59375,
+        "width": 903.84375,
+        "height": 422.84375,
+        "bottom": 1035.4375,
+        "right": 1223.421875
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 17,
+      "panelRightInsetPx": 17,
+      "panelWidthRatio": 0.9637,
+      "viewportWidth": 1279,
+      "documentWidth": 1279,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "spool edit detail",
+      "viewport": "1280x1000",
+      "recordBox": {
+        "x": 290.59375,
+        "y": 425.046875,
+        "width": 962.8125,
+        "height": 563.875,
+        "bottom": 988.921875,
+        "right": 1253.40625
+      },
+      "summaryBox": {
+        "x": 290.59375,
+        "y": 425.046875,
+        "width": 962.8125,
+        "height": 108,
+        "bottom": 533.046875,
+        "right": 1253.40625
+      },
+      "detailBox": {
+        "x": 290.59375,
+        "y": 533.046875,
+        "width": 962.8125,
+        "height": 455.875,
+        "bottom": 988.921875,
+        "right": 1253.40625
+      },
+      "panelBox": {
+        "x": 306.59375,
+        "y": 550.046875,
+        "width": 930.8125,
+        "height": 422.875,
+        "bottom": 972.921875,
+        "right": 1237.40625
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 16,
+      "panelRightInsetPx": 16,
+      "panelWidthRatio": 0.9668,
+      "viewportWidth": 1280,
+      "documentWidth": 1280,
+      "horizontalOverflowPx": 0
+    },
+    {
+      "view": "spool edit detail",
+      "viewport": "1440x1000",
+      "recordBox": {
+        "x": 293.796875,
+        "y": 434.65625,
+        "width": 1116.40625,
+        "height": 540.6875,
+        "bottom": 975.34375,
+        "right": 1410.203125
+      },
+      "summaryBox": {
+        "x": 293.796875,
+        "y": 434.65625,
+        "width": 1116.40625,
+        "height": 80,
+        "bottom": 514.65625,
+        "right": 1410.203125
+      },
+      "detailBox": {
+        "x": 293.796875,
+        "y": 514.65625,
+        "width": 1116.40625,
+        "height": 460.6875,
+        "bottom": 975.34375,
+        "right": 1410.203125
+      },
+      "panelBox": {
+        "x": 309.796875,
+        "y": 531.65625,
+        "width": 1084.40625,
+        "height": 427.6875,
+        "bottom": 959.34375,
+        "right": 1394.203125
+      },
+      "detailGapPx": 0,
+      "panelLeftInsetPx": 16,
+      "panelRightInsetPx": 16,
+      "panelWidthRatio": 0.9713,
+      "viewportWidth": 1440,
+      "documentWidth": 1440,
+      "horizontalOverflowPx": 0
+    }
+  ]
+}

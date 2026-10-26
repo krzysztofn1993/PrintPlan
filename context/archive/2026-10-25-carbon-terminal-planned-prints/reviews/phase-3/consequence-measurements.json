@@ -1,0 +1,58 @@
+{
+  "revision": "677ce82",
+  "browser": "Chrome 155.0.8059.39",
+  "captures": [
+    {
+      "file": "prints.reserved-edit-guidance.chrome.1440.png",
+      "state": "Reserved edit recalculation guidance",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflowPx": 0
+      },
+      "notes": "Real API-reserved print. Guidance explains current-margin recalculation and no-fit save; no response interception."
+    },
+    {
+      "file": "prints.reserved-edit-guidance.chrome.390.png",
+      "state": "Reserved edit recalculation guidance",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflowPx": 0
+      },
+      "notes": "Real API-reserved print. Guidance explains current-margin recalculation and no-fit save; no response interception."
+    },
+    {
+      "file": "prints.completed-delete-warning.chrome.1440.png",
+      "state": "Completed deletion warning: consumption is retained and stock is not refunded",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "1440x1000",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflowPx": 0
+      },
+      "notes": "Actual completed record; warning is visible before deletion. Action was cancelled without submitting the delete."
+    },
+    {
+      "file": "prints.completed-delete-warning.chrome.390.png",
+      "state": "Completed deletion warning: consumption is retained and stock is not refunded",
+      "browser": "Chrome 155.0.8059.39",
+      "viewport": "390x844",
+      "revision": "677ce82",
+      "measurement": {
+        "viewportWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflowPx": 0
+      },
+      "notes": "Actual completed record; warning is visible before deletion. Action was cancelled without submitting the delete."
+    }
+  ]
+}

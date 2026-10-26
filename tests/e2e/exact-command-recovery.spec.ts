@@ -1,6 +1,6 @@
 import type { APIResponse, Page } from "@playwright/test";
 import { test, expect, type RecoveryApi } from "./fixtures";
-import { deferred, openPrints, printAction, printRow } from "./helpers/ui";
+import { deferred, openPrints, printAction, printRecord } from "./helpers/ui";
 
 type Operation = "edit" | "cancellation";
 
@@ -26,7 +26,7 @@ async function prepareRecovery(page: Page, api: RecoveryApi, operation: Operatio
     await printAction(page, "Edit", print.id).click();
     await page.getByLabel("Required filament (g)").fill("90");
   } else {
-    await printRow(page, print.id).getByRole("button", { name: "Manage reservation" }).click();
+    await printRecord(page, print.id).getByRole("button", { name: "Manage reservation" }).click();
   }
   return {
     print,
@@ -34,13 +34,13 @@ async function prepareRecovery(page: Page, api: RecoveryApi, operation: Operatio
     reservationId,
     endpoint: `**/api/prints/${print.id}/${operation === "edit" ? "update" : "reservation/cancel"}`,
     submitName: operation === "edit" ? "Save changes" : "Release reservation",
-    retryName: operation === "edit" ? "Retry exact edit" : "Retry exact cancellation",
+    retryName: operation === "edit" ? "Retry the same edit" : "Retry the same release",
   };
 }
 
 async function expectUncertainGuard(page: Page, operation: Operation, printId: string) {
   await expect(
-    page.getByRole("button", { name: operation === "edit" ? "Retry exact edit" : "Retry exact cancellation" }),
+    page.getByRole("button", { name: operation === "edit" ? "Retry the same edit" : "Retry the same release" }),
   ).toBeEnabled();
   await expect(page.getByRole("button", { name: "Add a print", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Refresh list", exact: true })).toBeDisabled();
@@ -49,8 +49,8 @@ async function expectUncertainGuard(page: Page, operation: Operation, printId: s
     await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
   } else {
     await expect(printAction(page, "Delete", printId)).toBeDisabled();
-    await expect(printRow(page, printId).getByRole("button", { name: "Manage reservation" })).toBeDisabled();
-    await expect(printRow(page, printId).getByRole("button", { name: "Releasing…" })).toBeDisabled();
+    await expect(printRecord(page, printId).getByRole("button", { name: "Manage reservation" })).toBeDisabled();
+    await expect(printRecord(page, printId).getByRole("button", { name: "Releasing…" })).toBeDisabled();
   }
   await expect(page.getByRole("button", { name: "Retry current print and stock reads" })).toHaveCount(0);
 }
@@ -128,11 +128,15 @@ for (const operation of ["edit", "cancellation"] as const) {
         failure === "authentication"
           ? /Your session expired before/
           : failure === "validation"
-            ? /command could not be validated/
+            ? /rejected because .*could not be validated/
             : failure === "transport"
-              ? /exact (edit|cancellation) could not be reached/
-              : /(edit|cancellation) result is still uncertain/;
-      await expect(page.getByRole("alert").filter({ hasText: message })).toBeVisible();
+              ? /^(?:Your edit|The release) may have completed/
+              : /(edit|release) result is still uncertain/;
+      const retryAlert = page.getByRole("alert").filter({
+        has: page.getByRole("button", { name: scenario.retryName, exact: true }),
+      });
+      await expect(retryAlert).toBeVisible();
+      await expect(retryAlert).toContainText(message);
       expect(commands).toHaveLength(2);
       expect(commands[1]).toBe(commands[0]);
       expect(new URLSearchParams(commands[0]).get("expectedVersion")).toBe(String(scenario.print.version));
@@ -220,8 +224,8 @@ for (const outcome of ["edit retry wins", "cancellation retry wins", "same-ID re
       else expect(captured.get("requiredGrams")).toBe("90");
       expect(originalSent).toBe(false);
       if (outcome === "same-ID recalculation wins") {
-        await expect(printRow(page, scenario.print.id).getByRole("status")).toContainText(
-          "Cancellation was not applied because the print changed.",
+        await expect(printRecord(page, scenario.print.id).getByRole("status")).toContainText(
+          "The print changed while the release was being resolved.",
         );
       }
       const expectedOperation = outcome === "cancellation retry wins" ? "cancellation" : "edit";

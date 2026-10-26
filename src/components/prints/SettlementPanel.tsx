@@ -7,6 +7,7 @@ import type { SpoolDto } from "@/lib/spools";
 type SettlementPanelState = "editing" | "pending" | "uncertain" | "rejected" | "loading" | "receipt";
 
 interface SettlementPanelProps {
+  inWorkbench?: boolean;
   print: PrintDto;
   printAvailable: boolean;
   state: SettlementPanelState;
@@ -42,6 +43,7 @@ function receiptPrintName(receipt: SettlementReceipt) {
 }
 
 export function SettlementPanel({
+  inWorkbench = false,
   print,
   printAvailable,
   state,
@@ -69,12 +71,18 @@ export function SettlementPanel({
 }: SettlementPanelProps) {
   const completed = Boolean(receipt ?? print.settlement);
   const printName = receipt ? receiptPrintName(receipt) : describePrint(print);
+  const Panel = inWorkbench ? "div" : "section";
 
   return (
-    <section aria-labelledby={`settlement-heading-${print.id}`} className="carbon-inline-panel carbon-row-inline-panel">
-      <h4 id={`settlement-heading-${print.id}`} className="font-semibold" tabIndex={-1}>
-        {receipt ? "Settlement result" : completed ? "Review settlement" : "Settle completed print"}
-      </h4>
+    <Panel
+      aria-labelledby={inWorkbench ? undefined : `settlement-heading-${print.id}`}
+      className={inWorkbench ? "min-w-0" : "carbon-inline-panel carbon-row-inline-panel"}
+    >
+      {!inWorkbench && (
+        <h4 id={`settlement-heading-${print.id}`} className="font-semibold" tabIndex={-1}>
+          {receipt ? "Settlement result" : completed ? "Review settlement" : "Settle completed print"}
+        </h4>
+      )}
       <p className="mt-2 text-sm leading-relaxed">
         {printName}
         {receipt ? ` — settled ${new Date(receipt.settledAt).toLocaleString()}.` : "."}
@@ -89,8 +97,9 @@ export function SettlementPanel({
       {!completed && printAvailable && print.reservation && (
         <div className="carbon-feedback mt-3">
           <p>
-            This will release this print’s {print.reservation.reservedGrams} g reservation and may cancel newer
-            reservations on the same spool. Enter actual consumption; 0 g still completes the print.
+            Settlement records actual consumption once and releases this exact {print.reservation.reservedGrams} g
+            reservation. Enter the amount used; 0 g still completes the print. If recorded stock cannot cover later
+            reservations on this spool, the newest reservations are cancelled first.
           </p>
           <dl className="mt-3 grid min-w-0 gap-2">
             <div className="min-w-0">
@@ -165,8 +174,8 @@ export function SettlementPanel({
       {state === "uncertain" && !receipt && (
         <div role="status" aria-live="polite" className="carbon-feedback carbon-feedback-warning mt-3">
           <p>
-            The settlement outcome is not confirmed. Keep this exact amount and command until the saved result is read
-            or the same command is safely retried.
+            Settlement may have completed. Keep this amount unchanged until the saved result is read or this same
+            attempt is retried.
           </p>
           <div className="carbon-feedback-actions">
             {canCheckStatus && (
@@ -176,7 +185,7 @@ export function SettlementPanel({
             )}
             {canReplay && (
               <Button type="button" onClick={onReplay}>
-                Retry exact settlement
+                Retry the same settlement
               </Button>
             )}
           </div>
@@ -221,7 +230,7 @@ export function SettlementPanel({
               Stock recorded at settlement
             </h5>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              These are historical quantities saved with this result.
+              These historical quantities were saved with the result and may differ from current stock.
             </p>
             <dl className="carbon-row-values mt-3">
               <div className="carbon-row-value">
@@ -352,6 +361,6 @@ export function SettlementPanel({
           Close
         </Button>
       </div>
-    </section>
+    </Panel>
   );
 }
