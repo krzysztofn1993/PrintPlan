@@ -3,13 +3,13 @@ project: PrintPlan
 version: 3
 status: draft
 created: 2026-10-09
-updated: 2026-10-23
+updated: 2026-10-26
 prd_version: 3
 main_goal: speed
 top_blocker: decisions
 milestone_id: usable-filament-planning
 milestone_seq: 1
-milestone_status: open
+milestone_status: done
 ---
 
 # Roadmap: PrintPlan
@@ -20,7 +20,7 @@ milestone_status: open
 
 ## Milestone
 
-**M-1: Usable filament planning** — Status: open
+**M-1: Usable filament planning** — Status: done
 
 - **Intent:** Deliver the complete declared MVP: users can keep private spool stock and planned prints, reserve available material, adjust their account margin, and settle actual consumption without double booking or double deduction.
 - **Source materials:** `context/foundation/prd.md` (v2); supplementary `context/foundation/shape-notes.md` and `context/foundation/tech-stack.md`.
@@ -229,6 +229,8 @@ The author resolved the margin, rounding, and ordering questions in PRD v3. The 
 All eight declared functional requirements remain in this milestone; the speed goal changes ordering rather than dropping required behavior.
 
 ## Milestone History
+
+- **M-1: Usable filament planning** (`usable-filament-planning`) — closed 2026-10-26. All two foundations and seven user-facing slices are implemented, verified, and archived; the declared MVP flows are covered.
 
 ## Done
 
