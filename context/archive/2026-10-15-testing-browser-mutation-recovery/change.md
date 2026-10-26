@@ -1,10 +1,10 @@
 ---
 change_id: testing-browser-mutation-recovery
 title: Browser mutation recovery contracts
-status: impl_reviewed
+status: archived
 created: 2026-10-15
-updated: 2026-10-15
-archived_at: null
+updated: 2026-10-26
+archived_at: 2026-10-26T13:21:32Z
 ---
 
 ## Notes
