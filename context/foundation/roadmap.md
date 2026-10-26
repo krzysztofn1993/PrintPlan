@@ -197,19 +197,19 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 
 | Roadmap ID | Change ID                    | Suggested issue title                             | Ready for `/10x-plan` | Notes                                                                 |
 | ---------- | ---------------------------- | ------------------------------------------------- | --------------------- | --------------------------------------------------------------------- |
-| F-01       | verified-account-access      | Verify configured account access                  | yes                   | Run `/10x-plan verified-account-access`.                              |
-| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; see `context/changes/hosted-auth-verification/verification.md`. |
+| F-01       | verified-account-access      | Verify configured account access                  | no                    | Done; archived at `context/archive/2026-10-09-verified-account-access/`. |
+| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; archived at `context/archive/2026-10-10-hosted-auth-verification/`. |
 | S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Done; archived at `context/archive/2026-10-10-personal-filament-stock/`. |
 | S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Done; archived at `context/archive/2026-10-12-personal-planned-prints/`. |
-| S-03       | reserve-and-release-material | Reserve and release material safely               | yes                   | Run `/10x-plan reserve-and-release-material`.                          |
-| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Depends on S-03.                                                       |
-| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | yes                   | Run `/10x-plan edit-reserved-print`; S-03 and S-04 are done.                                              |
-| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Depends on S-03.                                                       |
-| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Depends on S-03.                                                       |
+| S-03       | reserve-and-release-material | Reserve and release material safely               | no                    | Done; archived at `context/archive/2026-10-16-reserve-and-release-material/`. |
+| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Done; archived at `context/archive/2026-10-17-account-safety-margin/`. |
+| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Done; archived at `context/archive/2026-10-20-edit-reserved-print/`. |
+| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Done; archived at `context/archive/2026-10-17-maintain-reserved-spool/`. |
+| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Done; archived at `context/archive/2026-10-17-settle-print-consumption/`. |
 
 ## Open Roadmap Questions
 
-The author resolved the access question: unauthenticated visitors opening protected pages are redirected to sign-in. F-01 is ready for planning; backend configuration and verification remain to be completed.
+The author resolved the access question: unauthenticated visitors opening protected pages are redirected to sign-in. F-01 and F-02 are complete; their implementation and verification evidence is retained in their archived change folders.
 
 The author resolved the margin, rounding, and ordering questions in PRD v3. The remaining source questions are non-blocking.
 
@@ -223,7 +223,7 @@ The author resolved the margin, rounding, and ordering questions in PRD v3. The 
 - **Printer-farm management** — Why parked: PRD Non-Goals assumes one printer.
 - **Advanced optimisation across all combinations of prints** — Why parked: PRD Non-Goals limits selection to one requested print at a time.
 - **Paid API integrations** — Why parked: explicitly excluded in PRD Non-Goals.
-- **Print priorities and automatic recalculation of the entire queue after every change** — Why parked: PRD Non-Goals defers these; single-print recalculation remains in S-05.
+- **Print priorities and automatic recalculation of the entire queue after every change** — Why parked: PRD Non-Goals defers these; recalculation of one reservation after editing its print was delivered in S-05.
 - **Per-print safety-margin settings** — Why parked: PRD Non-Goals selects one account-level setting.
 
 All eight declared functional requirements remain in this milestone; the speed goal changes ordering rather than dropping required behavior.
