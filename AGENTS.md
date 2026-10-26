@@ -22,7 +22,7 @@ Use `@/` imports (@tsconfig.json) and `cn()` from @src/lib/utils.ts for merged c
 
 Dashboard views use the design contract in [src/styles/global.css](src/styles/global.css), [src/layouts/DashboardShell.astro](src/layouts/DashboardShell.astro) and [src/components/ui/](src/components/ui/). Check those components before creating another presentation component. Keep literal colours and arbitrary sizing out of dashboard views. During dashboard presentation refactors, preserve the existing DTO bindings for `recordedGrams`, `reservedGrams`, `availableGrams`, and `requiredGrams`. Keep collection state, handlers and API mutations in the owning collection under `src/components/spools/` or `src/components/prints/`. See the retained [Carbon Terminal review evidence](context/archive/2026-10-12-carbon-terminal-spools/verification.md) and [screenshots](context/archive/2026-10-12-carbon-terminal-spools/reviews/phase-3/).
 
-Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool, planned-print, reservation, account-settings, and settlement flows are implemented. Reserved-print recalculation remains planned. Change artifacts belong in `context/changes/<change-id>/`.
+Read @context/foundation/prd.md for product rules and @context/foundation/tech-stack.md for the chosen stack; spool, planned-print, reservation, account-settings, reserved-print recalculation, and settlement flows are implemented. Change artifacts belong in `context/changes/<change-id>/`.
 
 ## Configuration
 
