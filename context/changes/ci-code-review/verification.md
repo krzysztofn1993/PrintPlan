@@ -14,12 +14,26 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 
 ## Phase 2
 
+- Commit: `4d7b72a`.
+
 - Adapter/configuration fixtures: PASS (10 tests, injected fake HTTP only).
 - Combined package suite: PASS (17 tests).
 - Deliberate break: removed completed-response status guard; incomplete-response fixture went red; restored from staging.
 - Prettier check: PASS.
 - `npm run verify:deploy`: PASS after documenting the intentionally stalled Promise fixture.
 
+## Phase 3
+
+- Workflow fixtures: PASS (4 tests).
+- GitHub API fixtures: PASS (14 tests).
+- Combined package suite: PASS (35 tests).
+- Deliberate break: removed live head/base guard; two stale-publication tests failed; restored from staging.
+- Package/workflow/context formatting: PASS.
+- `npm run verify:deploy`: PASS, including the provenance adaptation.
+- Preparation and publication share a job concurrency lock with queued completion; inference has no GitHub write credential. Third-party workflow Actions use full commit SHAs.
+- Provenance adaptation: only numeric public workflow-run metadata GETs omit authentication, preserving the planned GitHub token permissions; every other route retains authentication. This relies on the planned public deployment and fails closed on private/API-rate-limited responses. Official endpoint: https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run . Documented workflow-path `@ref` suffix is accepted with exact filename matching.
+- Live queue behavior, API access, and branch-protection acceptance remain Manual verification.
+
 ## Pending
 
-Phases 3 and 5 remain unverified. All Manual Progress rows remain pending; no live acceptance evidence exists.
+Phase 5 remains unverified. All Manual Progress rows remain pending; no live acceptance evidence exists.

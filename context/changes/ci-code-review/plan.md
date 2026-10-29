@@ -285,20 +285,20 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs.
-- [x] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output.
-- [x] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values.
+- [x] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs. — 4d7b72a
+- [x] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output. — 4d7b72a
+- [x] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values. — 4d7b72a
 
 ### Phase 3: Workflow, publication, and merge check
 
 #### Automated
 
-- [ ] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review.
-- [ ] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`.
-- [ ] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests.
-- [ ] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference.
-- [ ] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact.
-- [ ] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label.
+- [x] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review.
+- [x] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`.
+- [x] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests.
+- [x] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference.
+- [x] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact.
+- [x] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label.
 
 ### Phase 4: Public repository preparation and API setup
 
