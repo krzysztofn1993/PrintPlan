@@ -277,9 +277,9 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [ ] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`.
-- [ ] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`.
-- [ ] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal.
+- [x] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`.
+- [x] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`.
+- [x] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal.
 
 ### Phase 2: OpenAI API adapter and composite action
 

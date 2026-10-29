@@ -1,0 +1,19 @@
+{
+  "name": "@printplan/ai-reviewer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test test/contracts.test.mjs test/package.test.mjs",
+    "test:contracts": "node --test test/contracts.test.mjs test/package.test.mjs",
+    "test:adapter": "node --test test/adapter.test.mjs test/config.test.mjs",
+    "test:workflow": "node --test test/workflow.test.mjs",
+    "test:github": "node --test test/github.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0"
+  }
+}

@@ -71,9 +71,11 @@ const astroConfig = defineConfig({
 });
 
 const scriptsConfig = defineConfig({
-  files: ["scripts/**/*.mjs", ".codex/hooks/**/*.mjs"],
+  files: ["scripts/**/*.mjs", ".codex/hooks/**/*.mjs", "packages/ai-reviewer/**/*.mjs"],
   extends: [tseslint.configs.disableTypeChecked],
-  languageOptions: { globals: { console: true, process: true, fetch: true, URLSearchParams: true } },
+  languageOptions: {
+    globals: { console: true, process: true, fetch: true, URLSearchParams: true },
+  },
   rules: { "no-console": "off" },
 });
 
