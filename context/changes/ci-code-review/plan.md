@@ -277,17 +277,17 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`.
-- [x] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`.
-- [x] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal.
+- [x] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`. — a6d8278
+- [x] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`. — a6d8278
+- [x] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal. — a6d8278
 
 ### Phase 2: OpenAI API adapter and composite action
 
 #### Automated
 
-- [ ] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs.
-- [ ] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output.
-- [ ] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values.
+- [x] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs.
+- [x] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output.
+- [x] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values.
 
 ### Phase 3: Workflow, publication, and merge check
 
