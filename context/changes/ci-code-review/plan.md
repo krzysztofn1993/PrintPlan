@@ -312,9 +312,9 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage.
-- [x] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff.
-- [x] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation.
+- [x] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage. — 7c3ca68
+- [x] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff. — 7c3ca68
+- [x] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation. — 7c3ca68
 
 #### Manual
 

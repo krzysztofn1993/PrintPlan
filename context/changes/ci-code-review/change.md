@@ -1,7 +1,7 @@
 ---
 change_id: ci-code-review
 title: Run PR reviews with a modular Node package and the OpenAI API
-status: implementing
+status: implemented
 created: 2026-10-29
 updated: 2026-10-29
 archived_at: null
@@ -24,4 +24,4 @@ All five review findings are addressed in the reconciled plan. Publication clean
 
 The author reports USD 21 available for testing; verify that these are usable API funds and record actual usage after initial calls.
 
-Implementation is in progress under the automated plan scope. Per-phase gate evidence is recorded in `verification.md`, and the canonical Progress section records completed Automated rows and commits. Paid inference, history rewriting, pushes, repository visibility changes, and Manual acceptance have not been performed.
+The automated plan scope is implemented and verified. Per-phase gate evidence is recorded in `verification.md`, and the canonical Progress section records completed Automated rows and commits. Paid inference, history rewriting, pushes, repository visibility changes, and Manual acceptance have not been performed.
