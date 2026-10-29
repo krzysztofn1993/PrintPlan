@@ -24,6 +24,8 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 
 ## Phase 3
 
+- Commit: `916638c`.
+
 - Workflow fixtures: PASS (4 tests).
 - GitHub API fixtures: PASS (14 tests).
 - Combined package suite: PASS (35 tests).
@@ -34,6 +36,17 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 - Provenance adaptation: only numeric public workflow-run metadata GETs omit authentication, preserving the planned GitHub token permissions; every other route retains authentication. This relies on the planned public deployment and fails closed on private/API-rate-limited responses. Official endpoint: https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run . Documented workflow-path `@ref` suffix is accepted with exact filename matching.
 - Live queue behavior, API access, and branch-protection acceptance remain Manual verification.
 
-## Pending
+## Phase 5
 
-Phase 5 remains unverified. All Manual Progress rows remain pending; no live acceptance evidence exists.
+- Clean root install: PASS (`HUSKY=0 npm ci`); Husky installation was disabled only for this invocation to prevent its Git configuration write. Repository Git configuration SHA-256 remained unchanged.
+- Clean standalone install: PASS (`npm ci --ignore-scripts --prefix packages/ai-reviewer`).
+- `npm run test:ai-review`: PASS (38 tests), with provider/GitHub credentials unset; every suite preloads the offline HTTP guard.
+- `npm run verify:deploy`: PASS (native contracts, lint, Astro diagnostics and production build).
+- Deliberate break: removed the nested reviewer install from CI; the integration fixture failed; restored from staging.
+- Touched Markdown/JSON/YAML formatter check and implementation path allowlist: PASS; original root lockfile unchanged.
+- Original CI smoke job compared structurally with baseline `455a118`: identical. Live smoke/database/browser execution is not claimed by this offline change.
+- Setup/history/publication/API/key-rotation/acceptance/rollback runbook is documented in the package README; no operator steps were executed.
+
+## Manual evidence pending
+
+All Manual Progress rows remain pending. There are no live reviewed SHAs, run URLs, comment IDs, provider request IDs, token usage, charges, or branch-protection results to report. Offline fixtures use fabricated identities only. The first owner acceptance review must record those fields before operator acceptance can be claimed.

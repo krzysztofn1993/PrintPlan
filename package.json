@@ -26,7 +26,8 @@
     "prepare": "husky",
     "verify:deploy": "npm run test:hooks && npm run test:auth && npm run test:spools && npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings && astro sync && npm run lint && astro check && npm run build",
     "test:spools": "node --experimental-strip-types --test scripts/spool-contracts.test.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test:ai-review": "npm --prefix packages/ai-reviewer test"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",

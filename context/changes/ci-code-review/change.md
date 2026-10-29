@@ -24,4 +24,4 @@ All five review findings are addressed in the reconciled plan. Publication clean
 
 The author reports USD 21 available for testing; verify that these are usable API funds and record actual usage after initial calls.
 
-Only planning and triage were performed. Implementation, paid inference, history rewriting, pushes, and repository visibility changes were not performed. Every implementation Progress entry remains pending.
+Implementation is in progress under the automated plan scope. Per-phase gate evidence is recorded in `verification.md`, and the canonical Progress section records completed Automated rows and commits. Paid inference, history rewriting, pushes, repository visibility changes, and Manual acceptance have not been performed.

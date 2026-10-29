@@ -293,12 +293,12 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review.
-- [x] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`.
-- [x] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests.
-- [x] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference.
-- [x] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact.
-- [x] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label.
+- [x] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review. — 916638c
+- [x] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`. — 916638c
+- [x] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests. — 916638c
+- [x] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference. — 916638c
+- [x] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact. — 916638c
+- [x] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label. — 916638c
 
 ### Phase 4: Public repository preparation and API setup
 
@@ -312,9 +312,9 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [ ] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage.
-- [ ] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff.
-- [ ] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation.
+- [x] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage.
+- [x] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff.
+- [x] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation.
 
 #### Manual
 
