@@ -4,7 +4,7 @@
 
 Deliver roadmap S-07: settle a completed print using actual filament consumption exactly once, release its reservation, and cancel other reservations newest first until they fit the remaining recorded stock. Preserve a durable result so a lost response never causes another deduction or loses cancellation feedback.
 
-The author confirmed HIGH complexity and three product decisions on 2026-10-17: require an active reservation; accept whole grams including 0 g; keep completed prints in the existing collection, read-only except for deletion. The four phases below were approved before writing. This plan builds on [the completed research](research.md) at repository revision `5587b2184b889c752f8d615ed7728c3221e2b1ef`.
+The author confirmed HIGH complexity and three product decisions on 2026-10-17: require an active reservation; accept whole grams including 0 g; keep completed prints in the existing collection, read-only except for deletion. The four phases below were approved before writing. This plan builds on [the completed research](research.md) at repository revision `b8cf7ebaa68272022b89b1717cf4bf491f2b3718`.
 
 ## Current State Analysis
 

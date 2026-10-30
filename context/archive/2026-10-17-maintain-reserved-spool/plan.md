@@ -8,7 +8,7 @@ The author approved a narrower scope after reviewing the lost-response scenario 
 
 ## Current State Analysis
 
-The research baseline is commit `5587b2184b889c752f8d615ed7728c3221e2b1ef` on `maintain-reserved-spool`. Only the existing change artifacts were untracked when planning began; this plan does not authorize implementation.
+The research baseline is commit `b8cf7ebaa68272022b89b1717cf4bf491f2b3718` on `maintain-reserved-spool`. Only the existing change artifacts were untracked when planning began; this plan does not authorize implementation.
 
 `update_spool` already serializes mutations per owner and rejects recorded stock below active reservations. Equality is allowed; changing canonical material or colour while reserved requires cancellation first. `delete_spool` already cancels all reservations on the owned spool, preserves affected prints, advances their versions, and returns cancellation details atomically.
 

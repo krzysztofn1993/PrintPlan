@@ -4,7 +4,7 @@
 
 Deliver roadmap S-05: allow a reserved planned print to be edited and atomically recalculate its reservation using the current account safety margin. Continue the same reservation identity and age when an allocation remains possible, protect stale commands with the existing print version, and save the print unreserved with explicit insufficient-material feedback when no spool fits.
 
-The author approved HIGH complexity, four decision topics and the four phases below on 2026-10-22. Planning is based on research and source inspection at commit `4a722a8e5dcc172353d889de884603b48bc6b707`; no implementation or runtime verification has been performed.
+The author approved HIGH complexity, four decision topics and the four phases below on 2026-10-22. Planning is based on research and source inspection at commit `d0d0b255a2043466bafeb45f79d673d8a2bbb868`; no implementation or runtime verification has been performed.
 
 ## Current State Analysis
 

@@ -8,7 +8,7 @@
 - **Date**: 2026-10-20
 - **Verdict**: APPROVED
 - **Findings**: 0 critical, 0 warnings, 1 observation
-- **Git scope**: `d14a8a6..507def8` (`cb2d8c9^` through reviewed HEAD `507def8a2f3fafe2423d76276762e8e0d23d0e65`).
+- **Git scope**: `d14a8a6..507def8` (`cb2d8c9^` through reviewed HEAD `adb8b2a71adff516cfb9e0de8788a5f300850b67`).
 - **Progress at review**: 10/10 checked rows; all three phases complete; change status was `implemented`.
 
 ## Verdicts

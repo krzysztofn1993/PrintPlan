@@ -1,7 +1,7 @@
 ---
 date: 2026-10-20T19:48:45+02:00
 researcher: Codex
-git_commit: 4a722a8e5dcc172353d889de884603b48bc6b707
+git_commit: d0d0b255a2043466bafeb45f79d673d8a2bbb868
 branch: master
 repository: PrintPlan
 topic: "edit-reserved-print: automatic reservation recalculation after print edits"
@@ -15,7 +15,7 @@ last_updated_by: Codex
 
 **Date**: 2026-10-20T19:48:45+02:00  
 **Researcher**: Codex  
-**Git Commit**: 4a722a8e5dcc172353d889de884603b48bc6b707  
+**Git Commit**: d0d0b255a2043466bafeb45f79d673d8a2bbb868  
 **Branch**: master  
 **Repository**: PrintPlan
 
