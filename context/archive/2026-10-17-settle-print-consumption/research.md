@@ -1,7 +1,7 @@
 ---
 date: 2026-10-17T09:52:20+02:00
 researcher: Codex
-git_commit: 5587b2184b889c752f8d615ed7728c3221e2b1ef
+git_commit: b8cf7ebaa68272022b89b1717cf4bf491f2b3718
 branch: settle-print-consumption
 repository: PrintPlan
 topic: "S-07: Settle actual print consumption once"
@@ -18,7 +18,7 @@ last_updated_note: Initial repository investigation and planning handoff
 
 **Researcher:** Codex
 
-**Git commit:** 5587b2184b889c752f8d615ed7728c3221e2b1ef
+**Git commit:** b8cf7ebaa68272022b89b1717cf4bf491f2b3718
 
 **Branch:** settle-print-consumption
 
