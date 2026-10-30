@@ -14,7 +14,7 @@ Local email confirmation is disabled. Signup discards its returned session, whil
 
 The cookie adapter ignores SDK cache-prevention headers. Middleware and POST handlers construct separate clients against the original incoming cookies; an installed-SDK experiment demonstrated duplicate refreshes in this configuration, without establishing a production failure. The existing smoke shares cookies across signup and signin, accepts redirect prefixes, and does not inspect page bodies. Its successful run would therefore be insufficient evidence of independent password login.
 
-Research was static and did not start the backend or prove application behavior. The planning recheck used HEAD `ba02314352096f9ccec1957743c1cebf27eb3c58`; production sources were unchanged and this change folder was untracked. Research's earlier HEAD and untracked-source notes describe its earlier inspection.
+Research was static and did not start the backend or prove application behavior. The planning recheck used HEAD `a946c6b0cbc69308dd77a58528581b3ab173f6e0`; production sources were unchanged and this change folder was untracked. Research's earlier HEAD and untracked-source notes describe its earlier inspection.
 
 ## Desired End State
 
