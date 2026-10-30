@@ -1,7 +1,7 @@
 ---
 date: 2026-10-14T13:37:15+02:00
 researcher: Codex
-git_commit: 91890c8e518ff199db59979f90060274ca6cb6b0
+git_commit: 5925df561ef460d80373831186666e78f613aa2a
 branch: master
 repository: PrintPlan
 topic: "Rollout Phase 1: data isolation and persistence"
