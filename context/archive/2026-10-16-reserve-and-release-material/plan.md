@@ -8,7 +8,7 @@ The author approved HIGH complexity, four substantive decisions and the four pha
 
 ## Current State Analysis
 
-Planning baseline: `12740e410d13a8d098093a9bfa57ae147a673dd4` on `feat/reserve-and-release-material`, created from freshly fetched `master` / `origin/master`. Its source tree matches the research baseline `dbc6326`; the newer commit merges that work. Existing uncommitted PRD v3, roadmap v3 and S-03 research were preserved. No domain glossary exists; terminology follows the PRD and existing spool/print contracts.
+Planning baseline: `9f8cef318bbe09beb745dc42170a9491c06cf5e8` on `feat/reserve-and-release-material`, created from freshly fetched `master` / `origin/master`. Its source tree matches the research baseline `dbc6326`; the newer commit merges that work. Existing uncommitted PRD v3, roadmap v3 and S-03 research were preserved. No domain glossary exists; terminology follows the PRD and existing spool/print contracts.
 
 Spools and planned prints already support private CRUD, SSR and React collections. There is no reservation persistence or RPC contract. Spool DTOs expose reserved/available grams but currently return zero reservations. Print DTOs and both browser parsers contain no reservation state. Existing authenticated table grants permit writes that would bypass reservation checks placed only in HTTP handlers.
 
