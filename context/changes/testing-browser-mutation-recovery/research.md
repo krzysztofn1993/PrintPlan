@@ -1,7 +1,7 @@
 ---
 date: 2026-10-15T20:14:00+02:00
 researcher: Codex
-git_commit: 2fd5b61ec1963d468507334259f32e5de75b4b74
+git_commit: f558bfe496236061f2c2651da2ea9e616f15b1cf
 branch: testing-browser-mutation-recovery
 repository: PrintPlan
 topic: Browser mutation recovery rollout, risk 6

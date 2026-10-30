@@ -1,7 +1,7 @@
 ---
 date: 2026-10-12T20:51:17+02:00
 researcher: Codex
-git_commit: 792ded249ccd9f9785a375e95dd6f35991784800
+git_commit: 106667c3036e7ff968426dfaa1d752ccf9abc30c
 branch: master
 repository: PrintPlan
 topic: "Adapt the filament stock view to the Carbon Terminal reference"
@@ -16,7 +16,7 @@ last_updated_note: Added current implementation evidence and a presentation reus
 
 **Date**: 2026-10-12T20:51:17+02:00  
 **Researcher**: Codex  
-**Git Commit**: 792ded249ccd9f9785a375e95dd6f35991784800  
+**Git Commit**: 106667c3036e7ff968426dfaa1d752ccf9abc30c  
 **Branch**: master  
 **Repository**: PrintPlan
 
@@ -95,7 +95,7 @@ The repo already has a token-backed Carbon layer and shared controls, so this ch
 
 ## Follow-up: 2026-10-13 — Reuse the terminal structure in Planned Prints
 
-**Evidence snapshot:** 2026-10-13T11:43:07Z; researcher: Codex; branch: `master`; commit: `c54c0f0e56df82a7af23dbed3850635056675455`; repository: PrintPlan. `git status --short` returned no entries when gathering this snapshot. References below name local files; the earlier research metadata remains the original investigation's snapshot.
+**Evidence snapshot:** 2026-10-13T11:43:07Z; researcher: Codex; branch: `master`; commit: `eaf92aa192fb553f01234bacb3a7d71dac1e0320`; repository: PrintPlan. `git status --short` returned no entries when gathering this snapshot. References below name local files; the earlier research metadata remains the original investigation's snapshot.
 
 ### Question and answer
 

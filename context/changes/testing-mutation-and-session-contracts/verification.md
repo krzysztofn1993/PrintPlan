@@ -1,6 +1,6 @@
 # Mutation and session contract verification
 
-Branch: `testing-mutation-and-session-contracts` from `af2743c61cbc233bf86ecfe6e8d7a9ff08891745`. Date: 2026-10-15. Runtime: Node v24.21.0, installed dependencies, existing local Supabase and Mailpit.
+Branch: `testing-mutation-and-session-contracts` from `eed98f819734b238eda6b69cd12083a01b21445a`. Date: 2026-10-15. Runtime: Node v24.21.0, installed dependencies, existing local Supabase and Mailpit.
 
 ## Scope
 
