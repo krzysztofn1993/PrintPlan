@@ -8,7 +8,7 @@ This plan uses the existing research and the author's planning decisions confirm
 
 ## Current State Analysis
 
-Account access is complete in archived F-01. The current revision matches the research baseline, `0b6adcb68d8b252c4bf57dd731b667c6ff698db2`. Middleware already verifies identity, supplies a request-scoped Supabase client, and finalizes cookie/header changes (`src/middleware.ts:7`). The dashboard is an authenticated placeholder (`src/pages/dashboard.astro:7`); no product table, migration, query, or spool interface exists in the inspected source and Supabase directories.
+Account access is complete in archived F-01. The current revision matches the research baseline, `35a0c044d709b8ad2f6c0f46b2aa03ba4f8f2d8e`. Middleware already verifies identity, supplies a request-scoped Supabase client, and finalizes cookie/header changes (`src/middleware.ts:7`). The dashboard is an authenticated placeholder (`src/pages/dashboard.astro:7`); no product table, migration, query, or spool interface exists in the inspected source and Supabase directories.
 
 The stack already selects PostgreSQL migrations and per-user RLS. Existing form validation and native Node tests provide patterns; the HTTP smoke already establishes two independently authenticated accounts. No browser test runner is configured. The older AGENTS statement that there is no unit runner is superseded by `package.json:14` and `.github/workflows/ci.yml:19`.
 

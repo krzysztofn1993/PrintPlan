@@ -6,7 +6,7 @@ Deliver roadmap S-04: configure one persistent account safety margin for new bes
 
 ## Current State Analysis
 
-The completed [research](research.md) is the baseline at commit `5587b2184b889c752f8d615ed7728c3221e2b1ef`. There is no settings table, read/save API or editor. Reservation preview and confirmation hardcode 10%; the existing calculation helper already accepts a margin and uses numeric upward rounding.
+The completed [research](research.md) is the baseline at commit `b8cf7ebaa68272022b89b1717cf4bf491f2b3718`. There is no settings table, read/save API or editor. Reservation preview and confirmation hardcode 10%; the existing calculation helper already accepts a margin and uses numeric upward rounding.
 
 Reservations store `reserved_grams` and `margin_percent`; stock totals sum those stored grams. Mutations serialize per account through `private.acquire_owner_mutation_lock`. Successful request replay precedes print-version and eligibility checks. The browser protects against obsolete preview responses and uncertain mutations, but reserve commands carry no evidence of the displayed amount.
 

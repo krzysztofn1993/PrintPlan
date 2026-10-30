@@ -275,7 +275,7 @@ Execution prerequisites are Node 24.21.0 from `.nvmrc`, installed dependencies, 
 
 ## References
 
-- [Research and G1–G4 handoff](research.md), baseline commit `29b69ff6c1437174d9ff5b233f3310ffd8a0a7af`.
+- [Research and G1–G4 handoff](research.md), baseline commit `90db0f0bed20a541f2f10402da21e6121c75e4d8`.
 - [PRD](../../foundation/prd.md), FR-003–FR-008, Business Logic and Non-Functional Requirements; [test stack](../../foundation/test-stack.md).
 - [Accepted Data Table baseline](../../archive/2026-10-20-edit-reserved-print/verification.md); [historical seven-state evidence](../../archive/2026-10-12-carbon-terminal-spools/verification.md).
 - Shared contract: `src/components/ui/CollectionTable.tsx:30`, `src/styles/global.css:454`, `src/layouts/DashboardShell.astro:15`.

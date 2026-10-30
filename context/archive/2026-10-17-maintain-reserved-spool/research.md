@@ -1,7 +1,7 @@
 ---
 date: 2026-10-17T07:52:25Z
 researcher: Codex
-git_commit: 5587b2184b889c752f8d615ed7728c3221e2b1ef
+git_commit: b8cf7ebaa68272022b89b1717cf4bf491f2b3718
 branch: maintain-reserved-spool
 repository: PrintPlan
 topic: "S-06: Maintain a spool that has active reservations"
@@ -16,7 +16,7 @@ last_updated_note: "Installed dependencies and passed the required stop hook and
 
 **Date:** 2026-10-17T07:52:25Z  
 **Researcher:** Codex  
-**Git commit:** `5587b2184b889c752f8d615ed7728c3221e2b1ef`  
+**Git commit:** `b8cf7ebaa68272022b89b1717cf4bf491f2b3718`  
 **Branch:** `maintain-reserved-spool`  
 **Repository:** PrintPlan
 

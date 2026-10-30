@@ -35,7 +35,7 @@
 
 ## Review scope and evidence
 
-- Reviewed source revision: `b7cf3ceee32cac1d273a56305c3c16718ab5541d`.
+- Reviewed source revision: `35f8cacd7c73ef0949aaaeb0205c671a37d01147`.
 - Canonical Progress: 12/12 steps complete; current phase 4. All four phases are included. Progress was read without modification.
 - Feature scope: `261fc50..b7cf3ce` (44 changed files), resolved through feature commits because the plan filename has no date. This range excludes the already integrated settlement workflow from attribution to S-04.
 - Two independent read-only agents checked plan adherence and safety/pattern compliance. The main review checked their evidence, acceptance code and recovery boundaries, and ran the commands below.

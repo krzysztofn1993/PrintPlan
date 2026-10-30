@@ -6,21 +6,21 @@ This record captures the completed automated evidence for all three phases, the 
 
 | Phase | Commit |
 | --- | --- |
-| 1 — Correct stock with current reservation guidance | `cb2d8c9c1ccbde1bcfccf76e5e284f9f86488689` |
-| 2 — Explain confirmed and uncertain spool deletion | `a63b8519923543962639a82ef01de75126b69bb3` |
-| 3 — Verify the bounded S-06 outcome and record evidence | `94743371efe29308effa0423340fb641fa401ad1` |
-| Final SHA write-back and implemented status | `14bb2de57a838b4183cf2dd33f68c455eb42998c` |
-| Earlier closeout, superseded by the final SHA write-back | `c5bfac9542e3ceadbdd4ca22251ed4529b4e90d4` |
+| 1 — Correct stock with current reservation guidance | `66049475238baaa1d7c9151c9de8fb7cdeb410b5` |
+| 2 — Explain confirmed and uncertain spool deletion | `2199dd7a4e36dfc2324df39484215d8a0754545a` |
+| 3 — Verify the bounded S-06 outcome and record evidence | `6b83c63f71c60269f420697037664585adc12111` |
+| Final SHA write-back and implemented status | `180dcb129b0f71fa81088e1703c8c6650767a3d0` |
+| Earlier closeout, superseded by the final SHA write-back | `d173c8a2a0bc23622b6c9dffacb7017f2bf3ac83` |
 
 ## Post-rebase follow-up commits
 
 | Intent | Commit |
 | --- | --- |
-| Clarify the completed verification record | `b00719495fa6cb97468e9650cbfbb9483b95f195` |
-| Add spacing between correction recovery actions | `d7e52b709987812f10c741616083200bab28776d` |
-| Record manual browser verification | `7600473dd2f8b73796ab574ef9d322a9608a8909` |
-| Record acceptance of the recovery limitation | `b1589170f93693a8fb15e5a64dfb58e8e65058dd` |
-| Final SHA write-back and implemented status | `14bb2de57a838b4183cf2dd33f68c455eb42998c` |
+| Clarify the completed verification record | `16149faa64d1bcf31e87aa541946723480372440` |
+| Add spacing between correction recovery actions | `d9b17d61e810ae15c5ec68647385c772cd1ef54b` |
+| Record manual browser verification | `1b3bab7253ce6e3a23ab6258763a1787ed4d47b5` |
+| Record acceptance of the recovery limitation | `a037730708327b2a3a09d092820eb33959f5355e` |
+| Final SHA write-back and implemented status | `180dcb129b0f71fa81088e1703c8c6650767a3d0` |
 
 The pre-rebase evidence is retained below as historical context. The post-rebase runs dated 2026-10-20 cover the current branch after rebasing onto `origin/master` (`d14a8a6`), the spacing correction, and manual acceptance. Manual checks 3.4 and 3.5 were confirmed on the current branch.
 

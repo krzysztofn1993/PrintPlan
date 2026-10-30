@@ -1,7 +1,7 @@
 ---
 date: 2026-10-25T07:17:32+01:00
 researcher: Codex
-git_commit: 29b69ff6c1437174d9ff5b233f3310ffd8a0a7af
+git_commit: 90db0f0bed20a541f2f10402da21e6121c75e4d8
 branch: docs/close-milestone-1
 repository: PrintPlan
 topic: "Current Planned Prints view and gaps against the Carbon Terminal contract"
@@ -16,7 +16,7 @@ last_updated_note: Initial source-backed investigation, including a bounded brow
 
 **Date:** 2026-10-25T07:17:32+01:00  
 **Researcher:** Codex  
-**Git commit:** 29b69ff6c1437174d9ff5b233f3310ffd8a0a7af  
+**Git commit:** 90db0f0bed20a541f2f10402da21e6121c75e4d8  
 **Branch:** docs/close-milestone-1  
 **Repository:** PrintPlan; working tree clean before creating this change's artifacts.
 
