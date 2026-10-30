@@ -1,7 +1,7 @@
 ---
 date: 2026-10-12T20:51:17+02:00
 researcher: Codex
-git_commit: 792ded249ccd9f9785a375e95dd6f35991784800
+git_commit: 106667c3036e7ff968426dfaa1d752ccf9abc30c
 branch: master
 repository: PrintPlan
 topic: "Adapt the filament stock view to the Carbon Terminal reference"
@@ -16,7 +16,7 @@ last_updated_note: Linked the prior Carbon theme research and planned-prints res
 
 **Date**: 2026-10-12T20:51:17+02:00  
 **Researcher**: Codex  
-**Git Commit**: 792ded249ccd9f9785a375e95dd6f35991784800  
+**Git Commit**: 106667c3036e7ff968426dfaa1d752ccf9abc30c  
 **Branch**: master  
 **Repository**: PrintPlan
 

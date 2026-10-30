@@ -8,7 +8,7 @@ The author confirmed MEDIUM complexity, the five product decisions below, and th
 
 ## Current State Analysis
 
-The research baseline is `41e27b6`; the current inspected revision is `2b021943fb3b4109f71edaf89acddb48b871a85a`. Stock CRUD, request-scoped authenticated Supabase access, restricted-role database tests, native Node contracts, and built-preview HTTP smoke already exist. No planned-print table, service, endpoints, or view exists in the inspected source/schema.
+The research baseline is `41e27b6`; the current inspected revision is `3f34af9fd43378f39e3c4cd5a246aa207878fc67`. Stock CRUD, request-scoped authenticated Supabase access, restricted-role database tests, native Node contracts, and built-preview HTTP smoke already exist. No planned-print table, service, endpoints, or view exists in the inspected source/schema.
 
 Carbon phase 1 is now committed: shared semantic tokens, fixed dark mode, controls, and navigation are available. Dashboard and stock presentations still have earlier palette overrides; Carbon phases 2–3 remain pending. New print views consume the existing semantic contract. Re-read overlapping navigation/dashboard files before implementation rather than replacing another change's work.
 
