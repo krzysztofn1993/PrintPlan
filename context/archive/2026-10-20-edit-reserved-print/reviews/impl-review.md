@@ -59,7 +59,7 @@
 
 ## Scope and evidence
 
-- Baseline: `4a722a8e5dcc172353d889de884603b48bc6b707`; reviewed through `6c57d0f`, with an initially clean working tree. The baseline is named in the plan and immediately precedes the feature commits, avoiding a date-only range that could mix unrelated work.
+- Baseline: `d0d0b255a2043466bafeb45f79d673d8a2bbb868`; reviewed through `6c57d0f`, with an initially clean working tree. The baseline is named in the plan and immediately precedes the feature commits, avoiding a date-only range that could mix unrelated work.
 - Canonical Progress: 15/15 criteria checked; current phase 4; `change.md` initially `implemented`, updated 2026-10-23.
 - All four phases were reviewed: database/versioning, API/contracts, form/recovery, end-to-end acceptance.
 - Planned production and test changes are present. The append-only migration preserves identity/age, immutable original request fingerprints, mutable current-spool evidence, versioned cancellation, no-fit saves, and settlement compatibility. No security, owner-isolation, atomicity, or substantive architecture/pattern violation was found.

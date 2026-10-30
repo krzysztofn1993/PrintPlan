@@ -6,7 +6,7 @@
 - **Reviewed phases**: 1, 2, 3, 4
 - **Date**: 2026-10-16
 - **Source revision**: c67df75
-- **Baseline**: 12740e410d13a8d098093a9bfa57ae147a673dd4
+- **Baseline**: 9f8cef318bbe09beb745dc42170a9491c06cf5e8
 - **Progress**: 17/17 checked; current phase 4; change status was `implemented`.
 - **Verdict**: NEEDS ATTENTION
 - **Findings**: 0 critical, 6 warnings, 3 observations

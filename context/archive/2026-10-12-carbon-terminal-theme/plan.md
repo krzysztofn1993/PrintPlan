@@ -14,7 +14,7 @@ The supplied configuration is retained in `target-theme.css` as an unimported re
 
 The separate auth-unavailable response renders inline HTML/CSS without the application layout. Native auth tests enforce its retry actions, messages, private 503 response, and inline style boundary. Stock interactions already maintain input retention, focus transitions, live feedback, and guards against duplicate or uncertain mutations.
 
-The research revision matches current HEAD, `41e27b6f776af65dbae5ed35e64847e4a08797a1`. A focused follow-up found one additional token bypass: the password-length hint inside `SignUpForm.tsx`. No domain glossary or lessons document exists. Domain labels follow the PRD and current stock UI.
+The research revision matches current HEAD, `f0c9a754608c96214175e1054ec91baf3a3b6c42`. A focused follow-up found one additional token bypass: the password-length hint inside `SignUpForm.tsx`. No domain glossary or lessons document exists. Domain labels follow the PRD and current stock UI.
 
 ## Desired End State
 

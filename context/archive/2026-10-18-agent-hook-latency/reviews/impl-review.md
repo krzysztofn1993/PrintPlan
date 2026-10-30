@@ -8,7 +8,7 @@
 - **Date**: 2026-10-18
 - **Verdict**: REJECTED
 - **Findings**: 1 critical, 1 warning, 1 observation
-- **Revision**: e2efc82bcbc2fff90c4267d9509cc17d55133881
+- **Revision**: 498e4aef0952873aa2522ea47d6c7e116c4fe8b9
 - **Git range**: 1c77e2e^..e2efc82
 - **Progress at review**: 13/13 complete; all three phases included.
 
@@ -95,7 +95,7 @@ The following state belongs exclusively to an independent disposable clone. Its 
 
 | Field            | Before actual pre-push                                   | After rejected push                        |
 | ---------------- | -------------------------------------------------------- | ------------------------------------------ |
-| Caller HEAD      | `e2efc82bcbc2fff90c4267d9509cc17d55133881`               | `de3a28dcde0a109597a0b9cd4b3d54c22fb3d7a5` |
+| Caller HEAD      | `498e4aef0952873aa2522ea47d6c7e116c4fe8b9`               | `de3a28dcde0a109597a0b9cd4b3d54c22fb3d7a5` |
 | Commit subject   | `docs(agent-hook-latency): complete manual verification` | `Proof baseline`                           |
 | Index tree       | `6fdb6e65f0f3841cd7d5d41f737a7594eefb0d99`               | `2cc6316aca8fe2d2c051fae6074d798b11eab86e` |
 | Local user.name  | `Review`                                                 | `Hook proof`                               |
