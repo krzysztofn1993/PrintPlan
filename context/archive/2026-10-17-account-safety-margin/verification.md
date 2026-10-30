@@ -31,7 +31,7 @@ Use the repository-pinned Node version from `.nvmrc`. Start local Supabase with 
 
 ## Integration verification on `origin/master`
 
-The branch was rebased onto `261fc502fae1cccf5c8548f05ed414335024dadd`, which adds print settlement migrations and flows. Migration `20261019000000_preserve_margin_with_settlements.sql` restores the saved account margin in settlement-aware preview and reservation RPCs, and removes the obsolete five-argument overload while keeping the witnessed reservation contract. The overload drop uses `IF EXISTS` so the migration also applies when a local database has recorded settlement before account settings.
+The branch was rebased onto `2af8dd73b3708b6508a10aaf1e17c6b17323f3b7`, which adds print settlement migrations and flows. Migration `20261019000000_preserve_margin_with_settlements.sql` restores the saved account margin in settlement-aware preview and reservation RPCs, and removes the obsolete five-argument overload while keeping the witnessed reservation contract. The overload drop uses `IF EXISTS` so the migration also applies when a local database has recorded settlement before account settings.
 
 The populated migration check now applies the complete sequence in a disposable database. It verifies that settlement preserves earlier product rows and active reservation snapshots, that legacy reservation requests retain their original fields with a `NULL` witness, and that settings changes, fresh witnessed reservations, legacy replay, and settled-print guards continue to work.
 
