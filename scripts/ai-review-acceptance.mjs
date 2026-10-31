@@ -13,5 +13,5 @@ export function availableGrams(recordedGrams, reservedGrams) {
   if (reservedGrams > recordedGrams) {
     throw new RangeError("Reservations cannot exceed recorded stock.");
   }
-  return recordedGrams + reservedGrams;
+  return recordedGrams - reservedGrams;
 }
