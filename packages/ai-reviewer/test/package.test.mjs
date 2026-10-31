@@ -18,6 +18,14 @@ test("bundled prompt preserves criteria, verdict policy and static trust boundar
   assert.match(prompt.system, /Tests were not executed/);
   assert.match(prompt.system, /verdict alone controls/);
   assert.match(prompt.system, /Minor.*pass/);
+  assert.match(prompt.system, /executable test or reproducible sequence of steps/);
+  assert.match(prompt.system, /Missing context.*not evidence of a defect/);
+  assert.match(prompt.system, /Missing test coverage alone does not prove an implementation defect/);
+  assert.match(prompt.system, /Do not block a PR for a pre-existing problem/);
+  assert.match(prompt.criteria, /## Validation before returning the response/);
+  assert.match(prompt.criteria, /expected result.*incorrect result/);
+  assert.match(prompt.criteria, /cannot execute tests/);
+  assert.match(prompt.criteria, /If no finding meets all blocking conditions.*verdict to pass/);
   for (const id of ["../code-review", "/tmp/code-review", "unknown", "code-review/../../", ""])
     await assert.rejects(loadPrompt(id), /UNKNOWN_PROMPT/);
 });
