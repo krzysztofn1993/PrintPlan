@@ -76,12 +76,14 @@ export function fakeGitHub() {
     }
     if (options.method === "POST" && route === "/check-runs") {
       const check = { ...data, id: state.next++, app: { slug: "github-actions" } };
+      check.details_url = `https://github.com/${context.repository}/runs/${check.id}`;
       state.checks.push(check);
       return response(201, check);
     }
     if (options.method === "PATCH" && route.startsWith("/check-runs/")) {
       const check = state.checks.find((item) => String(item.id) === route.split("/").at(-1));
       Object.assign(check, data);
+      check.details_url = `https://github.com/${context.repository}/runs/${check.id}`;
       return response(200, check);
     }
     if (options.method === "DELETE" && route.includes("/labels/")) {

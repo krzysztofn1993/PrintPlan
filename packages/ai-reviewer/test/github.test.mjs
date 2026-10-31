@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { prepareCheck, eligible, execution, recoverCheck } from "../src/github/prepare.mjs";
+import { prepareCheck, eligible, execution, recoverCheck, checkIdentity, runUrl } from "../src/github/prepare.mjs";
 import { publishReview, ownedComment } from "../src/github/publish.mjs";
 import { MARKER } from "../src/reporting/comment.mjs";
 import { context, envelope } from "./fixtures/review.mjs";
@@ -14,6 +14,31 @@ const publish = (client, id, value = envelope()) =>
     context: { ...context, runId: id.runId, runAttempt: id.runAttempt },
     envelope: value && { ...value, context: { ...context, runId: id.runId, runAttempt: id.runAttempt } },
   });
+
+test("GitHub-managed check URLs preserve recovery, publication and owned-comment identity", async () => {
+  const { client, state } = fakeGitHub();
+  const id = await prepare(client);
+  const check = state.checks[0];
+  assert.equal(check.details_url, `https://github.com/${context.repository}/runs/${check.id}`);
+  assert.equal((await recoverCheck(client, id))?.id, id.checkId);
+  await prepare(client);
+  assert.equal(state.checks.length, 1);
+  assert.equal((await publish(client, id)).conclusion, "success");
+  assert.equal((await ownedComment(client, id)).id, state.comments[0].id);
+  assert.equal((await publish(client, id)).duplicate, true);
+  assert.deepEqual([...state.labels], ["ai-cr:passed"]);
+
+  assert.ok(checkIdentity({ ...check, details_url: runUrl(id) }, context.repository, 1));
+  for (const details_url of [
+    `https://github.com/${context.repository}/runs/${check.id + 1}`,
+    `https://github.com/another/repository/runs/${check.id}`,
+    `${runUrl(id)}/untrusted`,
+    "https://example.invalid/check",
+  ])
+    assert.equal(checkIdentity({ ...check, details_url }, context.repository, 1), null);
+  assert.equal(checkIdentity({ ...check, app: { slug: "other-app" } }, context.repository, 1), null);
+  assert.equal(checkIdentity({ ...check, head_sha: "f".repeat(40) }, context.repository, 1), null);
+});
 
 test("owner-only event policy includes drafts and synchronize, ignores forks bots and unrelated labels", async () => {
   assert.equal(eligible(event(), "OwNeR"), true);
