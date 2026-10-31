@@ -10,11 +10,11 @@ jobs:
     name: Prepare static review
     if: >-
       (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' && github.event.sender.type != 'Bot' &&
       (vars.AI_REVIEW_OWNER == '' ||
-       (github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.user.login == vars.AI_REVIEW_OWNER &&
-        github.actor == vars.AI_REVIEW_OWNER &&
-        github.event.pull_request.user.type != 'Bot' && github.event.sender.type != 'Bot'))
+       (github.event.pull_request.user.login == vars.AI_REVIEW_OWNER &&
+        github.actor == vars.AI_REVIEW_OWNER))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -108,11 +108,11 @@ jobs:
     needs: [prepare, review]
     if: >-
       always() && (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' && github.event.sender.type != 'Bot' &&
       (vars.AI_REVIEW_OWNER == '' ||
-       (github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.user.login == vars.AI_REVIEW_OWNER &&
-        github.actor == vars.AI_REVIEW_OWNER &&
-        github.event.pull_request.user.type != 'Bot' && github.event.sender.type != 'Bot'))
+       (github.event.pull_request.user.login == vars.AI_REVIEW_OWNER &&
+        github.actor == vars.AI_REVIEW_OWNER))
     runs-on: ubuntu-latest
     permissions:
       contents: read
