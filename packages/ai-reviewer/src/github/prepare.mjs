@@ -2,20 +2,21 @@ export const CHECK_NAME = "AI Code Review";
 export const BOT = "github-actions[bot]";
 const lower = (value) => (typeof value === "string" ? value.toLowerCase() : "");
 export function eligible(event, owner) {
-  if (!owner?.trim()) throw new Error("OWNER_REQUIRED");
   const pr = event.pull_request;
-  return Boolean(
+  // Fork events can lack repository variables; exclude them before validating configuration.
+  const inScope = Boolean(
     pr &&
     ["opened", "synchronize", "reopened", "labeled"].includes(event.action) &&
     (event.action !== "labeled" || event.label?.name === "ai-cr:review") &&
     pr.base?.ref === "master" &&
     pr.state !== "closed" &&
     lower(pr.head?.repo?.full_name) === lower(event.repository?.full_name) &&
-    lower(pr.user?.login) === lower(owner) &&
-    lower(event.sender?.login) === lower(owner) &&
     pr.user?.type !== "Bot" &&
     event.sender?.type !== "Bot",
   );
+  if (!inScope) return false;
+  if (!owner?.trim()) throw new Error("OWNER_REQUIRED");
+  return lower(pr.user?.login) === lower(owner) && lower(event.sender?.login) === lower(owner);
 }
 export function execution(event, runId, runAttempt) {
   const identity = {

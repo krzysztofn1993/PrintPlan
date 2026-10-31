@@ -72,6 +72,39 @@ test("owner-only event policy includes drafts and synchronize, ignores forks bot
   assert.equal(state.calls.length, 0);
 });
 
+test("CLI skips a fork with missing variables before configuration, artifacts or HTTP access", async () => {
+  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { runPrepare } = await import("../src/cli/prepare.mjs");
+  const { runPublish } = await import("../src/cli/publish.mjs");
+  const dir = await mkdtemp(join(tmpdir(), "review-ineligible-"));
+  const { client, state } = fakeGitHub();
+  try {
+    const fork = event();
+    fork.pull_request.head.repo.full_name = "external/PrintPlan";
+    fork.pull_request.user.login = "external";
+    fork.sender.login = "external";
+    const eventPath = join(dir, "event.json");
+    const outputPath = join(dir, "outputs");
+    await writeFile(eventPath, JSON.stringify(fork));
+    const env = { GITHUB_EVENT_PATH: eventPath, GITHUB_OUTPUT: outputPath, AI_REVIEW_OWNER: "" };
+    const directory = join(dir, "not-created");
+    for (const mode of ["pending", "input"])
+      assert.equal(await runPrepare({ env, mode, directory, fetchImpl: client.fetchImpl }), null);
+    assert.equal(await runPublish({ env, directory, fetchImpl: client.fetchImpl }), null);
+    assert.equal(state.calls.length, 0);
+    await assert.rejects(readFile(outputPath));
+    await assert.rejects(readFile(join(directory, "identity.json")));
+    // Missing owner configuration still fails closed for structurally eligible same-repository events.
+    await writeFile(eventPath, JSON.stringify(event()));
+    await assert.rejects(runPrepare({ env, mode: "pending", directory }), /OWNER_REQUIRED/);
+    await assert.rejects(runPublish({ env, directory }), /OWNER_REQUIRED/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("pending check is persisted before retry label removal and initial failure never consumes label", async () => {
   const { client, state } = fakeGitHub();
   const value = event({ action: "labeled", label: { name: "ai-cr:review" } });
