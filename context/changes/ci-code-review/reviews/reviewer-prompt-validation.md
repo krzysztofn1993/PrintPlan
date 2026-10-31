@@ -19,9 +19,15 @@ Prompt ID: `code-review`. New combined digest: `7e5260d50a6b4d8d42688efc9f07e1fa
 
 ## Verification and deployment
 
-- Source VM `npm run test:ai-review`: PASS, 46 tests, including the separate publication correction. Host validation on current `origin/master`: PASS, 39 tests; PR #41 remains separate and unmerged.
+- `npm run test:ai-review`: PASS, 46 tests.
 - `npm run verify:deploy`: PASS, including native contracts, lint, Astro checks, and production build.
 - Changed-file formatting and whitespace checks: PASS.
-- No provider request, remote write, model-variable change, or Manual Progress update was performed. Offline checks confirm the bundled prompt contract; improvement in model judgments is not yet measured.
+- During local implementation, no provider request, remote write, model-variable change, or Manual Progress update was performed. Those offline checks confirm the bundled prompt contract; the subsequent hosted observations are recorded below.
 
 The new prompt must reach trusted `master` before hosted reviews can use it. A PR event executes the package and prompts from its captured base SHA. Retrying an old event or merely pushing prompt changes to an unmerged PR does not activate them. After merging, use a fresh eligible event with the updated base and verify the recorded digest. Evaluate both known correct code and the deliberate arithmetic defect to check for false rejections and missed defects.
+
+## Hosted acceptance and closure
+
+The author merged prompt PR #42 as master `8e701a0fc9eac1786ceced0887a6dd4ee66ee0f6`, then updated PR #41's branch. Run `41201707354` confirms the new digest and a published pass for the correction, without treating unverified uncertainty as a blocker.
+
+PR #40 subsequently used the same new prompt to reject the real addition defect in run `41202310623`, explicitly identifying expected 62 versus actual 238 and a confirming test. Correction run `41202628985` produced a valid published pass. These positive/negative examples support the accepted policy; they do not establish general reviewer accuracy or guarantee that future model judgments are correct. The author accepted the recorded results in consolidated acceptance on 2026-10-31.

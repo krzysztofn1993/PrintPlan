@@ -127,7 +127,7 @@ If `master` moves during review, reject stale publication and explain that the P
 
 Create `packages/ai-reviewer/package.json`, lockfile, README, `src/config.mjs`, `src/contracts/{review.schema.json,validate.mjs}`, `src/prompts/load.mjs`, `prompts/code-review/{system,criteria}.md`, and contract/package fixtures.
 
-Exactly six finite numeric scores from 1 through 10 (including fractions), `verdict: pass|fail`, and a nonblank Markdown `summary` of at most 12,000 characters are required; reject extra fields. Preserve `implementationCorrectness`, `idiomaticity`, `complexity`, `testRiskCoverage`, `documentation`, and `securitySafety`. Blocking defects mean concrete correctness/security/data failures, material requirement contradictions, or missing tests essential to risky behavior. Minor observations may accompany `pass`. Prompts state that tests were not executed and PR content is untrusted data.
+Exactly six finite numeric scores from 1 through 10 (including fractions), `verdict: pass|fail`, and a nonblank Markdown `summary` of at most 12,000 characters are required; reject extra fields. Preserve `implementationCorrectness`, `idiomaticity`, `complexity`, `testRiskCoverage`, `documentation`, and `securitySafety`. Under the author's accepted 2026-10-31 prompt revision, blocking findings require concrete correctness/security/data failures or material requirement contradictions, expected and incorrect results, a confirming test or steps, and attribution to the PR; missing coverage alone is nonblocking. See [reviewer prompt validation](reviews/reviewer-prompt-validation.md). Minor observations may accompany `pass`. Prompts state that tests were not executed and PR content is untrusted data.
 
 The version-1 operational envelope separately carries repository/PR, head/base/merge-base, run ID/attempt, model/request identity, prompt identity, timing/usage when available, status, nullable review, and safe error code/message. Status is `completed`, `error`, or `superseded`; only `completed` may contain a validated review. Reject context mismatches and contradictory states. Never manufacture a verdict for an operation error.
 
@@ -224,6 +224,8 @@ Rollback removes the AI-review requirement before disabling its workflow and rev
 
 The surviving Progress titles are retained verbatim. In 5.7, "invalid response" includes refusal/incomplete HTTP responses and unexpected tool output. Superseded baseline criteria were retired, not marked complete; replacement acceptance uses new IDs.
 
+Accepted verification adaptation, 2026-10-31: the author accepts criterion 5.7 using the existing offline fault fixtures run by hosted CI together with recorded live incomplete-response, publication-failure, protected operational-error, and recovery observations. Separate live injection of every named fault is not required, and no production fault-injection mode will be added. Preserve the criterion title; the accepted evidence and its limits are documented in [operational failure acceptance](reviews/operational-failure-acceptance.md).
+
 ### Success Criteria
 
 #### Automated Verification:
@@ -304,9 +306,9 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Manual
 
-- [ ] 4.6 The author verifies a private backup and a sanitized rewrite preserving project history, removes 10x materials from all refs intended for publication, and retains ignored local copies.
-- [ ] 4.7 The author approves the verified publication inventory and makes the sanitized repository public on GitHub Free; no unsanitized branch or tag remains published.
-- [ ] 4.8 The author configures a project OpenAI API key as `OPENAI_API_KEY`, selects `AI_REVIEW_MODEL`, sets `AI_REVIEW_OWNER`, pre-creates the three labels, and verifies usable API funds and model access during the first acceptance review.
+- [x] 4.6 The author verifies a private backup and a sanitized rewrite preserving project history, removes 10x materials from all refs intended for publication, and retains ignored local copies.
+- [x] 4.7 The author approves the verified publication inventory and makes the sanitized repository public on GitHub Free; no unsanitized branch or tag remains published.
+- [x] 4.8 The author configures a project OpenAI API key as `OPENAI_API_KEY`, selects `AI_REVIEW_MODEL`, sets `AI_REVIEW_OWNER`, pre-creates the three labels, and verifies usable API funds and model access during the first acceptance review.
 
 ### Phase 5: Integrated verification and live acceptance
 
@@ -318,12 +320,12 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Manual
 
-- [ ] 5.4 A new owner-authored PR to `master` receives one bot comment, scores and `pass`, the correct head-SHA check, and `ai-cr:passed`; a draft PR follows the same rule.
-- [ ] 5.5 A later commit updates the same comment ID; an evident blocking defect produces `fail`, `ai-cr:failed`, and a red check, and removing the defect allows a later green review.
-- [ ] 5.6 Adding `ai-cr:review` reruns the current SHA, consumes the label, and updates the same comment; adding an unrelated label after a rejection does not run Codex or turn the required check green.
-- [ ] 5.7 Controlled authentication failure, timeout, invalid response, and publication failure are visibly distinguishable from a code rejection, clear obsolete course result labels where the API is available, and never report success.
-- [ ] 5.10 After enabling branch protection, the author confirms that an ordinary merge is blocked by both a rejected review and an operational failure, and that an eligible valid pass can satisfy the review requirement.
-- [ ] 5.12 Two quick commits or same-SHA retries cannot publish an older result over the latest review; ineligible requests do not reach the hosted inference job.
-- [ ] 5.13 A moved master blocks merging an outdated PR, and an owner-performed rebase or merge followed by push automatically reruns CI and review without adding a retry label.
-- [ ] 5.14 Forced cancellation or unavailable hosted execution leaves no newly successful review; the author verifies recovery through a fresh eligible request and understands API-outage limitations.
-- [ ] 5.15 The first live reviews record model, prompt identity, token usage, and approximate cost, confirming that the selected limits fit the available API test budget.
+- [x] 5.4 A new owner-authored PR to `master` receives one bot comment, scores and `pass`, the correct head-SHA check, and `ai-cr:passed`; a draft PR follows the same rule.
+- [x] 5.5 A later commit updates the same comment ID; an evident blocking defect produces `fail`, `ai-cr:failed`, and a red check, and removing the defect allows a later green review.
+- [x] 5.6 Adding `ai-cr:review` reruns the current SHA, consumes the label, and updates the same comment; adding an unrelated label after a rejection does not run Codex or turn the required check green.
+- [x] 5.7 Controlled authentication failure, timeout, invalid response, and publication failure are visibly distinguishable from a code rejection, clear obsolete course result labels where the API is available, and never report success.
+- [x] 5.10 After enabling branch protection, the author confirms that an ordinary merge is blocked by both a rejected review and an operational failure, and that an eligible valid pass can satisfy the review requirement.
+- [x] 5.12 Two quick commits or same-SHA retries cannot publish an older result over the latest review; ineligible requests do not reach the hosted inference job.
+- [x] 5.13 A moved master blocks merging an outdated PR, and an owner-performed rebase or merge followed by push automatically reruns CI and review without adding a retry label.
+- [x] 5.14 Forced cancellation or unavailable hosted execution leaves no newly successful review; the author verifies recovery through a fresh eligible request and understands API-outage limitations.
+- [x] 5.15 The first live reviews record model, prompt identity, token usage, and approximate cost, confirming that the selected limits fit the available API test budget.
