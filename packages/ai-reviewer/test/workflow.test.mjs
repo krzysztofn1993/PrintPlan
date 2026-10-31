@@ -5,9 +5,36 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { URL } from "node:url";
 import { execFileSync } from "node:child_process";
+import { runInNewContext } from "node:vm";
 import { parse } from "yaml";
 import { collectDiff } from "../src/input/diff.mjs";
+import { event } from "./fixtures/github.mjs";
 const workflow = parse(await readFile(new URL("../../../.github/workflows/review.yml", import.meta.url), "utf8"));
+
+test("forks and bots are skipped even when repository variables are unavailable", () => {
+  // Exercise the actual YAML boolean guards with fixed strings; this is not a general Actions evaluator.
+  for (const owner of ["", "owner"]) {
+    for (const kind of ["eligible", "fork", "author-bot", "sender-bot", "unrelated-label", "retry"]) {
+      const value = event({ sender: { login: "owner", type: "User" } });
+      if (kind === "fork") value.pull_request.head.repo.full_name = "external/PrintPlan";
+      if (kind === "author-bot") value.pull_request.user.type = "Bot";
+      if (kind === "sender-bot") value.sender.type = "Bot";
+      if (["unrelated-label", "retry"].includes(kind)) {
+        value.action = "labeled";
+        value.label = { name: kind === "retry" ? "ai-cr:review" : "accessibility" };
+      }
+      const expected = ["eligible", "retry"].includes(kind);
+      for (const name of ["prepare", "publish"]) {
+        const allowed = runInNewContext(workflow.jobs[name].if, {
+          github: { event: value, repository: value.repository.full_name, actor: value.sender.login },
+          vars: { AI_REVIEW_OWNER: owner },
+          always: () => true,
+        });
+        assert.equal(allowed, expected, `${name}: ${kind}, owner=${owner || "missing"}`);
+      }
+    }
+  }
+});
 
 test("routing is pull_request master including automatic synchronize and only retry-label events qualify", () => {
   assert.deepEqual(workflow.on, {
