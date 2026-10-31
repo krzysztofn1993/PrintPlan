@@ -16,6 +16,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm ci --ignore-scripts --prefix packages/ai-reviewer
+      - run: npm run test:ai-review
       - run: npm run test:hooks
       - run: npm run test:auth
       - run: npm run test:spools

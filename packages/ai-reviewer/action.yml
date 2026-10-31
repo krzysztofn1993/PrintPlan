@@ -1,0 +1,37 @@
+name: PrintPlan static review
+description: Review bounded text using an explicit OpenAI model and no tools
+inputs:
+  context:
+    description: Trusted context JSON path
+    required: true
+  input:
+    description: Bounded review input JSON path
+    required: true
+  model:
+    description: Explicit API model identifier
+    required: true
+  output:
+    description: Operational envelope output path
+    required: true
+outputs:
+  envelope:
+    description: Operational envelope path
+    value: ${{ steps.inference.outputs.envelope }}
+  verdict:
+    description: Validated verdict or empty on operational error
+    value: ${{ steps.inference.outputs.verdict }}
+  review:
+    description: Validated review path or empty on operational error
+    value: ${{ steps.inference.outputs.review }}
+runs:
+  using: composite
+  steps:
+    - id: inference
+      shell: bash
+      env:
+        REVIEW_CONTEXT: ${{ inputs.context }}
+        REVIEW_INPUT: ${{ inputs.input }}
+        REVIEW_OUTPUT: ${{ inputs.output }}
+        AI_REVIEW_MODEL: ${{ inputs.model }}
+        REVIEW_PACKAGE: ${{ github.action_path }}
+      run: node "$REVIEW_PACKAGE/src/cli/review.mjs" "$REVIEW_CONTEXT" "$REVIEW_INPUT" "$REVIEW_OUTPUT"
