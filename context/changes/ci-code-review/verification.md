@@ -67,3 +67,12 @@ Rebased only this change's six commits onto `6c2166a`, following the remote hist
 The private pre-rebase bundle and local tooling copy are outside this repository at `/root/work/PrintPlan-private-before-rebase-20261031/`. No push was performed.
 
 Post-rebase verification: `npm run test:ai-review` passed (38 tests); `npm run verify:deploy` passed; formatting passed. All 175 paths removed by the upstream cleanup are absent from this branch's reachable history. The retained smoke job matches the rebased baseline structurally. Local `master` equals `origin/master`.
+
+## Local VM import verification — 2026-10-31
+
+- Imported all seven commits through `9a99717` from VM `printplan`, `/root/work/PrintPlan`, branch `ci-code-review`. Source tracked and untracked status was clean; no pending files required transfer. The source worktree was left unchanged.
+- Base is current `origin/master` at `6c2166a`; no further rebase or SHA remapping was needed. None of the 175 paths removed by upstream cleanup appears in the imported branch's reachable history. Only the selected branch was bundled.
+- Preserved the destination's old local master and unrelated roadmap edit; verification used an isolated worktree. Existing application sources, tests, root lockfile, and the full smoke job remain unchanged.
+- Node `24.21.0`: `HUSKY=0 npm ci`, standalone `npm ci --ignore-scripts --prefix packages/ai-reviewer`, `npm run test:ai-review` (38 tests), `npm run verify:deploy`, and Prettier checking every changed file all passed. No live API inference was invoked. Database/browser/HTTP smoke execution was not performed.
+- Non-blocking output: root install reported 30 dependency vulnerabilities; Astro reported six existing unused-parameter hints and the missing sitemap `site` option.
+- GitHub account is `krzysztofn1993`, matching the intended owner. Reading `AI_REVIEW_OWNER` returned HTTP 404; configuration and live acceptance remain separate operator steps. Merge this infrastructure into master before opening the subsequent controlled test PR.
