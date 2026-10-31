@@ -60,7 +60,10 @@ export function checkIdentity(check, repository, pr) {
     )
       return null;
     const url = `https://github.com/${repository}/actions/runs/${id.runId}/attempts/${id.runAttempt}`;
-    return check.details_url === url ? id : null;
+    // GitHub Actions may replace the requested details URL with its own check-run URL.
+    const managedUrl =
+      Number.isSafeInteger(check.id) && check.id > 0 ? `https://github.com/${repository}/runs/${check.id}` : null;
+    return check.details_url === url || (managedUrl !== null && check.details_url === managedUrl) ? id : null;
   } catch {
     return null;
   }
