@@ -32,6 +32,12 @@ npm run dev
   preview, use the command and environment values in the F-01 runbook.
 - `npm run lint` and `npm run build` run their individual checks.
 
+## Merging into master
+
+Changes to `master` require a pull request with an up-to-date branch and successful `ci`, `smoke`,
+and `AI Code Review` checks from GitHub Actions (app ID `15368`). No human approval is required.
+These rules also apply to administrators; force pushes and deletion of `master` are blocked.
+
 ## Hosted authentication
 
 The durable [hosted authentication setup and acceptance guide](context/foundation/hosted-auth.md)
