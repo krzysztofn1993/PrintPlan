@@ -57,12 +57,14 @@ export function fakeGitHub() {
         if (!found) return response(404, {});
         const id = JSON.parse(found.external_id);
         return response(200, {
+          head_sha: id.head,
           event: "pull_request",
           path: ".github/workflows/review.yml",
           repository: { full_name: id.repository },
           head_repository: { full_name: id.repository },
           run_attempt: id.runAttempt,
-          pull_requests: [{ number: id.pr, head: { sha: id.head }, base: { sha: id.base } }],
+          // GitHub updates these nested refs when the PR moves, even for older runs.
+          pull_requests: [{ number: id.pr, head: { sha: state.pr.head.sha }, base: { sha: state.pr.base.sha } }],
         });
       }
 

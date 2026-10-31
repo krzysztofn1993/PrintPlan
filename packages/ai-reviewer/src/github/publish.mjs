@@ -1,9 +1,9 @@
-import { CHECK_NAME, BOT, trustedCheck, checks, freshness, recoverCheck, runUrl } from "./prepare.mjs";
+import { CHECK_NAME, BOT, trustedCheck, freshness, recoverCheck, runUrl } from "./prepare.mjs";
 import { MARKER, provenance, renderComment } from "../reporting/comment.mjs";
+import { safeGitHubErrorCode } from "./client.mjs";
 
-export async function ownedComment(client, id) {
+export async function ownedComment(client, id, runs = new Map()) {
   const comments = await client.pages(`/issues/${id.pr}/comments`);
-  const trusted = await checks(client, id);
   for (const comment of comments) {
     if (
       comment.user?.login !== BOT ||
@@ -12,20 +12,18 @@ export async function ownedComment(client, id) {
       comment.issue_url !== `https://api.github.com/repos/${id.repository}/issues/${id.pr}`
     )
       continue;
-    for (const check of trusted) {
-      const source = await trustedCheck(client, check, id.repository, id.pr);
-      if (source && comment.body.includes(provenance(source, check.id))) return comment;
-    }
     // Comments from earlier head SHAs retain verifiable check provenance.
     const match = comment.body.match(/<!-- provenance:([\w.-]+\/[\w.-]+):(\d+):(\d+):(\d+):(\d+) -->/);
     if (!match || match[1] !== id.repository || Number(match[2]) !== id.pr) continue;
     const check = await client.request("GET", `/check-runs/${match[3]}`, undefined, { missing: true });
-    const source = check && (await trustedCheck(client, check, id.repository, id.pr));
+    const source = check && (await trustedCheck(client, check, id.repository, id.pr, runs));
     if (source && comment.body.includes(provenance(source, check.id))) return comment;
   }
   return null;
 }
 export async function publishReview({ client, id, context, envelope, preparationError = "PREPARATION_FAILED" }) {
+  // Cache run provenance only for this invocation. Live PR/check freshness is never cached.
+  const runs = new Map();
   const check = await recoverCheck(client, id);
   if (!check) throw new Error("CHECK_NOT_FOUND");
   // Duplicate delivery never rewrites an already completed execution.
@@ -43,7 +41,7 @@ export async function publishReview({ client, id, context, envelope, preparation
       },
       { retry: true },
     );
-  const stale = await freshness(client, id);
+  const stale = await freshness(client, id, runs);
   if (stale) {
     await complete(
       "cancelled",
@@ -69,7 +67,7 @@ export async function publishReview({ client, id, context, envelope, preparation
     envelope = null;
   }
   const guard = async () => {
-    if (await freshness(client, id)) throw new Error("SUPERSEDED");
+    if (await freshness(client, id, runs)) throw new Error("SUPERSEDED");
   };
   const clear = async (label) => {
     await guard();
@@ -78,16 +76,20 @@ export async function publishReview({ client, id, context, envelope, preparation
       missing: true,
     });
   };
+  let operation = "clear_result_labels";
   try {
     // Clear obsolete outcomes before advertising a replacement.
     await clear("ai-cr:passed");
     await clear("ai-cr:failed");
-    const existing = await ownedComment(client, id);
+    operation = "comment_lookup";
+    const existing = await ownedComment(client, id, runs);
     await guard();
     const body = renderComment({ id, checkId: check.id, envelope: error ? null : envelope, error });
+    operation = "comment_write";
     if (existing) await client.request("PATCH", `/issues/comments/${existing.id}`, { body }, { retry: true });
     else await client.request("POST", `/issues/${id.pr}/comments`, { body });
     if (!error) {
+      operation = "result_label";
       await guard();
       await client.request(
         "POST",
@@ -97,6 +99,7 @@ export async function publishReview({ client, id, context, envelope, preparation
       );
     }
     await guard();
+    operation = "check_completion";
     const conclusion = error
       ? error === "DEADLINE_EXCEEDED"
         ? "timed_out"
@@ -111,8 +114,9 @@ export async function publishReview({ client, id, context, envelope, preparation
         : `Validated code verdict: ${envelope.review.verdict}. Comment and labels published.`,
     );
     return { conclusion };
-  } catch {
-    const moved = await freshness(client, id);
+  } catch (cause) {
+    const errorCode = safeGitHubErrorCode(cause);
+    const moved = await freshness(client, id, runs);
     if (!moved) {
       // A partial publication cannot leave a result label claiming approval.
       for (const label of ["ai-cr:passed", "ai-cr:failed"]) {
@@ -123,7 +127,7 @@ export async function publishReview({ client, id, context, envelope, preparation
         }
       }
       try {
-        const existing = await ownedComment(client, id);
+        const existing = await ownedComment(client, id, runs);
         await guard();
         const body = renderComment({ id, checkId: check.id, error: "PUBLICATION_FAILED" });
         // Never repeat an ambiguous comment POST: an outage may hide its successful creation.
@@ -136,8 +140,8 @@ export async function publishReview({ client, id, context, envelope, preparation
       moved ? "cancelled" : "failure",
       moved
         ? "SUPERSEDED: a newer review owns publication."
-        : "PUBLICATION_FAILED: no successful review was published.",
+        : `PUBLICATION_FAILED: ${operation} (${errorCode}); no successful review was published.`,
     );
-    return { conclusion: moved ? "cancelled" : "failure" };
+    return { conclusion: moved ? "cancelled" : "failure", errorCode, operation };
   }
 }

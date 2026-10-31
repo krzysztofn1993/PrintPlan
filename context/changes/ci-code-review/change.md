@@ -24,4 +24,4 @@ All five review findings are addressed in the reconciled plan. Publication clean
 
 The author reports USD 21 available for testing; verify that these are usable API funds and record actual usage after initial calls.
 
-The automated plan scope is implemented and verified. Per-phase gate evidence is recorded in `verification.md`, and the canonical Progress section records completed Automated rows and commits. Paid inference, history rewriting, pushes, repository visibility changes, and Manual acceptance have not been performed.
+The automated plan scope is implemented and verified. Per-phase gate evidence is recorded in `verification.md`, and the canonical Progress section records completed Automated rows and commits. The original automated run did not perform operator operations or paid inference. Subsequent operator setup and the successful PR #39 live review are recorded in `verification.md`; full Manual acceptance remains pending.

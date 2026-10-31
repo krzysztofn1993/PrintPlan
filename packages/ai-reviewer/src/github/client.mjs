@@ -1,5 +1,13 @@
 import { setTimeout } from "node:timers/promises";
 
+export function safeGitHubErrorCode(error) {
+  return /^(GITHUB_(HTTP_[1-5]\d{2}|UNAVAILABLE|INVALID_RESPONSE|RATE_LIMITED)|SUPERSEDED|CHECK_NOT_FOUND)$/.test(
+    error?.message,
+  )
+    ? error.message
+    : "PUBLICATION_ERROR";
+}
+
 export class GitHubClient {
   constructor({ token, repository, fetchImpl = fetch, sleep = setTimeout }) {
     if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error("GITHUB_CONFIG_REQUIRED");
@@ -9,7 +17,7 @@ export class GitHubClient {
     this.sleep = sleep;
   }
   async request(method, path, body, { retry = false, missing = false } = {}) {
-    // The deployment target is public. Limit anonymous access to this immutable read
+    // The deployment target is public. Limit anonymous access to workflow run reads
     // instead of broadening the mutation jobs' token permissions to Actions:read.
     const publicRunRead = method === "GET" && /^\/actions\/runs\/\d+$/.test(path) && body === undefined;
     for (let attempt = 1; attempt <= (retry ? 3 : 1); attempt++) {
@@ -35,7 +43,12 @@ export class GitHubClient {
       }
       if (missing && response.status === 404) return null;
       if (response.ok) return response.status === 204 ? null : response.json();
-      if (retry && [429, 500, 502, 503, 504].includes(response.status) && attempt < 3) {
+      if (
+        response.status === 429 ||
+        (response.status === 403 && response.headers?.get("x-ratelimit-remaining") === "0")
+      )
+        throw new Error("GITHUB_RATE_LIMITED");
+      if (retry && [500, 502, 503, 504].includes(response.status) && attempt < 3) {
         await this.sleep(attempt * 100);
         continue;
       }

@@ -69,18 +69,25 @@ export function checkIdentity(check, repository, pr) {
   }
 }
 // Validate that a marker/check belongs to this workflow's PR run, not another bot workflow.
-export async function trustedCheck(client, check, repository, pr) {
+export async function trustedCheck(client, check, repository, pr, runs = new Map()) {
   const id = checkIdentity(check, repository, pr);
   if (!id) return null;
-  const run = await client.request("GET", `/actions/runs/${id.runId}`, undefined, { missing: true });
+  let run = runs.get(id.runId);
+  if (!run || run.run_attempt < id.runAttempt) {
+    run = await client.request("GET", `/actions/runs/${id.runId}`, undefined, { missing: true });
+    if (run) runs.set(id.runId, run);
+  }
   if (
     !run ||
     run.event !== "pull_request" ||
     run.path?.split("@")[0] !== ".github/workflows/review.yml" ||
     run.repository?.full_name !== repository ||
     run.head_repository?.full_name !== repository ||
+    run.head_sha !== id.head ||
+    !Number.isSafeInteger(run.run_attempt) ||
     run.run_attempt < id.runAttempt ||
-    !run.pull_requests?.some((item) => item.number === pr && item.head.sha === id.head && item.base.sha === id.base)
+    // Nested PR refs track the current branch, including in historical run responses.
+    !run.pull_requests?.some((item) => item.number === pr)
   )
     return null;
   return id;
@@ -94,12 +101,12 @@ export async function checks(client, id) {
     "check_runs",
   );
 }
-export async function freshness(client, id) {
+export async function freshness(client, id, runs = new Map()) {
   const pr = await client.request("GET", `/pulls/${id.pr}`);
   if (pr.head.sha !== id.head || pr.base.sha !== id.base || pr.state === "closed") return "BRANCH_MOVED";
   const list = await checks(client, id);
   for (const check of list) {
-    const other = await trustedCheck(client, check, id.repository, id.pr);
+    const other = await trustedCheck(client, check, id.repository, id.pr, runs);
     if (other && newer(other, id)) return "SUPERSEDED";
   }
   return null;
@@ -122,8 +129,9 @@ export async function prepareCheck({
   },
 }) {
   if (!eligible(event, owner)) return null;
+  const runs = new Map();
   const id = execution(event, runId, runAttempt);
-  if (await freshness(client, id)) throw new Error("STALE_PREPARATION");
+  if (await freshness(client, id, runs)) throw new Error("STALE_PREPARATION");
   let check = await recoverCheck(client, id);
   if (!check) {
     check = await client.request("POST", "/check-runs", {
@@ -137,7 +145,7 @@ export async function prepareCheck({
   }
   await persist({ ...id, checkId: check.id, completed: check.status === "completed" });
   if (event.action === "labeled") {
-    if (await freshness(client, id)) throw new Error("STALE_PREPARATION");
+    if (await freshness(client, id, runs)) throw new Error("STALE_PREPARATION");
     await client.request("DELETE", `/issues/${id.pr}/labels/ai-cr%3Areview`, undefined, { missing: true, retry: true });
   }
   return { ...id, checkId: check.id };

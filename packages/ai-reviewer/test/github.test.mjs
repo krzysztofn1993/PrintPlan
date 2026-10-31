@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { prepareCheck, eligible, execution, recoverCheck, checkIdentity, runUrl } from "../src/github/prepare.mjs";
+import {
+  prepareCheck,
+  eligible,
+  execution,
+  recoverCheck,
+  checkIdentity,
+  runUrl,
+  trustedCheck,
+} from "../src/github/prepare.mjs";
 import { publishReview, ownedComment } from "../src/github/publish.mjs";
 import { MARKER } from "../src/reporting/comment.mjs";
+import { safeGitHubErrorCode } from "../src/github/client.mjs";
 import { context, envelope } from "./fixtures/review.mjs";
 import { event, fakeGitHub } from "./fixtures/github.mjs";
 const prepare = (client, runId = context.runId, runAttempt = 1, extra = {}) =>
@@ -332,4 +341,88 @@ test("run provenance accepts documented workflow path ref suffix but rejects oth
   assert.ok(await ownedComment(client, id));
   suffixPath = ".github/workflows/review-copy.yml@master";
   assert.equal(await ownedComment(client, id), null);
+});
+
+test("historical provenance binds immutable run head and PR association despite moved nested refs", async () => {
+  const { client, state } = fakeGitHub();
+  const id = await prepare(client);
+  await publish(client, id);
+  state.pr.head.sha = "d".repeat(40);
+  state.pr.base.sha = "e".repeat(40);
+  assert.ok(await ownedComment(client, id));
+  const original = client.fetchImpl;
+  for (const patch of [
+    { head_sha: "f".repeat(40) },
+    { pull_requests: [{ number: 99 }] },
+    { repository: { full_name: "other/repo" } },
+    { head_repository: { full_name: "fork/repo" } },
+    { event: "push" },
+    { run_attempt: 0 },
+    { run_attempt: undefined },
+  ]) {
+    client.fetchImpl = async (url, options) => {
+      const response = await original(url, options);
+      if (!url.includes("/actions/runs/")) return response;
+      return { ...response, json: async () => ({ ...(await response.json()), ...patch }) };
+    };
+    assert.equal(await ownedComment(client, id), null);
+  }
+});
+
+test("publication reads each run once while refreshing live head and checks before mutations", async () => {
+  const { client, state } = fakeGitHub();
+  await publish(client, await prepare(client));
+  const id = await prepare(client, "124");
+  const seen = new Set();
+  const original = client.fetchImpl;
+  client.fetchImpl = async (url, options) => {
+    if (url.includes("/actions/runs/")) {
+      if (seen.has(url)) return { ok: false, status: 403, headers: { get: () => "0" } };
+      seen.add(url);
+    }
+    return original(url, options);
+  };
+  assert.equal((await publish(client, id)).conclusion, "success");
+  assert.equal(seen.size, 2);
+  assert.equal(state.comments.length, 1);
+});
+
+test("run metadata cache refreshes when checking a later attempt of the same run", async () => {
+  const { client, state } = fakeGitHub();
+  await prepare(client);
+  const runs = new Map();
+  assert.ok(await trustedCheck(client, state.checks[0], context.repository, 1, runs));
+  assert.ok(await trustedCheck(client, state.checks[0], context.repository, 1, runs));
+  assert.equal(state.calls.filter((call) => call.path === "/actions/runs/123").length, 1);
+  await prepare(client, "123", 2);
+  assert.ok(await trustedCheck(client, state.checks.at(-1), context.repository, 1, runs));
+  assert.ok(await trustedCheck(client, state.checks.at(-1), context.repository, 1, runs));
+  const reads = state.calls.filter((call) => call.path === "/actions/runs/123");
+  assert.equal(reads.length, 3); // initial lookup, preparation, refreshed attempt
+});
+
+test("publication reports a safe failing operation and HTTP code without response bodies or secrets", async () => {
+  const { client, state } = fakeGitHub();
+  const id = await prepare(client);
+  state.failures.push({ method: "POST", path: "/comments", status: 403, count: 1 });
+  const result = await publish(client, id);
+  assert.equal(result.conclusion, "failure");
+  assert.equal(result.errorCode, "GITHUB_HTTP_403");
+  assert.equal(result.operation, "comment_write");
+  assert.match(state.checks[0].output.summary, /comment_write.*GITHUB_HTTP_403/);
+  assert.ok(!JSON.stringify(result).includes("fake-github-secret"));
+  for (const message of ["fake-github-secret", "GITHUB_HTTP_403 fake-github-secret", "GITHUB_HTTP_403\nsecret"])
+    assert.equal(safeGitHubErrorCode(new Error(message)), "PUBLICATION_ERROR");
+});
+
+test("exhausted anonymous quota is distinguished from a generic forbidden response", async () => {
+  const { client, state } = fakeGitHub();
+  const id = await prepare(client);
+  const original = client.fetchImpl;
+  client.fetchImpl = async (url, options) => {
+    if (!url.includes("/actions/runs/")) return original(url, options);
+    return { ok: false, status: 403, headers: { get: () => "0" } };
+  };
+  await assert.rejects(publish(client, id), /GITHUB_RATE_LIMITED/);
+  assert.notEqual(state.checks[0].conclusion, "success");
 });
