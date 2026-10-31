@@ -1,9 +1,9 @@
 ---
 project: PrintPlan
 version: 3
-status: draft
+status: done
 created: 2026-10-09
-updated: 2026-10-26
+updated: 2026-10-31
 prd_version: 3
 main_goal: speed
 top_blocker: decisions
@@ -41,17 +41,17 @@ The sequencing goal is `speed`, confirmed by the author. The author has resolved
 
 ## At a glance
 
-| ID   | Change ID                    | Outcome (user can …)                                                                                                                                                                        | Prerequisites | PRD refs                                                                                                   | Status   |
-| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
-| F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done     |
-| F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done     |
-| S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | done |
-| S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | done |
-| S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done |
-| S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | done |
-| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | done |
-| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | done |
-| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done |
+| ID   | Change ID                    | Outcome (user can …)                                                                                                                                                                        | Prerequisites | PRD refs                                                                                                   | Status |
+| ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- | ------ |
+| F-01 | verified-account-access      | (foundation) the existing account integration is configured and verified for registration, login, cookie sessions, and the agreed protected-page redirect.                                  | —             | FR-001, Access Control                                                                                     | done   |
+| F-02 | hosted-auth-verification     | (foundation) a hosted instance can run the existing account smoke checks and support verification of persistent product data.                                                               | F-01          | FR-001, Non-Functional Requirements: persistence across refreshes and logins                               | done   |
+| S-01 | personal-filament-stock      | user can add, view, correct, and delete their own unreserved spools, with material, colour, estimated stock, and explained recorded, reserved, and available grams.                         | F-01          | FR-001, FR-002, FR-005                                                                                     | done   |
+| S-02 | personal-planned-prints      | user can create, view, edit, and delete their own unreserved planned prints with material, colour, and required grams.                                                                      | F-01          | FR-001, FR-003                                                                                             | done   |
+| S-03 | reserve-and-release-material | user can reserve material through best-fit or an eligible manual choice with the default 10% margin, see insufficient-material feedback, and cancel a reservation to release its grams.     | S-01, S-02    | US-01, FR-004, FR-005, FR-006                                                                              | done   |
+| S-04 | account-safety-margin        | user can change their account margin while existing reservations retain their grams and new best-fit or manual reservations use the new value.                                              | S-03          | US-02, FR-004, FR-008                                                                                      | done   |
+| S-05 | edit-reserved-print          | user can edit a reserved print using the current account margin, retain a manually selected spool when eligible, otherwise use best-fit, and save the print unreserved when no spool fits.  | S-03, S-04    | US-02, FR-003, FR-004, FR-008                                                                              | done   |
+| S-06 | maintain-reserved-spool      | user can correct a reserved spool's recorded stock subject to the reservation guardrail, or delete it and see which reservations were automatically cancelled.                              | S-03          | FR-002, FR-005, FR-006, Non-Functional Requirements: automatic cancellation feedback                       | done   |
+| S-07 | settle-print-consumption     | user can settle a completed print once, deduct actual consumption, release its reservation, and see other reservations cancelled newest first until they fit the remaining estimated stock. | S-03          | FR-007, FR-005, FR-006, Non-Functional Requirements: automatic cancellation and exceeded-estimate feedback | done   |
 
 ## Streams
 
@@ -195,17 +195,17 @@ S-01/S-02 initially support unreserved records. When S-03 introduces reservation
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                    | Suggested issue title                             | Ready for `/10x-plan` | Notes                                                                 |
-| ---------- | ---------------------------- | ------------------------------------------------- | --------------------- | --------------------------------------------------------------------- |
-| F-01       | verified-account-access      | Verify configured account access                  | no                    | Done; archived at `context/archive/2026-10-09-verified-account-access/`. |
-| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; archived at `context/archive/2026-10-10-hosted-auth-verification/`. |
-| S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Done; archived at `context/archive/2026-10-10-personal-filament-stock/`. |
-| S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Done; archived at `context/archive/2026-10-12-personal-planned-prints/`. |
+| Roadmap ID | Change ID                    | Suggested issue title                             | Ready for `/10x-plan` | Notes                                                                         |
+| ---------- | ---------------------------- | ------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------- |
+| F-01       | verified-account-access      | Verify configured account access                  | no                    | Done; archived at `context/archive/2026-10-09-verified-account-access/`.      |
+| F-02       | hosted-auth-verification     | Enable a hosted verification path                 | no                    | Done; archived at `context/archive/2026-10-10-hosted-auth-verification/`.     |
+| S-01       | personal-filament-stock      | Record and inspect filament stock                 | no                    | Done; archived at `context/archive/2026-10-10-personal-filament-stock/`.      |
+| S-02       | personal-planned-prints      | Maintain planned prints                           | no                    | Done; archived at `context/archive/2026-10-12-personal-planned-prints/`.      |
 | S-03       | reserve-and-release-material | Reserve and release material safely               | no                    | Done; archived at `context/archive/2026-10-16-reserve-and-release-material/`. |
-| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Done; archived at `context/archive/2026-10-17-account-safety-margin/`. |
-| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Done; archived at `context/archive/2026-10-20-edit-reserved-print/`. |
-| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Done; archived at `context/archive/2026-10-17-maintain-reserved-spool/`. |
-| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Done; archived at `context/archive/2026-10-17-settle-print-consumption/`. |
+| S-04       | account-safety-margin        | Configure the account safety margin               | no                    | Done; archived at `context/archive/2026-10-17-account-safety-margin/`.        |
+| S-05       | edit-reserved-print          | Recalculate a reservation after editing its print | no                    | Done; archived at `context/archive/2026-10-20-edit-reserved-print/`.          |
+| S-06       | maintain-reserved-spool      | Maintain a spool that has active reservations     | no                    | Done; archived at `context/archive/2026-10-17-maintain-reserved-spool/`.      |
+| S-07       | settle-print-consumption     | Settle actual consumption once                    | no                    | Done; archived at `context/archive/2026-10-17-settle-print-consumption/`.     |
 
 ## Open Roadmap Questions
 
