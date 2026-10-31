@@ -277,28 +277,28 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`. — a6d8278
-- [x] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`. — a6d8278
-- [x] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal. — a6d8278
+- [x] 1.2 Schema and prompt fixtures preserve all six course criteria and eight field names, reject malformed results, and demonstrate that code gating uses only `verdict`. — 685d0f8
+- [x] 1.3 Package contract tests pass with `npm --prefix packages/ai-reviewer run test:contracts` after `npm ci --ignore-scripts --prefix packages/ai-reviewer`. — 685d0f8
+- [x] 1.4 Package boundary fixtures load prompts and schemas independently of the working directory and reject unknown prompt IDs or path traversal. — 685d0f8
 
 ### Phase 2: OpenAI API adapter and composite action
 
 #### Automated
 
-- [x] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs. — 4d7b72a
-- [x] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output. — 4d7b72a
-- [x] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values. — 4d7b72a
+- [x] 2.3 Injection fixtures demonstrate that PR text is passed as data and that no PR script, hook, executable configuration, or shell tool runs. — 9aa5a58
+- [x] 2.4 HTTP adapter tests pass with `npm --prefix packages/ai-reviewer run test:adapter`, including abortable deadlines, refusals, incomplete responses, and malformed or oversized output. — 9aa5a58
+- [x] 2.5 Configuration and adapter fixtures require an explicit model and key, make no real network calls, disable inference retries, and expose no model tools or credential values. — 9aa5a58
 
 ### Phase 3: Workflow, publication, and merge check
 
 #### Automated
 
-- [x] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review. — 916638c
-- [x] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`. — 916638c
-- [x] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests. — 916638c
-- [x] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference. — 916638c
-- [x] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact. — 916638c
-- [x] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label. — 916638c
+- [x] 3.3 API fixtures prove one owned comment, mutually exclusive course result labels, red outcomes for all operational failures, and no stale or duplicate publication over a newer review. — 69be0fe
+- [x] 3.5 Workflow and publication tests pass with `npm --prefix packages/ai-reviewer run test:workflow` and `npm --prefix packages/ai-reviewer run test:github`. — 69be0fe
+- [x] 3.6 Event fixtures prove owner-only scheduling, automatic synchronize runs and retry-label consumption, without API inference or gate mutation on unrelated labels or ineligible requests. — 69be0fe
+- [x] 3.7 Permission and provenance assertions prove trusted-base package execution on hosted runners, no PR-controlled code execution in the review workflow, and no GitHub write credential in inference. — 69be0fe
+- [x] 3.8 A prior pass followed by a same-SHA retry and preparation failure leaves the new check red when GitHub is reachable, even without an input artifact. — 69be0fe
+- [x] 3.9 Freshness fixtures reject outdated head/base/run results and prove that branch updates schedule replacement review without a retry label. — 69be0fe
 
 ### Phase 4: Public repository preparation and API setup
 
@@ -312,9 +312,9 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Automated
 
-- [x] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage. — 7c3ca68
-- [x] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff. — 7c3ca68
-- [x] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation. — 7c3ca68
+- [x] 5.2 `npm run verify:deploy` passes with the project's existing build environment configured, and the existing integration workflow remains valid with its original `smoke` coverage. — b9b7d10
+- [x] 5.3 Touched Markdown/JSON/YAML files pass the repository formatter check, workflow fixtures validate routing/permissions, and only the agreed CI-review files appear in the implementation diff. — b9b7d10
+- [x] 5.11 `npm run test:ai-review` passes from clean root/package installs and runs the package offline suites without provider credentials, paid inference, or GitHub mutation. — b9b7d10
 
 #### Manual
 

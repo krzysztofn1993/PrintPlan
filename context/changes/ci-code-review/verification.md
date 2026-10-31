@@ -4,7 +4,7 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 
 ## Phase 1
 
-- Commit: `a6d8278`.
+- Commit: `685d0f8`.
 - Clean package install and contract/package tests: PASS (7 tests).
 - Deliberate break: inverted the verdict comparison; the verdict-only gate test failed; restored from staging.
 - `npm run verify:deploy`: PASS after fixing Node lint imports.
@@ -14,7 +14,7 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 
 ## Phase 2
 
-- Commit: `4d7b72a`.
+- Commit: `9aa5a58`.
 
 - Adapter/configuration fixtures: PASS (10 tests, injected fake HTTP only).
 - Combined package suite: PASS (17 tests).
@@ -24,7 +24,7 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 
 ## Phase 3
 
-- Commit: `916638c`.
+- Commit: `69be0fe`.
 
 - Workflow fixtures: PASS (4 tests).
 - GitHub API fixtures: PASS (14 tests).
@@ -44,9 +44,26 @@ No live inference, GitHub mutations, paid calls, manual operations, pushes, hist
 - `npm run verify:deploy`: PASS (native contracts, lint, Astro diagnostics and production build).
 - Deliberate break: removed the nested reviewer install from CI; the integration fixture failed; restored from staging.
 - Touched Markdown/JSON/YAML formatter check and implementation path allowlist: PASS; original root lockfile unchanged.
-- Original CI smoke job compared structurally with baseline `455a118`: identical. Live smoke/database/browser execution is not claimed by this offline change.
+- Original CI smoke job compared structurally with baseline `e7e1b15`: identical. Live smoke/database/browser execution is not claimed by this offline change.
 - Setup/history/publication/API/key-rotation/acceptance/rollback runbook is documented in the package README; no operator steps were executed.
 
 ## Manual evidence pending
 
 All Manual Progress rows remain pending. There are no live reviewed SHAs, run URLs, comment IDs, provider request IDs, token usage, charges, or branch-protection results to report. Offline fixtures use fabricated identities only. The first owner acceptance review must record those fields before operator acceptance can be claimed.
+
+## Rebase onto sanitized master — 2026-10-31
+
+Rebased only this change's six commits onto `6c2166a`, following the remote history cleanup. `git range-diff` reports identical patches for all six commits. Active phase references above and in Progress now use the rebased commit IDs; archived project references were left unchanged.
+
+| Original commit | Rebased commit |
+| --------------- | -------------- |
+| `455a118`       | `e7e1b15`      |
+| `a6d8278`       | `685d0f8`      |
+| `4d7b72a`       | `9aa5a58`      |
+| `916638c`       | `69be0fe`      |
+| `7c3ca68`       | `b9b7d10`      |
+| `1397743`       | `60e7f29`      |
+
+The private pre-rebase bundle and local tooling copy are outside this repository at `/root/work/PrintPlan-private-before-rebase-20261031/`. No push was performed.
+
+Post-rebase verification: `npm run test:ai-review` passed (38 tests); `npm run verify:deploy` passed; formatting passed. All 175 paths removed by the upstream cleanup are absent from this branch's reachable history. The retained smoke job matches the rebased baseline structurally. Local `master` equals `origin/master`.
