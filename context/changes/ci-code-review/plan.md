@@ -320,12 +320,12 @@ Progress migration: surviving IDs/titles and checkbox state are preserved. Retir
 
 #### Manual
 
-- [x] 5.4 A new owner-authored PR to `master` receives one bot comment, scores and `pass`, the correct head-SHA check, and `ai-cr:passed`; a draft PR follows the same rule.
-- [x] 5.5 A later commit updates the same comment ID; an evident blocking defect produces `fail`, `ai-cr:failed`, and a red check, and removing the defect allows a later green review.
-- [x] 5.6 Adding `ai-cr:review` reruns the current SHA, consumes the label, and updates the same comment; adding an unrelated label after a rejection does not run Codex or turn the required check green.
-- [x] 5.7 Controlled authentication failure, timeout, invalid response, and publication failure are visibly distinguishable from a code rejection, clear obsolete course result labels where the API is available, and never report success.
-- [x] 5.10 After enabling branch protection, the author confirms that an ordinary merge is blocked by both a rejected review and an operational failure, and that an eligible valid pass can satisfy the review requirement.
-- [x] 5.12 Two quick commits or same-SHA retries cannot publish an older result over the latest review; ineligible requests do not reach the hosted inference job.
-- [x] 5.13 A moved master blocks merging an outdated PR, and an owner-performed rebase or merge followed by push automatically reruns CI and review without adding a retry label.
-- [x] 5.14 Forced cancellation or unavailable hosted execution leaves no newly successful review; the author verifies recovery through a fresh eligible request and understands API-outage limitations.
-- [x] 5.15 The first live reviews record model, prompt identity, token usage, and approximate cost, confirming that the selected limits fit the available API test budget.
+- [x] 5.4 A new owner-authored PR to `master` receives one bot comment, scores and `pass`, the correct head-SHA check, and `ai-cr:passed`; a draft PR follows the same rule. — 4362fa2
+- [x] 5.5 A later commit updates the same comment ID; an evident blocking defect produces `fail`, `ai-cr:failed`, and a red check, and removing the defect allows a later green review. — 4362fa2
+- [x] 5.6 Adding `ai-cr:review` reruns the current SHA, consumes the label, and updates the same comment; adding an unrelated label after a rejection does not run Codex or turn the required check green. — 4362fa2
+- [x] 5.7 Controlled authentication failure, timeout, invalid response, and publication failure are visibly distinguishable from a code rejection, clear obsolete course result labels where the API is available, and never report success. — 4362fa2
+- [x] 5.10 After enabling branch protection, the author confirms that an ordinary merge is blocked by both a rejected review and an operational failure, and that an eligible valid pass can satisfy the review requirement. — 4362fa2
+- [x] 5.12 Two quick commits or same-SHA retries cannot publish an older result over the latest review; ineligible requests do not reach the hosted inference job. — 4362fa2
+- [x] 5.13 A moved master blocks merging an outdated PR, and an owner-performed rebase or merge followed by push automatically reruns CI and review without adding a retry label. — 4362fa2
+- [x] 5.14 Forced cancellation or unavailable hosted execution leaves no newly successful review; the author verifies recovery through a fresh eligible request and understands API-outage limitations. — 4362fa2
+- [x] 5.15 The first live reviews record model, prompt identity, token usage, and approximate cost, confirming that the selected limits fit the available API test budget. — 4362fa2
