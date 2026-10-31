@@ -9,6 +9,8 @@ npm --prefix packages/ai-reviewer run test:contracts
 
 The bundled `code-review` Markdown prompts are resolved relative to the loader module. Edit them while preserving the six criteria and eight-field schema. A SHA-256 digest identifies the exact prompt contents. Unknown identifiers and paths are rejected. Local validation rejects extra fields, nonfinite scores, malformed summaries, and contradictory operational envelopes. Only a validated review's `verdict` gates code; scores never supply an implicit threshold.
 
+The review instructions require each blocking finding to identify hard evidence, a changed-code location, a triggering scenario, expected and incorrect results, an executable confirming test or reproducible steps, and attribution to the PR. The reviewer describes that test without executing it. A final validation checklist distinguishes demonstrated defects from concerns, missing context, missing coverage alone, or unrelated pre-existing behavior. These are model instructions; the existing runtime JSON validator checks structure and numeric bounds, not whether the evidence is true. Evaluate prompt changes against both known correct and deliberately incorrect code before relying on their verdicts.
+
 `src/config.mjs` requires explicit `OPENAI_API_KEY` and `AI_REVIEW_MODEL` settings. Credentials are transport inputs and must never appear in review envelopes or logs. The reviewer exposes no tools and executes no PR instructions. Operational errors carry a safe diagnostic and no review verdict. Live GitHub/API setup and publication acceptance remain operator tasks; contract fixtures make no network requests.
 
 The offline adapter suite uses injected fake HTTP only:
