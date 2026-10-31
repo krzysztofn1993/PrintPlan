@@ -72,6 +72,8 @@ export function checkIdentity(check, repository, pr) {
 export async function trustedCheck(client, check, repository, pr, runs = new Map()) {
   const id = checkIdentity(check, repository, pr);
   if (!id) return null;
+  // Cache historical run provenance only; freshness() re-reads live PR refs and checks.
+  // Moving nested PR refs does not change this run's top-level head_sha.
   let run = runs.get(id.runId);
   if (!run || run.run_attempt < id.runAttempt) {
     run = await client.request("GET", `/actions/runs/${id.runId}`, undefined, { missing: true });

@@ -401,6 +401,44 @@ test("run metadata cache refreshes when checking a later attempt of the same run
   assert.equal(reads.length, 3); // initial lookup, preparation, refreshed attempt
 });
 
+test("same-attempt head or base movement after caching run provenance cancels publication", async () => {
+  for (const branch of ["head", "base"]) {
+    const { client, state } = fakeGitHub();
+    const id = await prepare(client);
+    let runRead = false;
+    let moved = false;
+    state.before = ({ method, path }) => {
+      if (method !== "GET") return;
+      if (path === `/actions/runs/${id.runId}`) runRead = true;
+      if (path === "/pulls/1" && runRead && !moved) {
+        moved = true;
+        state.pr[branch].sha = "f".repeat(40);
+      }
+    };
+    assert.equal((await publish(client, id)).conclusion, "cancelled");
+    assert.equal(moved, true);
+    assert.equal(state.comments.length, 0);
+    assert.equal(state.labels.size, 0);
+    assert.equal(state.checks[0].conclusion, "cancelled");
+    assert.equal(state.calls.filter((call) => call.path === `/actions/runs/${id.runId}`).length, 1);
+  }
+});
+
+test("same-attempt nested PR ref changes do not invalidate cached historical provenance", async () => {
+  const { client, state } = fakeGitHub();
+  await prepare(client);
+  const runs = new Map();
+  const check = state.checks[0];
+  const original = await trustedCheck(client, check, context.repository, 1, runs);
+  state.pr.head.sha = "d".repeat(40);
+  state.pr.base.sha = "e".repeat(40);
+  const cached = await trustedCheck(client, check, context.repository, 1, runs);
+  const fresh = await trustedCheck(client, check, context.repository, 1);
+  assert.deepEqual(cached, original);
+  assert.deepEqual(fresh, original);
+  assert.equal(state.calls.filter((call) => call.path === "/actions/runs/123").length, 2);
+});
+
 test("publication reports a safe failing operation and HTTP code without response bodies or secrets", async () => {
   const { client, state } = fakeGitHub();
   const id = await prepare(client);

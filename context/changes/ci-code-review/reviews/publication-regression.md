@@ -27,6 +27,19 @@ GitHub documents a 60-request/hour/IP limit for anonymous REST access. Repeated 
 
 ## Deployment and remaining acceptance
 
-The correction is local and uncommitted. Existing duplicate comments were not deleted or modified. The fixed code will reuse the original trusted comment; it does not automatically remove historical duplicates.
+The host published the original correction as [PR #41](https://github.com/krzysztofn1993/PrintPlan/pull/41), head `718f8c1f304c6d868c8035f9edf5f2eb489384e0`. It is not merged. Existing duplicate comments were not deleted or modified. The fixed code will reuse the original trusted comment; it does not automatically remove historical duplicates.
 
 Merge the correction into trusted `master` before issuing a fresh eligible review. An old event retains its old trusted base. Updating the test branch with the corrected master and pushing requests replacement review automatically and incurs a new provider call. Verify original-comment continuity and successful publication before closing 5.5; retain the other pending Manual criteria.
+
+## PR #41 review assessment — 2026-10-31
+
+Run `41187355156` published a valid model rejection, not an operational publication error. Application `ci` and `smoke` passed. The reviewer alleged that same-attempt run metadata caching could permit stale publication after PR refs move.
+
+The claimed stale-publication defect is not reproduced: cached run metadata establishes historical provenance. `freshness()` separately reads `/pulls/{pr}` and the current-head check list before mutations; neither response is cached. Nested PR head/base refs are deliberately excluded from historical identity, while top-level run `head_sha` identifies the original execution. A later run attempt still forces a run metadata refresh.
+
+Added two targeted regressions without changing functional source behavior:
+
+- Move live head or base after the first run metadata read, within the same attempt and publication invocation. Both cases cancel the execution before comment/result-label publication, with only one run metadata read.
+- Change nested PR refs after populating the historical cache. Both cached and freshly fetched run metadata resolve to the same original trusted identity.
+
+The reviewer suite passes 46 tests; `npm run verify:deploy` and formatting also pass. A source comment now explicitly separates cached historical provenance from live freshness. The hosted review remains red until a new review is requested; this assessment does not override its verdict or claim hosted recovery.

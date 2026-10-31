@@ -160,6 +160,13 @@ Current stage: Phase 5, live acceptance. All 15 Automated Progress rows are chec
 - Hosted acceptance of this correction remains the responsibility of the coordinating agent after merge. The exact cause of the prior `PUBLICATION_FAILED` remains unconfirmed.
 - Host verification on Node `24.21.0`: `npm run test:ai-review` passed all 44 offline tests; `npm run verify:deploy` passed; Prettier passed for every imported or edited file. Existing Astro unused-parameter hints and the sitemap configuration warning remain non-blocking.
 
+### PR #41 review assessment — 2026-10-31
+
+- Host branch `fix/ai-review-publication`, head `718f8c1f304c6d868c8035f9edf5f2eb489384e0`, is open as [PR #41](https://github.com/krzysztofn1993/PrintPlan/pull/41) against base `10421c8a4713d4e6035db128f082f0e3795b4455`. Both application `ci` and `smoke` passed. Run `41187355156`, attempt 1, returned a valid model `fail`, successfully published comment `6541507419` and `ai-cr:failed`, and completed exact-head custom check `124496911625` with `failure`. This is a code-review rejection, not another `PUBLICATION_FAILED` incident.
+- Output artifact `review-output-v1-41187355156-1`: model `gpt-5.4-mini`, request ID `resp_053fbbe44a4e4d8b016ae5afd92cd487d18d66eb52ed2d7eb0`, unchanged prompt digest `94cf3b8c1dd4626f0adc71b1ca1dc3ed67a2e88fae1cebf4ebba6f107c38867f`, 13,858 input / 275 output / 14,133 total tokens. Started `2026-10-31T09:07:36.602Z`; completed `2026-10-31T09:07:39.407Z`. At the previously checked Standard rates, the uncached estimate is USD 0.011631, not a billing receipt.
+- The blocking claim confuses cached historical run provenance with live PR freshness. Added explicit same-attempt cache regressions: head/base movement after the cache is populated cancels publication; changed nested PR refs leave cached and fresh historical identities equivalent. All 46 reviewer tests pass. See [the assessment](reviews/publication-regression.md#pr-41-review-assessment--2026-10-31).
+- No functional source behavior changed in response to this unsupported claim; only two tests and an explanatory source comment were added locally. No remote mutation, paid retry, merge, or Manual checkbox change was performed. PR #41 remains open and red.
+
 ### Remaining acceptance
 
 - Obtain author confirmation of the observed ordinary and draft PR passes (5.4).
