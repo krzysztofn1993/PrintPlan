@@ -406,7 +406,7 @@ No application or database migration is needed. The runner and trusted workflow 
 
 #### Manual
 
-- [x] 3.5 Only if a hosted GitHub evaluation is later requested: create and approve a new exact manifest for that hosted run while keeping checked-in approval disabled. The author confirmed the trusted bootstrap is on `master` on 2026-11-01. The consumed local manifest cannot be reused. This is not required to adopt a model and does not require branch-protection changes. — Not applicable to this pilot; no hosted evaluation was requested, and no dispatch or branch-protection change was made.
+- [x] 3.5 Only if a hosted GitHub evaluation is later requested: create and approve a new exact manifest for that hosted run while keeping checked-in approval disabled. The author confirmed the trusted bootstrap is on `master` on 2026-11-01. The consumed local manifest cannot be reused. This is not required to adopt a model and does not require branch-protection changes. — Not applicable to this pilot; no hosted evaluation was requested, and no dispatch or branch-protection change was made; ab850bf.
 
 ### Phase 4: Pilot interpretation and holdout run
 
@@ -426,4 +426,4 @@ No application or database migration is needed. The runner and trusted workflow 
 - [x] 4.5a The author approved the models, 72-request count, maximum 24-hour approval window, GitHub credential date (2026-11-07), and $4.50 one-run cap; the temporary run approval used a 12-hour window.
 - [x] 4.5b The author accepted the final runner/corpus/prompt/schema/pricing digests and exact manifest; one authorized run completed. — 2026-11-01.
 - [x] 4.6 Defer recurring-gate planning until a concrete future need arises. It is not required to choose a model from the holdout comparison; no recurring spend or branch-protection change is approved.
-- [x] 4.9 Human-audit all 72 saved summaries for unsupported allegations and record those outcomes separately; make no additional provider calls. — 2026-11-01; all 72 reviewed case by case with the author, no unsupported allegations recorded, no additional provider calls.
+- [x] 4.9 Human-audit all 72 saved summaries for unsupported allegations and record those outcomes separately; make no additional provider calls. — 2026-11-01; all 72 reviewed case by case with the author, no unsupported allegations recorded, no additional provider calls; ab850bf.
