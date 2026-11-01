@@ -1,0 +1,248 @@
+name: Reviewer behavior evaluations
+
+on:
+  pull_request_target:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run an explicitly approved comparison or rerun a PR evaluation
+        required: true
+        type: choice
+        options: [comparison, pull-request]
+      pr_number:
+        description: Numeric PR number for a fresh trusted-ref rerun; leave empty for comparison
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+    concurrency:
+      group: reviewer-evals-pr-${{ github.repository }}-${{ github.event.pull_request.number || inputs.pr_number || 'comparison' }}
+      cancel-in-progress: false
+      queue: max
+    outputs:
+      eligible: ${{ steps.prepare.outputs.eligible || steps.manual.outputs.eligible }}
+      prompt_digest: ${{ steps.prepare.outputs.prompt_digest }}
+      check_id: ${{ steps.open-check.outputs.check_id }}
+      unchanged: ${{ steps.prepare.outputs.unchanged }}
+      head_sha: ${{ steps.prepare.outputs.head_sha }}
+      base_sha: ${{ steps.prepare.outputs.base_sha }}
+      pr_number: ${{ steps.prepare.outputs.pr_number }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Resolve fresh PR refs for manual rerun
+        id: manual-pr
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" > "$RUNNER_TEMP/pr.json"
+          node --input-type=module -e '
+            import {readFile,writeFile} from "node:fs/promises";
+            const p=JSON.parse(await readFile(process.argv[1],"utf8"));
+            if(p.base.ref!=="master"||p.state!=="open"||p.head.repo?.full_name!==process.env.GITHUB_REPOSITORY)process.exit(2);
+            const event={action:"opened",repository:{full_name:process.env.GITHUB_REPOSITORY},sender:{login:process.env.GITHUB_ACTOR,type:"User"},pull_request:{number:p.number,state:p.state,base:{ref:p.base.ref,sha:p.base.sha},head:{sha:p.head.sha,repo:{full_name:p.head.repo.full_name}},user:{login:p.user.login,type:p.user.type}}};
+            await writeFile(process.env.RUNNER_TEMP+"/eval-event.json",JSON.stringify(event));
+            await writeFile(process.env.RUNNER_TEMP+"/eval-refs.env",`EVAL_HEAD_SHA=${p.head.sha}\nEVAL_BASE_SHA=${p.base.sha}\nEVAL_PR_NUMBER=${p.number}\n`);
+            await writeFile(process.env.GITHUB_OUTPUT,`head_sha=${p.head.sha}\nbase_sha=${p.base.sha}\npr_number=${p.number}\n`,{flag:"a"});
+          ' "$RUNNER_TEMP/pr.json"
+      - name: Open pending check before fallible preparation
+        id: open-check
+        if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || steps.manual-pr.outputs.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          response="$(curl --fail --silent --show-error -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs" \
+            -d "{\"name\":\"AI Reviewer Evals\",\"head_sha\":\"${HEAD_SHA}\",\"status\":\"in_progress\",\"output\":{\"title\":\"Reviewer evaluation pending\",\"summary\":\"Trusted preparation is in progress.\"}}")"
+          check_id="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).id))' "$response")"
+          echo "check_id=$check_id" >> "$GITHUB_OUTPUT"
+      - name: Fetch PR head as Git data
+        if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || steps.manual-pr.outputs.head_sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || steps.manual-pr.outputs.base_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          [[ "$HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "refs/heads/master:refs/remotes/origin/master"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+      - name: Prepare candidate prompt data
+        id: prepare
+        if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
+        env:
+          AI_REVIEW_OWNER: ${{ vars.AI_REVIEW_OWNER }}
+          CANDIDATE_OUTPUT: ${{ runner.temp }}/eval-identity.json
+          EVAL_CHECK_ID: ${{ steps.open-check.outputs.check_id }}
+          EVAL_EVENT_PATH: ${{ github.event_name == 'workflow_dispatch' && format('{0}/eval-event.json', runner.temp) || '' }}
+        run: |
+          result="$(node packages/ai-reviewer/evals/github/prepare.mjs)"
+          echo "eligible=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.eligible))' "$result")" >> "$GITHUB_OUTPUT"
+          echo "prompt_digest=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.promptDigest||"")' "$result")" >> "$GITHUB_OUTPUT"
+          echo "check_id=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.checkId||""))' "$result")" >> "$GITHUB_OUTPUT"
+          echo "unchanged=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.unchanged||false))' "$result")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.head||"")' "$result")" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.base||"")' "$result")" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.pr||""))' "$result")" >> "$GITHUB_OUTPUT"
+      - name: Install trusted reviewer and eval dependencies
+        if: steps.prepare.outputs.eligible == 'true'
+        run: |
+          npm ci --ignore-scripts --prefix packages/ai-reviewer
+          npm ci --ignore-scripts --prefix packages/ai-reviewer/evals
+      - name: Select approved manual comparison
+        id: manual
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'comparison'
+        run: echo 'eligible=true' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: steps.prepare.outputs.eligible == 'true'
+        with:
+          name: eval-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/eval-candidate/packages/ai-reviewer/prompts/code-review/system.md
+            ${{ runner.temp }}/eval-candidate/packages/ai-reviewer/prompts/code-review/criteria.md
+            ${{ runner.temp }}/eval-identity.json
+          retention-days: 7
+      - name: Complete pending check if preparation cannot continue
+        if: always() && steps.open-check.outputs.check_id != '' && (failure() || cancelled() || steps.prepare.outputs.eligible != 'true')
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CHECK_ID: ${{ steps.open-check.outputs.check_id }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          ELIGIBLE: ${{ steps.prepare.outputs.eligible }}
+          CANCELLED: ${{ cancelled() }}
+        run: |
+          [[ "$CHECK_ID" =~ ^[1-9][0-9]*$ ]]
+          if [[ "$CANCELLED" == "true" ]]; then
+            conclusion="cancelled"
+            title="Reviewer evaluation cancelled"
+            summary="Trusted preparation was cancelled. See the workflow logs."
+          elif [[ "$PREPARE_OUTCOME" == "success" && "$ELIGIBLE" != "true" ]]; then
+            conclusion="failure"
+            title="Reviewer evaluation blocked"
+            summary="This pull request is not eligible for evaluation. No model request was made."
+          else
+            conclusion="failure"
+            title="Reviewer evaluation preparation failed"
+            summary="Trusted preparation did not complete. See the workflow logs."
+          fi
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 1 -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H 'Content-Type: application/json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs/${CHECK_ID}" \
+            -d "{\"status\":\"completed\",\"conclusion\":\"${conclusion}\",\"output\":{\"title\":\"${title}\",\"summary\":\"${summary}\"}}"
+
+  infer:
+    needs: prepare
+    if: needs.prepare.outputs.eligible == 'true' && needs.prepare.outputs.unchanged != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: {}
+    concurrency:
+      group: reviewer-evals-paid-${{ github.repository }}
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha || github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci --ignore-scripts --prefix packages/ai-reviewer
+      - run: npm ci --ignore-scripts --prefix packages/ai-reviewer/evals
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
+        with:
+          name: eval-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/eval-input
+      - name: Overlay candidate prompt data only
+        if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
+        run: |
+          cp "$RUNNER_TEMP/eval-input/eval-candidate/packages/ai-reviewer/prompts/code-review/system.md" packages/ai-reviewer/prompts/code-review/system.md
+          cp "$RUNNER_TEMP/eval-input/eval-candidate/packages/ai-reviewer/prompts/code-review/criteria.md" packages/ai-reviewer/prompts/code-review/criteria.md
+      - name: Evaluate approved candidate with trusted code
+        id: eval
+        continue-on-error: true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVAL_APPROVAL_FILE: packages/ai-reviewer/evals/approval.json
+          EVAL_IDENTITY_FILE: ${{ (github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')) && format('{0}/eval-input/eval-identity.json', runner.temp) || '' }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "${{ inputs.mode }}" == "comparison" ]]; then
+            npm --prefix packages/ai-reviewer/evals run compare
+          else
+            npm --prefix packages/ai-reviewer/evals run gate
+          fi
+      - name: Upload allowlisted report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: eval-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: packages/ai-reviewer/evals/reports/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Preserve evaluation result
+        if: steps.eval.outcome == 'failure'
+        run: exit 1
+
+  publish:
+    needs: [prepare, infer]
+    if: always() && (github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')) && needs.prepare.result == 'success' && needs.prepare.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha || github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: eval-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/eval-input
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: needs.infer.result == 'success' && needs.prepare.outputs.unchanged != 'true'
+        continue-on-error: true
+        with:
+          name: eval-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/eval-report
+      - name: Validate provenance, freshness, and complete evaluation matrix
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVAL_IDENTITY_FILE: ${{ runner.temp }}/eval-input/eval-identity.json
+          EVAL_REPORT_FILE: ${{ runner.temp }}/eval-report/report.json
+        run: node packages/ai-reviewer/evals/github/publish.mjs

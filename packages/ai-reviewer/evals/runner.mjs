@@ -24,6 +24,9 @@ export const runnerIdentityFiles = Object.freeze([
   "../package-lock.json",
   "cases/catalog.mjs",
   "approval.schema.json",
+  "github/checks.mjs",
+  "github/prepare.mjs",
+  "github/publish.mjs",
   "../src/config.mjs",
   "../src/core/review.mjs",
   "../src/providers/openai.mjs",
@@ -31,6 +34,7 @@ export const runnerIdentityFiles = Object.freeze([
   "../src/tools/policy.mjs",
   "../src/contracts/validate.mjs",
   "../src/contracts/review.schema.json",
+  "../../../.github/workflows/reviewer-evals.yml",
 ]);
 
 export async function runnerDigest(baseDir = root) {
