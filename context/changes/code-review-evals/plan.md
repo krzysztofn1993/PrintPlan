@@ -303,9 +303,9 @@ No application or database migration is needed. Land the runner and disabled pol
 
 #### Automated
 
-- [x] 1.1 Corpus validation passes: exactly three nonempty reviewable diffs with valid hunks, frozen before/after witnesses, path agreement, and no oracle fields in assembled model input.
-- [x] 1.2 Fixture witnesses pass offline: correct arithmetic returns 62, addition returns 238, and own-hold double counting changes retention into erroneous release in the documented scenario.
-- [x] 1.3 Assertion tests pass offline: schema errors, wrong verdicts, generic or unrelated failures, and known-finding omissions fail; acceptable wording variants pass.
+- [x] 1.1 Corpus validation passes: exactly three nonempty reviewable diffs with valid hunks, frozen before/after witnesses, path agreement, and no oracle fields in assembled model input. — f9eeef9
+- [x] 1.2 Fixture witnesses pass offline: correct arithmetic returns 62, addition returns 238, and own-hold double counting changes retention into erroneous release in the documented scenario. — f9eeef9
+- [x] 1.3 Assertion tests pass offline: schema errors, wrong verdicts, generic or unrelated failures, and known-finding omissions fail; acceptable wording variants pass. — f9eeef9
 
 #### Manual
 
@@ -315,11 +315,11 @@ No application or database migration is needed. Land the runner and disabled pol
 
 #### Automated
 
-- [ ] 2.1 `npm run test:ai-review-evals` passes without credentials or network, including real trusted-reviewer request assembly, provider mappings, sanitized errors, and candidate-prompt digest coverage.
-- [ ] 2.2 Budget tests prove zero fetch calls for missing/expired/mismatched authorization, unknown rates/token accounting, excess cost, excess requests, or attempts to override trusted models/cases; failures stop further paid work.
-- [ ] 2.3 Fake-response comparisons produce exactly 18 or 27 planned cells and gate runs nine; cache, retries, concurrency, settings, and no-judge behavior match policy.
-- [ ] 2.4 Report tests verify confusion matrices, denominators, pass/fail distinction, timing units, uncached price arithmetic, missing-usage handling, partial runs, and safe JSON/HTML exports.
-- [ ] 2.5 `npm run test:ai-review`, `npm run lint`, and `npm run build` pass with production reviewer behavior unchanged.
+- [x] 2.1 `npm run test:ai-review-evals` passes without credentials or network, including real trusted-reviewer request assembly, provider mappings, sanitized errors, and candidate-prompt digest coverage.
+- [x] 2.2 Budget tests prove zero fetch calls for missing/expired/mismatched authorization, unknown rates/token accounting, excess cost, excess requests, or attempts to override trusted models/cases; failures stop further paid work.
+- [x] 2.3 Fake-response comparisons produce exactly 18 or 27 planned cells and gate runs nine; cache, retries, concurrency, settings, and no-judge behavior match policy.
+- [x] 2.4 Report tests verify confusion matrices, denominators, pass/fail distinction, timing units, uncached price arithmetic, missing-usage handling, partial runs, and safe JSON/HTML exports.
+- [x] 2.5 `npm run test:ai-review`, `npm run lint`, and `npm run build` pass with production reviewer behavior unchanged.
 
 ### Phase 3: Trusted GitHub Actions and bootstrap
 
