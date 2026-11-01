@@ -1,0 +1,7 @@
+{
+  "title": "Update stock availability formula",
+  "body": "Changes the arithmetic used to calculate material available for a planned print.",
+  "diff": "diff --git a/src/spool-availability.mjs b/src/spool-availability.mjs\nindex 2222222..3333333 100644\n--- a/src/spool-availability.mjs\n+++ b/src/spool-availability.mjs\n@@ -1,6 +1,6 @@\n export function getAvailableGrams(spool) {\n   if (!Number.isFinite(spool.recordedGrams) || spool.recordedGrams < 0) throw new Error(\"INVALID_RECORDED_GRAMS\");\n   if (!Number.isFinite(spool.reservedGrams) || spool.reservedGrams < 0) throw new Error(\"INVALID_RESERVED_GRAMS\");\n   if (spool.reservedGrams > spool.recordedGrams) throw new Error(\"RESERVATION_EXCEEDS_STOCK\");\n-  return spool.recordedGrams - spool.reservedGrams;\n+  return spool.recordedGrams + spool.reservedGrams;\n }\n",
+  "paths": ["src/spool-availability.mjs"],
+  "unreviewedPaths": []
+}

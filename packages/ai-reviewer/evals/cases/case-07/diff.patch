@@ -1,0 +1,9 @@
+diff --git a/src/lib/cookie-policy.mjs b/src/lib/cookie-policy.mjs
+index c11f71d..019d8e8 100644
+--- a/src/lib/cookie-policy.mjs
++++ b/src/lib/cookie-policy.mjs
+@@ -1,3 +1,3 @@
+ export function cookieOptions(_isHttps) {
+-  return { secure: true, sameSite: "lax" };
++  return { secure: false, sameSite: "lax" };
+ }

@@ -1,0 +1,17 @@
+{
+  "sourceRevision": "3571beba0b95a3a899dceeed9c83cb845f3b5442",
+  "expectedVerdict": "fail",
+  "changedLocation": "recoveryMessage",
+  "mechanism": "The message asserts rejection even though a version conflict can occur after the original write committed.",
+  "trigger": "The server commits the edit but the response is lost; a retry then conflicts with the now-current version.",
+  "expectedBehavior": "Recovery copy explains that the submitted version is stale and the original may have completed.",
+  "incorrectBehavior": "The UI tells the user the request was rejected and invites a duplicate action.",
+  "reproduction": "Commit a write, drop its response, retry with the prior version; display the returned recovery message.",
+  "unacceptableAllegations": ["Alleging unrelated vulnerabilities or claiming secret disclosure without evidence."],
+  "assertionAnchors": [
+    "recoveryMessage|recovery|message",
+    "conflict|version|retry|original",
+    "rejected|duplicate|may have completed|committed|stale"
+  ],
+  "evidenceStatus": "author-reviewed-accepted"
+}

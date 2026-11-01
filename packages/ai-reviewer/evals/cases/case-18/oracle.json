@@ -1,0 +1,13 @@
+{
+  "sourceRevision": "d440125c4d83173c65a23c0384df1b077027ad37",
+  "expectedVerdict": "pass",
+  "changedLocation": "actions",
+  "mechanism": "The saved result retains a review action independent of source-row existence.",
+  "trigger": "The source print is deleted and the result panel is closed.",
+  "expectedBehavior": "The user can reopen the saved settlement result for the current session.",
+  "incorrectBehavior": "N/A; the review action is preserved while the saved result is available.",
+  "reproduction": "Call actions(savedResult, false); it still returns the review action.",
+  "unacceptableAllegations": ["Claiming the change bypasses an unstated policy or introduces unrelated risk."],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

@@ -1,0 +1,7 @@
+{
+  "title": "Preserve complete rename-aware diffs for review input",
+  "body": "This change updates review-input sizing and diff options. The reviewer needs complete diffs for large changes and readable move detection. Please assess whether the new limits preserve that behavior.",
+  "diff": "diff --git a/src/review-input.mjs b/src/review-input.mjs\nindex 99e656c..b338a20 100644\n--- a/src/review-input.mjs\n+++ b/src/review-input.mjs\n@@ -1,2 +1,2 @@\n-export const DIFF_LIMIT = 1_048_576;\n-export const DIFF_ARGS = [\"--find-renames=100%\"];\n+export const DIFF_LIMIT = 262_144;\n+export const DIFF_ARGS = [\"--no-renames\"];\n",
+  "paths": ["src/review-input.mjs"],
+  "unreviewedPaths": []
+}

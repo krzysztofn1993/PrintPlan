@@ -1,0 +1,7 @@
+{
+  "title": "Cancel newest reservations first when stock is short",
+  "body": "When active reservations exceed available stock, cancel the newest-created reservation first and continue in newest-first order until the total fits. Older reservations keep priority.",
+  "diff": "diff --git a/src/reservation-priority.mjs b/src/reservation-priority.mjs\nindex 6666666..7777777 100644\n--- a/src/reservation-priority.mjs\n+++ b/src/reservation-priority.mjs\n@@ -1,11 +1,11 @@\n export function cancelUntilFits(reservations, available) {\n-  const ordered = [...reservations].sort((a, b) => b.createdAt - a.createdAt);\n+  const ordered = [...reservations].sort((a, b) => a.createdAt - b.createdAt);\n   const cancelled = [];\n   let total = reservations.reduce((sum, item) => sum + item.grams, 0);\n   for (const item of ordered) {\n     if (total <= available) break;\n     total -= item.grams;\n     cancelled.push(item.id);\n   }\n   return cancelled;\n }\n",
+  "paths": ["src/reservation-priority.mjs"],
+  "unreviewedPaths": []
+}

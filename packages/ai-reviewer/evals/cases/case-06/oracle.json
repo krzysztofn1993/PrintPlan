@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "fail",
+  "changedLocation": "src/reservation-priority.mjs: changed behavior",
+  "mechanism": "cancelUntilFits sorts reservations oldest-first instead of newest-first; with 100 g available and holds of 60 g then 50 g, it cancels the older reservation rather than the newer 50 g reservation required by policy.",
+  "trigger": "After consumption, available stock is 100 g; an older reservation holds 60 g and a newer reservation holds 50 g.",
+  "expectedBehavior": "Cancel the newer 50 g reservation first; the older reservation can remain because 60 g fits.",
+  "incorrectBehavior": "Cancel the older reservation first, leaving the newer reservation active even though policy requires newest-first cancellation.",
+  "reproduction": "Call the before and after fixture with {\"reservations\": [{\"id\": \"older\", \"grams\": 60, \"createdAt\": 1}, {\"id\": \"newer\", \"grams\": 50, \"createdAt\": 2}], \"available\": 100}; compare the result to verify the described behavior.",
+  "unacceptableAllegations": [
+    "the fixture directly executes a production database migration",
+    "the fixture proves unrelated application behavior"
+  ]
+}

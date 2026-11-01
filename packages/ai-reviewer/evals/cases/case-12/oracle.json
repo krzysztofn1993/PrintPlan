@@ -1,0 +1,13 @@
+{
+  "sourceRevision": "286c33ce11298eddeacda53d586f479021eb0c06",
+  "expectedVerdict": "pass",
+  "changedLocation": "DIFF_LIMIT and DIFF_ARGS",
+  "mechanism": "The bounded input cap is raised and exact rename detection is enabled.",
+  "trigger": "A review contains a larger patch or a file move with unchanged content.",
+  "expectedBehavior": "The larger input fits the configured cap and exact moves remain recognizable.",
+  "incorrectBehavior": "N/A; the change addresses both prior input omissions.",
+  "reproduction": "Check the 1 MiB cap and --find-renames=100% option.",
+  "unacceptableAllegations": ["Claiming the change bypasses an unstated policy or introduces unrelated risk."],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

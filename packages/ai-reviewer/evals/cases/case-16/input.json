@@ -1,0 +1,7 @@
+{
+  "title": "Describe exact-version retry conflicts without asserting rejection",
+  "body": "This change makes retry-conflict copy neutral about whether the original request completed, while explaining that the submitted version is no longer current. Review the wording against the recovery state.",
+  "diff": "diff --git a/src/recovery-message.mjs b/src/recovery-message.mjs\nindex ae8ef5d..c35bc02 100644\n--- a/src/recovery-message.mjs\n+++ b/src/recovery-message.mjs\n@@ -1,3 +1,3 @@\n export function recoveryMessage() {\n-  return \"The request was rejected. Try again.\";\n+  return \"Your submitted version is not current. The original request may have completed.\";\n }\n",
+  "paths": ["src/recovery-message.mjs"],
+  "unreviewedPaths": []
+}

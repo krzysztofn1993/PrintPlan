@@ -1,0 +1,19 @@
+{
+  "sourceRevision": "6f1f88a63818405a4ee4a1fe576f2b62dfe12b20",
+  "expectedVerdict": "fail",
+  "changedLocation": "retryListRefresh",
+  "mechanism": "The generic retry passes the editing print as conflictId, which bypasses the unsaved-edit confirmation reserved for an explicitly confirmed conflict refresh.",
+  "trigger": "A list read has failed, an edit form contains unsaved values, and the user clicks the generic Try again action.",
+  "expectedBehavior": "The retry must ask before loading a newer list that can replace the version-keyed edit form and discard its unsaved values.",
+  "incorrectBehavior": "The refresh proceeds without confirmation and remounts the form with saved values, losing the user's edits.",
+  "reproduction": "With editingPrintId set, call retryListRefresh using a confirmDiscard callback that returns false. The changed path still calls loadLatest and returns true instead of preserving the form.",
+  "unacceptableAllegations": [
+    "Claiming that saved server data is deleted or that unrelated security boundaries are bypassed."
+  ],
+  "assertionAnchors": [
+    "retryListRefresh|conflictId|confirmDiscard",
+    "unsaved|edit|discard|confirm",
+    "refresh|retry|remount|lose|overwrite"
+  ],
+  "evidenceStatus": "author-reviewed-accepted"
+}
