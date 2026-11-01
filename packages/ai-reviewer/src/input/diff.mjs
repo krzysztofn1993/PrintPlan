@@ -46,7 +46,8 @@ export function collectDiff({ cwd, head, base, title, body = "", git = execFileS
     .split("\0")
     .filter(Boolean);
   const unreviewedPaths = stats.filter((line) => line.startsWith("-\t-\t")).map((line) => line.slice(4));
-  const diff = command(["diff", "--no-ext-diff", "--no-textconv", "--no-renames", mergeBase, head, "--"]);
+  // Compact identical moves without changing the complete path inventory or binary disclosure.
+  const diff = command(["diff", "--no-ext-diff", "--no-textconv", "--find-renames=100%", mergeBase, head, "--"]);
   const input = { title, body: body ?? "", paths, unreviewedPaths, diff };
   assembleInput(input);
   return { mergeBase, input };

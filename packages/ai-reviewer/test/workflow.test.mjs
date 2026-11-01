@@ -1,6 +1,7 @@
 import test from "node:test";
+import { Buffer } from "node:buffer";
 import assert from "node:assert/strict";
-import { readFile, mkdtemp, writeFile, rm, mkdir } from "node:fs/promises";
+import { readFile, mkdtemp, writeFile, rm, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { URL } from "node:url";
@@ -8,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { runInNewContext } from "node:vm";
 import { parse } from "yaml";
 import { collectDiff } from "../src/input/diff.mjs";
+import { LIMITS } from "../src/config.mjs";
 import { event } from "./fixtures/github.mjs";
 const workflow = parse(await readFile(new URL("../../../.github/workflows/review.yml", import.meta.url), "utf8"));
 
@@ -137,6 +139,66 @@ test("real Git diff treats head as data, disables executable drivers/hooks, and 
     assert.ok(collectDiff({ cwd: dir, head, base, title: "Review" }).input.diff.includes("+new"));
     assert.equal(git(["rev-parse", "HEAD"]), base);
     assert.throws(() => collectDiff({ cwd: dir, head: "--exec=unsafe", base, title: "Review" }), /INVALID_SHA/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("large archive moves stay bounded while edited files and binary moves retain coverage", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "review-renames-"));
+  const git = (args) =>
+    execFileSync("git", args, {
+      cwd: dir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 8 * LIMITS.inputBytes,
+    }).trim();
+  const oldText = "notes\tbefore\n.md";
+  const newText = "notes\tafter\n.md";
+  const contents = Array.from(
+    { length: Math.ceil(LIMITS.inputBytes / 80) },
+    (_, i) => `Evidence ${i}: retain unchanged archival documentation.\n`,
+  ).join("");
+  try {
+    git(["init", "-q"]);
+    git(["config", "user.name", "Fixture"]);
+    git(["config", "user.email", "fixture@example.invalid"]);
+    await writeFile(join(dir, oldText), contents);
+    await writeFile(join(dir, "edited-before.md"), "original evidence\n");
+    await writeFile(join(dir, "binary-before"), new Uint8Array([0, 1, 2]));
+    git(["add", "."]);
+    git(["commit", "-qm", "base"]);
+    const base = git(["rev-parse", "HEAD"]);
+    await rename(join(dir, oldText), join(dir, newText));
+    await rename(join(dir, "edited-before.md"), join(dir, "edited-after.md"));
+    await writeFile(join(dir, "edited-after.md"), "updated evidence\n");
+    await rename(join(dir, "binary-before"), join(dir, "binary-after"));
+    git(["add", "-A"]);
+    git(["commit", "-qm", "archive"]);
+    const head = git(["rev-parse", "HEAD"]);
+    const expanded = git(["diff", "--no-renames", base, head]);
+    assert.ok(Buffer.byteLength(expanded) > LIMITS.inputBytes);
+    const { input } = collectDiff({ cwd: dir, head, base, title: "Archive" });
+    assert.ok(Buffer.byteLength(JSON.stringify(input)) < LIMITS.inputBytes);
+    assert.deepEqual(
+      new Set(input.paths),
+      new Set([oldText, newText, "edited-before.md", "edited-after.md", "binary-before", "binary-after"]),
+    );
+    assert.deepEqual(input.unreviewedPaths, ["binary-after", "binary-before"]);
+    assert.match(input.diff, /similarity index 100%/);
+    assert.ok(!input.diff.includes(contents));
+    assert.match(input.diff, /-original evidence/);
+    assert.match(input.diff, /\+updated evidence/);
+
+    // An identical binary move alone still cannot receive a code verdict.
+    git(["checkout", "--detach", base]);
+    await rename(join(dir, "binary-before"), join(dir, "binary-after"));
+    git(["add", "-A"]);
+    git(["commit", "-qm", "binary move"]);
+    assert.throws(
+      () => collectDiff({ cwd: dir, head: git(["rev-parse", "HEAD"]), base, title: "Binary move" }),
+      /UNREVIEWABLE_INPUT/,
+    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
