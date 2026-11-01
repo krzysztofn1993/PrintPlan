@@ -97,8 +97,9 @@ if ((process.env.EVAL_EVENT_PATH || process.env.GITHUB_EVENT_PATH) && process.en
   } else {
     const identity = executionIdentity(event, process.env.GITHUB_RUN_ID, process.env.GITHUB_RUN_ATTEMPT);
     const candidate = extractCandidatePrompts({ cwd: process.env.GITHUB_WORKSPACE, head: identity.head });
-    const { loadPrompt } = await import("../../src/prompts/load.mjs");
-    const unchanged = candidate.digest === (await loadPrompt()).digest;
+    // Manual dispatch can use a different ref, so compare against the captured PR base.
+    const baseline = extractCandidatePrompts({ cwd: process.env.GITHUB_WORKSPACE, head: identity.base });
+    const unchanged = candidate.digest === baseline.digest;
     const destination = resolve(process.env.RUNNER_TEMP, "eval-candidate");
     await stageTrustedPackage({ trustedRoot: process.env.GITHUB_WORKSPACE, destination, candidate });
     const checkId = Number(process.env.EVAL_CHECK_ID);

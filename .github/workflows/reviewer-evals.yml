@@ -84,8 +84,17 @@ jobs:
         if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || steps.manual-pr.outputs.head_sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || steps.manual-pr.outputs.base_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-        run: git -c core.hooksPath=/dev/null fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          [[ "$HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "refs/heads/master:refs/remotes/origin/master"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          git cat-file -e "${BASE_SHA}^{commit}"
       - name: Prepare candidate prompt data
         id: prepare
         if: github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')
