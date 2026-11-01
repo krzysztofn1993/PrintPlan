@@ -211,3 +211,8 @@ playwright-report/
 
 # Local 10x skills and bundled resources
 /.agents/skills/10x-*/
+
+# AI reviewer evaluation outputs and promptfoo state
+packages/ai-reviewer/evals/reports/
+packages/ai-reviewer/evals/.promptfoo/
+packages/ai-reviewer/evals/promptfoo-cache/
