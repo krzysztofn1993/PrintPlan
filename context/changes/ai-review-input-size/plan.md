@@ -177,9 +177,9 @@ No database or input schema migration is required. Preserve the trusted-base bou
 
 #### Automated
 
-- [x] 2.1 The complete offline reviewer suite passes: `npm run test:ai-review`.
-- [x] 2.2 The repository native, lint, type, and build gate passes: `npm run verify:deploy`.
+- [x] 2.1 The complete offline reviewer suite passes: `npm run test:ai-review`. — 48c5e7e
+- [x] 2.2 The repository native, lint, type, and build gate passes: `npm run verify:deploy`. — 48c5e7e
 
 #### Manual
 
-- [x] 2.3 Review the README and verification evidence against the accepted limit, coverage rules, and trusted-base adoption prerequisite; confirm no hosted or model-capacity claim relies solely on offline tests.
+- [x] 2.3 Review the README and verification evidence against the accepted limit, coverage rules, and trusted-base adoption prerequisite; confirm no hosted or model-capacity claim relies solely on offline tests. — 48c5e7e
