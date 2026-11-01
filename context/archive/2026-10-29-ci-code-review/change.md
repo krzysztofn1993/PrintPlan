@@ -1,10 +1,10 @@
 ---
 change_id: ci-code-review
 title: Run PR reviews with a modular Node package and the OpenAI API
-status: impl_reviewed
+status: archived
 created: 2026-10-29
 updated: 2026-11-01
-archived_at: null
+archived_at: 2026-11-01T06:47:08Z
 ---
 
 ## Intent and Accepted Scope
