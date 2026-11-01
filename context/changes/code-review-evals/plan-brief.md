@@ -2,71 +2,67 @@
 
 > Full plan: [plan.md](plan.md)
 > Research: [research.md](research.md)
+> Current verification and run evidence: [verification.md](verification.md)
 
 ## What & Why
 
-Test whether our reviewer accepts correct code and detects two known introduced defects before accepting prompt changes. Compare two or three models on identical diffs and report pass/fail, time, and estimated cost.
+The harness was extended from six development cases to twelve author-accepted holdout cases. This brief records the historical and holdout runs, the current harness contract, and the remaining decisions. The checked-in approval remains disabled.
 
-## Starting Point
+## Historical Run
 
-The existing OpenAI reviewer has a shared prompt, six scoring criteria, and an eight-field JSON schema. Its required `AI Code Review` check already gates application PRs, but executes the prompt from the PR base; it does not test proposed prompt changes against known answers.
+- 36/36 responses completed with known usage; no operational errors or `not-run` cells.
+- Each model matched oracle verdicts in 18/18 trials: 30/30 defective reviews were `fail`, and 6/6 safe controls were `pass`.
+- Assertions passed 34/36 (17/18 per model). The two misses are verdict-matching, relevant findings for Luna case-02 repetition 3 and Sol case-03 repetition 3; their consequence wording was not accepted by current anchors.
+- Observed cost was $0.1402725: Luna $0.0089325 and Sol $0.13134. Median/p95 duration was Luna 5.069/25.955 s and Sol 6.436/11.976 s.
+- Assertions were edited after answers from these same cases were inspected. Treat 34/36 as historical diagnostic evidence, not an independent quality score or model-selection result.
 
-## Desired End State
+## Holdout Run
 
-Promptfoo evaluates three frozen cases three times per model. A separate required `AI Reviewer Evals` check tests prompt text from the PR with one selected model and blocks merge when any of its nine evaluations fails. Initial human inspection verifies whether findings match the known bugs; routine runs use automatic assertions.
+- The accepted 12-case comparison completed all 72 requests: zero operational errors, zero `not-run` cells, and known usage for every response.
+- Sol matched 36/36 oracle verdicts; Luna matched 33/36. Luna's three misses were all case-09, where it marked the confirmation bypass `pass`; Sol identified the bypass in all three repetitions.
+- End-to-end evaluation passed 34/36 Sol cells and 31/36 Luna cells. Four other assertion misses were relevant findings whose wording did not match the deterministic consequence anchors; do not tune anchors to these observed answers.
+- Estimated cost was $0.270941: Sol $0.254570 and Luna $0.016371. Median/p95 duration was 6.196/14.056 s for Sol and 5.395/14.487 s for Luna. Actual billing may differ.
+- Recommendation: prefer Sol for a bounded, human-reviewed pilot. This curated 12-case set is not a statistical benchmark and does not justify a recurring gate or branch-protection change.
 
-## Key Decisions Made
+The combined verdict confusion counts are TP 33, TN 36, FP 0, FN 3. These are repeated response cells over six unique defect cases and six unique safe cases; the three misses are one Luna case-09 scenario repeated three times. The counts support verdict-level comparison on this curated set. They do not score unsupported allegations in summary text; the author separately reviewed all 72 saved summaries case by case and found no unsupported or unrelated allegations.
 
-| Decision           | Choice                                                                                                       | Why                                                                    | Source          |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | --------------- |
-| Corpus             | Exactly three controlled diffs: correct, obvious defect, harder defect.                                      | Small, understandable regression coverage based on project behavior.   | Plan            |
-| Concrete cases     | Guarded subtraction; incorrect addition; double counting the current reservation during allocation.          | Each has a reproducible expected result.                               | Research + Plan |
-| Fidelity           | Wrap existing `reviewChange()`; preserve prompt, six criteria, schema, and request settings.                 | Avoid a second reviewer implementation.                                | Research + Plan |
-| Repetitions        | Three fresh runs per case/model; concurrency one, no automatic retries.                                      | Expose basic instability with bounded request counts.                  | Plan            |
-| Finding assessment | Deterministic assertions plus initial reference-based human inspection; no model judge.                      | Check the actual known finding without extra grader cost.              | Plan            |
-| PR gate            | One selected model; all nine results must pass; test candidate prompt from PR.                               | Automate regression blocking at lower recurring cost.                  | Plan            |
-| Trust              | Base runner/corpus/policy; only the two head prompt Markdown files are candidate data.                       | Candidate code cannot weaken tests or execute with the secret.         | Research + Plan |
-| Cost               | Dated uncached USD estimates, explicit unknowns, conservative preflight allowance.                           | Existing usage lacks cache detail; estimates are not billing receipts. | Research + Plan |
-| Paid approval      | Approve exact models and numeric limit after fixture preflight; recurring gate needs explicit authorization. | No paid requests before a concrete experiment is approved.             | Plan            |
+| Model         | TP / 18 defect responses | FN / 18 defect responses | TN / 18 safe responses | FP / 18 safe responses | Defect fixtures hit | Safe fixtures passed |
+| ------------- | -----------------------: | -----------------------: | ---------------------: | ---------------------: | ------------------: | -------------------: |
+| `gpt-6-luna`  |                       15 |                        3 |                     18 |                      0 |               5 / 6 |                6 / 6 |
+| `gpt-6.1-sol` |                       18 |                        0 |                     18 |                      0 |               6 / 6 |                6 / 6 |
 
-## Scope
+The seven failed deterministic assertions comprise three wrong verdicts (all Luna case-09 repetitions) and four verdict-matching text-anchor misses (Luna case-07 rep 1 and case-11 rep 3; Sol case-07 reps 1 and 3). Repetition counts are not independent fixture counts. These assertion results are separate from the completed human audit of unsupported summary allegations.
 
-**In scope:** frozen cases/oracles; deterministic assertions; isolated pinned promptfoo package; safe reports; existing repository secret; trusted manual comparison and required candidate-prompt check; bootstrap and activation runbook.
+## Current Corpus and Run Shape
 
-**Out of scope:** production prompt/schema changes; application defects or migrations; 24-case benchmark; model judge; candidate executable eval code with secrets; automatic production-model switching; exact billing or broad accuracy claims.
+The original six cases remain the development set. Twelve holdout cases (07–18) are based on six historical change areas, each with one defect regression and one safe correction: HTTPS cookie security, preserving unsaved print edits during a failed list-refresh retry, rename-aware diff handling, validation of both returned reservation amounts against the configured margin, retry recovery wording, and access to saved settlement results. These are controlled fixtures grounded in historical revisions, not verbatim historical PRs.
 
-## Architecture / Approach
+The author accepted all twelve holdout oracle outcomes and the shared pass/fail rubric on 2026-11-01. Cases 09–10 cover the product-level lost-edit regression and its safe correction, grounded in the historical fix and author-confirmed manual behavior recorded in the repository. The former GitHub fork-eligibility pair was removed as unnecessary workflow testing. Do not fit assertions to holdout responses.
 
-A trusted runner stages the production reviewer package and overlays only the two prompt Markdown blobs from the captured PR head. It runs trusted cases through the unchanged review entrypoint and maps results into promptfoo. Prepare and publish manage a separate head-SHA check; inference alone receives `OPENAI_API_KEY`, without GitHub write permissions. No prompt change means success with zero model calls; changed prompts without approval remain blocked without spend.
+| Run                          | Case set            | Models | Requests | Conservative reserve | Cost status                   |
+| ---------------------------- | ------------------- | -----: | -------: | -------------------: | ----------------------------- |
+| Historical comparison        | 6 development cases |      2 |       36 |              $1.9656 | $0.1402725 observed           |
+| Completed holdout comparison | 12 holdout cases    |      2 |       72 |              $3.9312 | $0.270941 observed estimate   |
+| Later full comparison        | All 18 cases        |      2 |      108 |              $5.8968 | ~$0.4208175 linear projection |
+| Later full comparison        | All 18 cases        |      3 |      162 |              $8.8452 | ~$0.6312263 linear projection |
+| Hypothetical larger corpus   | 24 cases            |      2 |      144 |              $7.8624 | ~$0.56109 linear projection   |
+| Later recurring gate         | All 18 cases        |      1 |       54 |              $2.9484 | Separate cycle-bound approval |
 
-## Phases at a Glance
+The reserve is $0.0546 per request, calculated from the current dated uncached price record and preflight token allowances. It is an admission reserve, not a bill or provider-enforced ceiling. Costs of the six-case and 12-case runs are observed token-based estimates; linear projections do not guarantee another run's cost. The author stated $20.50 was available and approved a $4.50 cap for the 72-call holdout run. The provider token was reported to expire after one day, and the separate approval policy enforces a maximum 24-hour approval lifetime. The author reports GitHub credential validity through 2026-11-07. The checked-in `approval.json` remains disabled.
 
-| Phase                        | What it delivers                                                                      | Key risk                                                                         |
-| ---------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 1. Cases and assertions      | Three neutral inputs, independent labels, executable witnesses, finding checks.       | Generic rejection or invented allegations mistaken for detection.                |
-| 2. Adapter and reports       | Production parity, spending guard, three repetitions, safe JSON/HTML metrics.         | Unknown costs or incomplete runs hidden as successes.                            |
-| 3. Actions and bootstrap     | Trusted candidate-prompt workflow, separate exact-head check, offline CI and runbook. | Executing head code or enabling a required check too early.                      |
-| 4. Comparison and activation | Approved paid comparison, human inspection, one gate model, verified protection.      | Model access, repeatability, budget, or operator permissions prevent activation. |
+## Code and Workflow State
 
-**Prerequisites:** Node 24.21.0; existing OpenAI repository secret; trusted-master bootstrap before hosted evals; author approval of model IDs and numeric USD allowances before paid work; authorized protection operator for activation.
-**Estimated effort:** Roughly 3–5 implementation sessions plus author review and hosted acceptance; API execution and approval waiting time are additional.
+`cases/catalog.mjs` lists the six development and twelve holdout IDs. Comparison approvals bind exact `caseIds`; the completed holdout run selected 07–18. A gate must select all 18 IDs. Runtime and schema ceilings are 162 comparison calls and 54 gate calls; a 24-case corpus is outside the current catalog and approval schema. The report includes selected case IDs. `github/checks.mjs` expects 54 successful cells for a full-corpus gate.
 
-## Open Risks & Assumptions
+The current implementation includes the catalog, accepted oracle metadata, fixtures, request-limit changes, and case-09 anchors/source-pair tests. It retains `runner.mjs` as the trusted approval, budget, and report boundary and uses Promptfoo as the compare/gate matrix engine. The production reviewer transport uses Vercel AI SDK 7 with the OpenAI Responses provider. The saved 72-response live comparison remains historical evidence from the earlier custom-runner/direct-API path; a no-network Promptfoo replay exercises those saved responses without new inference. The offline checks now prove that a consumed local approval is rejected in a separate process before any provider request (2.7), and that stalled cloned error-response metadata cannot outlive the SDK request deadline (2.10). The checked-in approval remains disabled. The separately authorized one-request SDK demonstration and existing PR #39 screenshots are complete. The author reviewed all 72 summaries case by case and found no unsupported allegations (4.9). No recurring gate, hosted workflow, or branch-protection change is enabled. The author confirmed the trusted bootstrap is on `master`; Phase 3.5 applies only if a hosted evaluation is later requested, which would require a fresh exact manifest and approval.
 
-- The first infrastructure PR uses existing checks. Only after its runner reaches trusted `master` can hosted eval acceptance and new required-check activation occur.
-- Initial comparison: 18 requests for two models, 27 for three. Later gate: nine per changed-prompt run. Hosted activation tests and reruns need separate approved allowances.
-- Exact model IDs and numeric limits are intentionally deferred to the mandatory approval step; disabled policy makes zero requests until then. Historical research candidates do not establish live access or the current production setting.
-- Three cases and tolerant finding checks provide narrow regression protection. Human inspection is needed initially and for ambiguous failures or corpus changes; automatic matches do not prove every allegation is true.
-- Estimated-cost guards cannot guarantee provider billing totals. Unknown-cost failures stop inference; recurring authorization explicitly defines a per-run allowance.
+## Author Decisions Still Required
 
-## Success Criteria (Summary)
+1. **Complete:** The author accepted the six original oracle outcomes and confirmed the historic 36 answers need no second review.
+2. **Complete:** The author accepted all twelve holdout oracles and the shared rubric on 2026-11-01.
+3. **Complete:** The author accepted the exact manifest and the 72-request run completed within the $4.50 cap.
+4. No recurring gate or branch-protection decision is needed for this pilot. Revisit only if a concrete future need arises.
 
-- Every model receives the same three cases and settings; the report distinguishes schema compliance, expected verdict, known findings, false rejections, operational errors, time, and estimated cost.
-- The selected model passes all nine evaluations; an unconditional-pass prompt fails the two defective cases. Prompt text comes from the current PR head while test execution remains trusted.
-- Paid work requires prior approval; the new check blocks failed prompt changes after verified activation and preserves existing required checks.
+## Next Workflow
 
-## References
-
-- [Research](research.md), [full plan and verification criteria](plan.md), [change identity](change.md).
-- Production core: `packages/ai-reviewer/src/core/review.mjs:60`; prompt loading: `src/prompts/load.mjs:5`; trusted checkout: `.github/workflows/review.yml:35`.
-- Fixture grounding: `src/lib/spool-dto.ts:27`; `supabase/migrations/20261022000000_recalculate_reserved_print.sql:283`; `supabase/tests/edit-reserved-prints.test.sql:75`.
+Use `gpt-6.1-sol` as the preferred model for a bounded manual-review pilot, with human review retained. Per-model holdout metrics come from the saved report and require no provider calls. The SDK-backed synthetic-diff demonstration, existing Champion pipeline/log/PR-comment screenshots, and author audit of all 72 summaries are complete. The grouped audit record is in [summary-audit.md](reviews/summary-audit.md). Course reviewers decide whether the adapted implementation meets submission criteria. No additional paid comparison, recurring gate, or branch-protection change is authorized by this result.

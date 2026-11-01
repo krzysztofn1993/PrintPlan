@@ -255,7 +255,7 @@ Unchanged ordered prompt contents succeed without paid calls, with an explicit n
 
 The historic six-case comparison was followed by an author-reviewed 12-case holdout comparison. On this curated holdout, `gpt-6.1-sol` matched all 36 expected verdicts while `gpt-6-luna` matched 33/36. Prefer Sol for a bounded, human-reviewed pilot; do not treat this sample as a statistical benchmark or activate a recurring gate or branch protection from these results.
 
-These verdict results do not assess unsupported allegations in summary text. The full 72-response summary audit is a pending manual step; report verdict-level false positives and allegation-level false claims separately.
+These verdict results do not assess unsupported allegations in summary text. The author separately reviewed all 72 saved summaries case by case and found no unsupported or unrelated allegations; report verdict-level false positives and allegation-level false claims separately.
 
 ### Changes Required:
 
@@ -400,13 +400,13 @@ No application or database migration is needed. The runner and trusted workflow 
 
 - [x] 3.1 Workflow contract tests prove trusted-base execution, fixed-path blob extraction, rejection of symlink/deleted/oversized prompts, isolated secret/token permissions, locked installs, and no head-code execution. — 4f68f47
 - [x] 3.2 (historical scope) Check lifecycle tests covered the previous six-case result contract; the prior bootstrap commit records the original nine-result version.
-- [x] 3.2a Validate the updated 54-cell gate matrix and full 18-case report manifest offline. — 27/27, 2026-11-01.
+- [x] 3.2a Validate the updated 54-cell gate matrix and full 18-case report manifest offline. — 27/27, 2026-11-01; 22cd6fb.
 - [x] 3.3 Offline integration tests show a candidate prompt changes request text/digest, candidate runner/assertion/corpus/policy edits do not execute in privileged inference, and reports persist on failed evals without changing the production check. — 4f68f47
 - [x] 3.4 Candidate offline eval tests and existing reviewer tests pass through CI; `npm run lint` and `npm run build` pass. — 4f68f47
 
 #### Manual
 
-- [ ] 3.5 Only if a hosted GitHub evaluation is later requested: create and approve a new exact manifest for that hosted run while keeping checked-in approval disabled. The author confirmed the trusted bootstrap is on `master` on 2026-11-01. The consumed local manifest cannot be reused. This is not required to adopt a model and does not require branch-protection changes.
+- [x] 3.5 Only if a hosted GitHub evaluation is later requested: create and approve a new exact manifest for that hosted run while keeping checked-in approval disabled. The author confirmed the trusted bootstrap is on `master` on 2026-11-01. The consumed local manifest cannot be reused. This is not required to adopt a model and does not require branch-protection changes. — Not applicable to this pilot; no hosted evaluation was requested, and no dispatch or branch-protection change was made.
 
 ### Phase 4: Pilot interpretation and holdout run
 
@@ -426,4 +426,4 @@ No application or database migration is needed. The runner and trusted workflow 
 - [x] 4.5a The author approved the models, 72-request count, maximum 24-hour approval window, GitHub credential date (2026-11-07), and $4.50 one-run cap; the temporary run approval used a 12-hour window.
 - [x] 4.5b The author accepted the final runner/corpus/prompt/schema/pricing digests and exact manifest; one authorized run completed. — 2026-11-01.
 - [x] 4.6 Defer recurring-gate planning until a concrete future need arises. It is not required to choose a model from the holdout comparison; no recurring spend or branch-protection change is approved.
-- [ ] 4.9 Human-audit all 72 saved summaries for unsupported allegations and record those outcomes separately; make no additional provider calls.
+- [x] 4.9 Human-audit all 72 saved summaries for unsupported allegations and record those outcomes separately; make no additional provider calls. — 2026-11-01; all 72 reviewed case by case with the author, no unsupported allegations recorded, no additional provider calls.
