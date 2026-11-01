@@ -315,20 +315,20 @@ No application or database migration is needed. Land the runner and disabled pol
 
 #### Automated
 
-- [x] 2.1 `npm run test:ai-review-evals` passes without credentials or network, including real trusted-reviewer request assembly, provider mappings, sanitized errors, and candidate-prompt digest coverage.
-- [x] 2.2 Budget tests prove zero fetch calls for missing/expired/mismatched authorization, unknown rates/token accounting, excess cost, excess requests, or attempts to override trusted models/cases; failures stop further paid work.
-- [x] 2.3 Fake-response comparisons produce exactly 18 or 27 planned cells and gate runs nine; cache, retries, concurrency, settings, and no-judge behavior match policy.
-- [x] 2.4 Report tests verify confusion matrices, denominators, pass/fail distinction, timing units, uncached price arithmetic, missing-usage handling, partial runs, and safe JSON/HTML exports.
-- [x] 2.5 `npm run test:ai-review`, `npm run lint`, and `npm run build` pass with production reviewer behavior unchanged.
+- [x] 2.1 `npm run test:ai-review-evals` passes without credentials or network, including real trusted-reviewer request assembly, provider mappings, sanitized errors, and candidate-prompt digest coverage. — 2ba002e
+- [x] 2.2 Budget tests prove zero fetch calls for missing/expired/mismatched authorization, unknown rates/token accounting, excess cost, excess requests, or attempts to override trusted models/cases; failures stop further paid work. — 2ba002e
+- [x] 2.3 Fake-response comparisons produce exactly 18 or 27 planned cells and gate runs nine; cache, retries, concurrency, settings, and no-judge behavior match policy. — 2ba002e
+- [x] 2.4 Report tests verify confusion matrices, denominators, pass/fail distinction, timing units, uncached price arithmetic, missing-usage handling, partial runs, and safe JSON/HTML exports. — 2ba002e
+- [x] 2.5 `npm run test:ai-review`, `npm run lint`, and `npm run build` pass with production reviewer behavior unchanged. — 2ba002e
 
 ### Phase 3: Trusted GitHub Actions and bootstrap
 
 #### Automated
 
-- [ ] 3.1 Workflow contract tests prove trusted-base execution, fixed-path blob extraction, rejection of symlink/deleted/oversized prompts, isolated secret/token permissions, locked installs, and no head-code execution.
-- [ ] 3.2 Check lifecycle tests cover unchanged prompt with zero calls, changed prompt with nine expected results, unauthorized owner/fork/bot with no secret use, missing approval/artifacts, invalid provenance, stale head/base, duplicate delivery, and newer attempts.
-- [ ] 3.3 Offline integration tests show a candidate prompt changes request text/digest, candidate runner/assertion/corpus/policy edits do not execute in privileged inference, and reports persist on failed evals without changing the production check.
-- [ ] 3.4 Candidate offline eval tests and existing reviewer tests pass through CI; `npm run lint` and `npm run build` pass.
+- [x] 3.1 Workflow contract tests prove trusted-base execution, fixed-path blob extraction, rejection of symlink/deleted/oversized prompts, isolated secret/token permissions, locked installs, and no head-code execution.
+- [x] 3.2 Check lifecycle tests cover unchanged prompt with zero calls, changed prompt with nine expected results, unauthorized owner/fork/bot with no secret use, missing approval/artifacts, invalid provenance, stale head/base, duplicate delivery, and newer attempts.
+- [x] 3.3 Offline integration tests show a candidate prompt changes request text/digest, candidate runner/assertion/corpus/policy edits do not execute in privileged inference, and reports persist on failed evals without changing the production check.
+- [x] 3.4 Candidate offline eval tests and existing reviewer tests pass through CI; `npm run lint` and `npm run build` pass.
 
 #### Manual
 

@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "mode": "gate",
+  "models": [],
+  "requestCount": 0,
+  "repetitions": 3,
+  "usdLimit": null,
+  "approvalId": null,
+  "expiresAt": null
+}
