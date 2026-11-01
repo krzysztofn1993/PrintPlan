@@ -1,0 +1,18 @@
+{
+  "name": "@printplan/ai-reviewer-evals",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.21.0"
+  },
+  "scripts": {
+    "test": "node --import ../test/offline.mjs --test test/*.test.mjs",
+    "preflight": "node runner.mjs preflight",
+    "compare": "node runner.mjs compare",
+    "gate": "node runner.mjs gate",
+    "replay": "node runner.mjs replay"
+  },
+  "devDependencies": {
+    "promptfoo": "0.125.1"
+  }
+}

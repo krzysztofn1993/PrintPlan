@@ -51,7 +51,9 @@ test("package imports and assets are independent of cwd, app, and Actions", asyn
   const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(manifest.private, true);
   assert.equal(manifest.type, "module");
-  assert.deepEqual(Object.keys(manifest.dependencies), ["ajv"]);
+  assert.deepEqual(Object.keys(manifest.dependencies), ["@ai-sdk/openai", "ai", "ajv"]);
+  assert.match(manifest.dependencies["@ai-sdk/openai"], /^\d+\.\d+\.\d+$/);
+  assert.match(manifest.dependencies.ai, /^\d+\.\d+\.\d+$/);
   assert.match(manifest.dependencies.ajv, /^\d+\.\d+\.\d+$/);
   assert.equal(manifest.workspaces, undefined);
 });
