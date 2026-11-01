@@ -27,9 +27,9 @@ GitHub documents a 60-request/hour/IP limit for anonymous REST access. Repeated 
 
 ## Deployment and remaining acceptance
 
-The host published the original correction as [PR #41](https://github.com/krzysztofn1993/PrintPlan/pull/41), head `718f8c1f304c6d868c8035f9edf5f2eb489384e0`. It is not merged. Existing duplicate comments were not deleted or modified. The fixed code will reuse the original trusted comment; it does not automatically remove historical duplicates.
+The host published the correction as [PR #41](https://github.com/krzysztofn1993/PrintPlan/pull/41), initially at head `718f8c1f304c6d868c8035f9edf5f2eb489384e0`, and subsequently merged it as `0251d4f89faa166a48be96e013c07d9a0715d6db`. Existing duplicate comments were not deleted or modified. The fixed code reuses the original trusted comment; it does not automatically remove historical duplicates.
 
-Merge the correction into trusted `master` before issuing a fresh eligible review. An old event retains its old trusted base. Updating the test branch with the corrected master and pushing requests replacement review automatically and incurs a new provider call. Verify original-comment continuity and successful publication before closing 5.5; retain the other pending Manual criteria.
+After deployment, PR #40 run `41202310623` updated original comment `6541157337` with the deliberate-defect rejection; correction run `41202628985` updated that same comment with a successfully published pass. These observations verify historical comment continuity across new heads. The author confirmed criterion 5.5 in consolidated acceptance on 2026-10-31. An old workflow event still retains its captured base; these acceptance runs used the corrected master.
 
 ## PR #41 review assessment — 2026-10-31
 
@@ -42,4 +42,12 @@ Added two targeted regressions without changing functional source behavior:
 - Move live head or base after the first run metadata read, within the same attempt and publication invocation. Both cases cancel the execution before comment/result-label publication, with only one run metadata read.
 - Change nested PR refs after populating the historical cache. Both cached and freshly fetched run metadata resolve to the same original trusted identity.
 
-The reviewer suite passes 46 tests; `npm run verify:deploy` and formatting also pass. A source comment now explicitly separates cached historical provenance from live freshness. The hosted review remains red until a new review is requested; this assessment does not override its verdict or claim hosted recovery.
+At that checkpoint, the reviewer suite passed 46 tests; `npm run verify:deploy` and formatting also passed. A source comment explicitly separates cached historical provenance from live freshness. The hosted review was still red; the assessment itself did not override its verdict or establish hosted recovery.
+
+### Follow-up head `09ef2e7`
+
+Run `41198436249` rejected the test follow-up with different speculative findings. The first alleged a newly split failure-result/exception convention, but handled publication failures already returned `{conclusion: "failure"}` and the CLI already converted that result to a nonzero exit before this change. Added diagnostic fields do not change that contract. The second alleged possible identifier collisions without an actionable foreign-check acceptance scenario; existing repository/check/workflow/head/PR/attempt validation remains in place. These statements did not establish a blocking correctness defect. No further functional change was made in response. At that checkpoint the gate was still red and execution used the old trusted-base publisher.
+
+### Final hosted outcome
+
+The owner updated the branch after the revised prompt reached master. PR #41 run `41201707354` used digest `7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631` and completed with a valid published pass. The correction then merged, and the current-publisher acceptance sequence on PR #40 confirmed the original comment was maintained. Complete execution identities and the author's acceptance are retained in `../verification.md`.

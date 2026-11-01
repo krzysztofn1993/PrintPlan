@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 import { LIMITS } from "../config.mjs";
 import { validateContext, validateEnvelope } from "../contracts/validate.mjs";
 import { loadPrompt } from "../prompts/load.mjs";
-import { requestReview } from "../providers/openai.mjs";
+import { requestReview, ReviewResponseError } from "../providers/openai.mjs";
 
 export function assembleInput(input) {
   if (
@@ -79,7 +79,13 @@ export async function reviewChange({ context, input, apiKey, model, fetchImpl, d
     Object.assign(envelope, result, { status: "completed", error: null });
     validateEnvelope(envelope, context);
   } catch (error) {
-    Object.assign(envelope, { status: "error", review: null, usage: null, requestId: null, error: safeError(error) });
+    Object.assign(envelope, {
+      status: "error",
+      review: null,
+      requestId: error instanceof ReviewResponseError ? error.requestId : envelope.requestId,
+      usage: error instanceof ReviewResponseError ? error.usage : envelope.usage,
+      error: safeError(error),
+    });
   }
   envelope.timing = { startedAt, completedAt: new Date().toISOString() };
   return validateEnvelope(envelope, context);

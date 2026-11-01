@@ -4,6 +4,14 @@ import { LIMITS } from "../config.mjs";
 import { reviewSchema, parseReview } from "../contracts/validate.mjs";
 import { tools, assertTextOnlyOutput } from "../tools/policy.mjs";
 
+export class ReviewResponseError extends Error {
+  constructor(message, { requestId, usage }) {
+    super(message);
+    this.requestId = requestId;
+    this.usage = usage;
+  }
+}
+
 export async function requestReview({
   apiKey,
   model,
@@ -13,6 +21,7 @@ export async function requestReview({
   deadlineMs = LIMITS.deadlineMs,
 }) {
   if (!apiKey?.trim() || !model?.trim()) throw new Error("CONFIG_REQUIRED");
+  const metadata = { requestId: null, usage: null };
   const controller = new globalThis.AbortController();
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -53,7 +62,18 @@ export async function requestReview({
         } catch {
           throw new Error("INVALID_RESPONSE");
         }
-        if (value.status !== "completed") throw new Error("INCOMPLETE_RESPONSE");
+        metadata.requestId = typeof value?.id === "string" && /^resp_[A-Za-z0-9_-]+$/.test(value.id) ? value.id : null;
+        if (value?.usage != null) {
+          const usage = {
+            inputTokens: value.usage.input_tokens,
+            outputTokens: value.usage.output_tokens,
+            totalTokens: value.usage.total_tokens,
+          };
+          if (Object.values(usage).some((count) => !Number.isSafeInteger(count) || count < 0))
+            throw new Error("INVALID_RESPONSE");
+          metadata.usage = usage;
+        }
+        if (value?.status !== "completed") throw new Error("INCOMPLETE_RESPONSE");
         assertTextOnlyOutput(value.output);
         const text = value.output
           .filter((item) => item.type === "message")
@@ -61,20 +81,12 @@ export async function requestReview({
           .join("");
         if (!text || Buffer.byteLength(text, "utf8") > LIMITS.outputBytes) throw new Error("OUTPUT_SIZE");
         const review = parseReview(text);
-        const usage = value.usage
-          ? {
-              inputTokens: value.usage.input_tokens,
-              outputTokens: value.usage.output_tokens,
-              totalTokens: value.usage.total_tokens,
-            }
-          : null;
-        return {
-          review,
-          requestId: typeof value.id === "string" && /^resp_[A-Za-z0-9_-]+$/.test(value.id) ? value.id : null,
-          usage,
-        };
+        return { review, ...metadata };
       })(),
     ]);
+  } catch (error) {
+    // Only allowlisted metadata crosses the error boundary; never retain the raw response.
+    throw new ReviewResponseError(error.message, metadata);
   } finally {
     clearTimeout(timer);
   }

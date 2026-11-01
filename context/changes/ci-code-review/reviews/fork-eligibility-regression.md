@@ -25,8 +25,8 @@ The approved run's logs show empty `AI_REVIEW_OWNER` and `AI_REVIEW_MODEL`. The 
 
 ## Deployment and acceptance
 
-The fix is local and uncommitted. Merge it through an owner-authored PR into master, then update PR #44's fork branch with the corrected master and push a fresh event from the external account. Approve the specific workflow run if GitHub requests approval again. Do not rely on rerunning the old event, which retains the old workflow/base snapshot.
+The host merged the fix through owner-authored PR #45 as master commit `99d17808b65558685af13f359d63fada34279fab` at `2026-10-31T20:01:50Z`. The author then updated PR #44's fork branch with that master and approved the new workflow run. The original old-base event was not used as the acceptance run.
 
-Expected outcome: preparation, inference, and publication are skipped, with no custom `AI Code Review` check, review comment, result labels, or provider request. Retain the existing overlapping-commit evidence for 5.12; hosted confirmation of the corrected skip behavior remains pending. Do not merge the disposable external fixture PR.
+Hosted outcome: run `41237084465` for new head `bc43373d2691d4330954c7aa599a7edddae6a3b9` completed as `skipped`. Preparation, inference, and publication were all skipped, with no custom `AI Code Review` check, review comment, result labels, or provider request. Together with the existing overlapping-commit evidence, this supplies the remaining hosted condition of 5.12. The author subsequently confirmed 5.12 in the consolidated acceptance on 2026-10-31. The disposable external fixture PR was not merged.
 
 Documentation fetched through Context7 confirms [unset configuration variables return an empty string](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables). The empty fork-run values above are observed evidence, not an assumption that every fork context has identical configuration behavior.

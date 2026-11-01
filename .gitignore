@@ -208,3 +208,6 @@ playwright-report/
 /.agents/skills/setup-cicd/SKILL.md
 /.agents/skills/tf-registry/SKILL.md
 /public/template.png
+
+# Local 10x skills and bundled resources
+/.agents/skills/10x-*/

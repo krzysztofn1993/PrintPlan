@@ -150,6 +150,72 @@ test("reasoning metadata does not become tools or final output", async () => {
   assert.equal(result.status, "completed");
 });
 
+test("failed reviews retain available request identity and usage without retaining provider output", async () => {
+  const usage = { input_tokens: 12, output_tokens: 8000, total_tokens: 8012 };
+  const cases = [
+    [response({ status: "incomplete", usage }), "INCOMPLETE_RESPONSE"],
+    [
+      response({
+        usage,
+        output: [
+          {
+            type: "message",
+            role: "assistant",
+            status: "completed",
+            content: [{ type: "refusal", refusal: "private provider output" }],
+          },
+        ],
+      }),
+      "REFUSED_RESPONSE",
+    ],
+    [response({ usage }, '{"verdict":"pass","private":"private provider output"}'), "REVIEW_FAILED"],
+  ];
+  for (const [value, code] of cases) {
+    let calls = 0;
+    const result = await run(async () => {
+      calls++;
+      return { ok: true, json: async () => value };
+    });
+    assert.equal(calls, 1);
+    assert.equal(result.status, "error");
+    assert.equal(result.error.code, code);
+    assert.equal(result.review, null);
+    assert.equal(result.requestId, "resp_fixture");
+    assert.deepEqual(result.usage, { inputTokens: 12, outputTokens: 8000, totalTokens: 8012 });
+    assert.ok(!JSON.stringify(result).includes("private provider output"));
+  }
+});
+
+test("error metadata is independently validated and unavailable metadata stays null", async () => {
+  const invalidUsage = [
+    { input_tokens: -1, output_tokens: 20, total_tokens: 19 },
+    { input_tokens: 12, output_tokens: 0.5, total_tokens: 12.5 },
+    { input_tokens: 12, output_tokens: 20, total_tokens: Number.MAX_SAFE_INTEGER + 1 },
+    { input_tokens: "12", output_tokens: 20, total_tokens: 32 },
+    {},
+  ];
+  for (const usage of invalidUsage) {
+    const result = await run(fake(response({ status: "incomplete", usage })));
+    assert.equal(result.status, "error");
+    assert.equal(result.review, null);
+    assert.equal(result.requestId, "resp_fixture");
+    assert.equal(result.usage, null);
+  }
+  const invalidId = await run(fake(response({ status: "incomplete", id: "private provider output" })));
+  assert.equal(invalidId.status, "error");
+  assert.equal(invalidId.requestId, null);
+  assert.deepEqual(invalidId.usage, { inputTokens: 12, outputTokens: 20, totalTokens: 32 });
+  assert.ok(!JSON.stringify(invalidId).includes("private provider output"));
+  const absent = await run(fake(response({ status: "incomplete", id: null, usage: null })));
+  assert.equal(absent.requestId, null);
+  assert.equal(absent.usage, null);
+  const unavailable = await run(async () => {
+    throw new Error("private provider output");
+  });
+  assert.equal(unavailable.requestId, null);
+  assert.equal(unavailable.usage, null);
+});
+
 test("input size and changed-path caps reject before HTTP, mixed binary paths remain disclosed", async () => {
   const huge = { ...input, body: "x".repeat(LIMITS.inputBytes) };
   const cases = [
