@@ -170,8 +170,8 @@ No database or input schema migration is required. Preserve the trusted-base bou
 
 #### Automated
 
-- [ ] 1.1 Adapter tests pass, including exact-byte acceptance and one-byte-over rejection before HTTP: `npm --prefix packages/ai-reviewer run test:adapter`.
-- [ ] 1.2 Workflow tests pass, including large moves, edited text, binary paths, unusual filenames, and Git isolation: `npm --prefix packages/ai-reviewer run test:workflow`.
+- [x] 1.1 Adapter tests pass, including exact-byte acceptance and one-byte-over rejection before HTTP: `npm --prefix packages/ai-reviewer run test:adapter`.
+- [x] 1.2 Workflow tests pass, including large moves, edited text, binary paths, unusual filenames, and Git isolation: `npm --prefix packages/ai-reviewer run test:workflow`.
 
 ### Phase 2: Verification and CI Readiness
 
