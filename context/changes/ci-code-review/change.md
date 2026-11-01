@@ -1,9 +1,9 @@
 ---
 change_id: ci-code-review
 title: Run PR reviews with a modular Node package and the OpenAI API
-status: implemented
+status: impl_reviewed
 created: 2026-10-29
-updated: 2026-10-31
+updated: 2026-11-01
 archived_at: null
 ---
 
@@ -24,4 +24,4 @@ All five review findings are addressed. The author confirmed publication cleanup
 
 The original API test budget was USD 21. The author reported USD 0.07 spent and USD 20.93 remaining at the recorded cost checkpoint; later live requests and token usage are documented separately in `verification.md`.
 
-Implementation and acceptance are complete: all five phases and all 27 Progress criteria are checked. Per-phase automated evidence, subsequent operator setup, deployed corrections, hosted tests, and final author confirmation are recorded in `verification.md`. Criterion 5.7 uses explicitly accepted combined automated/hosted evidence; 5.14 uses the unavailable-workflow and recovery variant. The change remains `implemented` and is not archived. Documentation closeout does not merge or delete disposable acceptance PRs or historical duplicate comments.
+Implementation and acceptance are complete: all five phases and all 27 Progress criteria are checked. Per-phase automated evidence, subsequent operator setup, deployed corrections, hosted tests, and final author confirmation are recorded in `verification.md`. Criterion 5.7 uses explicitly accepted combined automated/hosted evidence; 5.14 uses the unavailable-workflow and recovery variant. The change is `impl_reviewed` and is not archived. The full implementation review is recorded in `reviews/impl-review.md`; its metadata warning was fixed locally during author-requested triage on 2026-11-01, with no pending findings. Documentation closeout does not merge or delete disposable acceptance PRs or historical duplicate comments.
