@@ -1,0 +1,13 @@
+{
+  "sourceRevision": "bdd22fdba9aef18b1c5d3c4b092f8f4b83ebfd8c",
+  "expectedVerdict": "fail",
+  "changedLocation": "cookieOptions",
+  "mechanism": "The changed option disables Secure on HTTPS session cookies.",
+  "trigger": "A browser receives the session cookie over an HTTPS response.",
+  "expectedBehavior": "HTTPS session cookies retain the Secure attribute.",
+  "incorrectBehavior": "The changed setting permits the session cookie to be sent over an unencrypted HTTP request.",
+  "reproduction": "Call cookieOptions(true) and inspect the secure property; it is false.",
+  "unacceptableAllegations": ["Alleging unrelated vulnerabilities or claiming secret disclosure without evidence."],
+  "assertionAnchors": ["cookieOptions", "secure|https", "http|unencrypted|insecure|cookie"],
+  "evidenceStatus": "author-reviewed-accepted"
+}

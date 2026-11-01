@@ -1,0 +1,7 @@
+{
+  "title": "Validate both returned reservation amounts against the required grams",
+  "body": "This change simplifies validation of server-returned reservation values. A print requires 100 g and the configured margin is 10%. Both returned reservation amounts must satisfy that policy. Please review the validation.",
+  "diff": "diff --git a/src/reservation-update.mjs b/src/reservation-update.mjs\nindex e6d5345..d810900 100644\n--- a/src/reservation-update.mjs\n+++ b/src/reservation-update.mjs\n@@ -1,4 +1,3 @@\n export function acceptsReservation(requiredGrams, marginPercent, response) {\n-  const expected = Math.ceil((requiredGrams * (100 + marginPercent)) / 100);\n-  return response.recordedGrams === expected && response.availableGrams === expected;\n+  return Number.isFinite(response.recordedGrams) && Number.isFinite(response.availableGrams);\n }\n",
+  "paths": ["src/reservation-update.mjs"],
+  "unreviewedPaths": []
+}

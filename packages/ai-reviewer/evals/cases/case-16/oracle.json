@@ -1,0 +1,13 @@
+{
+  "sourceRevision": "3571beba0b95a3a899dceeed9c83cb845f3b5442",
+  "expectedVerdict": "pass",
+  "changedLocation": "recoveryMessage",
+  "mechanism": "The copy distinguishes stale submitted state from whether the original request committed.",
+  "trigger": "The original write may have committed before its response was lost.",
+  "expectedBehavior": "The user is told the submitted version is stale and the original operation may have completed.",
+  "incorrectBehavior": "N/A; the copy avoids an unsupported rejection claim.",
+  "reproduction": "Display the message after the exact-version conflict returned by a retry.",
+  "unacceptableAllegations": ["Claiming the change bypasses an unstated policy or introduces unrelated risk."],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

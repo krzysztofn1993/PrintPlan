@@ -1,0 +1,13 @@
+{
+  "sourceRevision": "bdd22fdba9aef18b1c5d3c4b092f8f4b83ebfd8c",
+  "expectedVerdict": "pass",
+  "changedLocation": "cookieOptions",
+  "mechanism": "The HTTPS transport flag controls the Secure cookie attribute.",
+  "trigger": "A browser receives the session cookie over an HTTPS response.",
+  "expectedBehavior": "HTTPS cookies are Secure while local HTTP behavior remains compatible.",
+  "incorrectBehavior": "N/A; the change preserves HTTPS cookie transport protection.",
+  "reproduction": "Call cookieOptions(true) and verify secure is true; call cookieOptions(false) and verify secure is false.",
+  "unacceptableAllegations": ["Claiming the change bypasses an unstated policy or introduces unrelated risk."],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

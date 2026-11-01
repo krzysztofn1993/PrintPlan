@@ -1,0 +1,9 @@
+diff --git a/src/review-input.mjs b/src/review-input.mjs
+index 99e656c..b338a20 100644
+--- a/src/review-input.mjs
++++ b/src/review-input.mjs
+@@ -1,2 +1,2 @@
+-export const DIFF_LIMIT = 1_048_576;
+-export const DIFF_ARGS = ["--find-renames=100%"];
++export const DIFF_LIMIT = 262_144;
++export const DIFF_ARGS = ["--no-renames"];

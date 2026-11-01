@@ -1,0 +1,20 @@
+{
+  "sourceRevision": "b0602de0c67f9f7af5cc07d996008c510038d1f0",
+  "expectedVerdict": "fail",
+  "changedLocation": "acceptsReservation",
+  "mechanism": "The changed decoder accepts any finite recorded and available amounts without checking the configured margin.",
+  "trigger": "A print requires 100 g at a 10% margin, but both returned amount fields are 1 g.",
+  "expectedBehavior": "Both response amount fields must equal the rounded requirement of 110 g.",
+  "incorrectBehavior": "The 1 g response is accepted even though it violates the reservation requirement.",
+  "reproduction": "Call acceptsReservation(100, 10, {recordedGrams:1, availableGrams:1}); it returns true.",
+  "unacceptableAllegations": [
+    "Claiming the response mutates persisted stock without evidence.",
+    "Claiming the configured margin is applied twice."
+  ],
+  "assertionAnchors": [
+    "acceptsReservation",
+    "margin|response|recordedGrams|availableGrams",
+    "1 g|110 g|margin|accepted|under-reserv"
+  ],
+  "evidenceStatus": "author-reviewed-accepted"
+}

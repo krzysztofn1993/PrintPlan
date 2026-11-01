@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "fail",
+  "changedLocation": "src/settlement-replay.mjs: changed behavior",
+  "mechanism": "settle removes the existing-receipt replay check, so retrying the same request ID deducts the same 80 g again; after a first settlement leaves 70 g, retry incorrectly clamps the estimate to 0 g.",
+  "trigger": "A settlement request for 80 g succeeds against 150 g estimated stock, but the client times out and retries the same request ID.",
+  "expectedBehavior": "The retry returns the saved receipt and leaves the already-updated estimate at 70 g.",
+  "incorrectBehavior": "The same 80 g is deducted again and the estimate falls to 0 g.",
+  "reproduction": "Call the before and after fixture with {\"recorded\": 150, \"actual\": 80, \"requestId\": \"req-1\"}; compare the result to verify the described behavior.",
+  "unacceptableAllegations": [
+    "the fixture directly executes a production database migration",
+    "the fixture proves unrelated application behavior"
+  ]
+}

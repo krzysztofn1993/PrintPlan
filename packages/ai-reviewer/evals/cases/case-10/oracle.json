@@ -1,0 +1,15 @@
+{
+  "sourceRevision": "6f1f88a63818405a4ee4a1fe576f2b62dfe12b20",
+  "expectedVerdict": "pass",
+  "changedLocation": "retryListRefresh",
+  "mechanism": "The generic retry uses the ordinary refresh path, which asks for confirmation before discarding unsaved edit values.",
+  "trigger": "A list read has failed and an edit form contains unsaved values when the user clicks Try again.",
+  "expectedBehavior": "A declined confirmation leaves the form and its unsaved values intact; an accepted confirmation permits refresh.",
+  "incorrectBehavior": "N/A; the generic retry honors the existing discard confirmation.",
+  "reproduction": "With confirmDiscard returning false, call retryListRefresh; it returns false without calling loadLatest. With confirmation accepted, it loads the latest list.",
+  "unacceptableAllegations": [
+    "Claiming the retry prevents all possible overlapping operations or introduces unrelated behavior."
+  ],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

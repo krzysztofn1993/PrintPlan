@@ -1,0 +1,19 @@
+diff --git a/src/settlement-replay.mjs b/src/settlement-replay.mjs
+index 6666666..7777777 100644
+--- a/src/settlement-replay.mjs
++++ b/src/settlement-replay.mjs
+@@ -1,14 +1,12 @@
+ export function settle(state, requestId, actual) {
+-  const previous = state.receipts[requestId];
+-  if (previous) return { state, receipt: previous, replayed: true };
+   const receipt = { requestId, actual };
+   return {
+     state: {
+       ...state,
+       recorded: Math.max(0, state.recorded - actual),
+       receipts: { ...state.receipts, [requestId]: receipt },
+     },
+     receipt,
+     replayed: false,
+   };
+ }
