@@ -1,7 +1,7 @@
 ---
 change_id: code-review-evals
 title: Evaluate the static code reviewer with promptfoo
-status: plan_reviewed
+status: implementing
 created: 2026-11-01
 updated: 2026-11-01
 archived_at: null

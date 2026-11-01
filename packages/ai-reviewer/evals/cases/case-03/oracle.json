@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "fail",
+  "changedLocation": "src/reservation-capacity.mjs:capacity and two eligibility comparisons",
+  "mechanism": "the current reservation is no longer excluded from capacity before it is added back for eligibility",
+  "trigger": "matching spool has 300 g, another print holds 209 g, this print holds 88 g, and edited print requests 84 g",
+  "expectedBehavior": "capacity excluding this reservation is 91 g; retain and resize this reservation to 84 g",
+  "incorrectBehavior": "capacity is counted as 3 g and the still-valid 88 g reservation is released",
+  "reproduction": "Call resizeReservation({recorded:300,otherHolds:209,ownHold:88,requested:84}); the before version retains 84 g; the changed version releases it. No alternative spool is available.",
+  "unacceptableAllegations": [
+    "the fixture exercises the SQL migration directly",
+    "an alternative spool masks the release"
+  ]
+}

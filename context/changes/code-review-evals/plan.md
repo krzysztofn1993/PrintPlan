@@ -303,9 +303,9 @@ No application or database migration is needed. Land the runner and disabled pol
 
 #### Automated
 
-- [ ] 1.1 Corpus validation passes: exactly three nonempty reviewable diffs with valid hunks, frozen before/after witnesses, path agreement, and no oracle fields in assembled model input.
-- [ ] 1.2 Fixture witnesses pass offline: correct arithmetic returns 62, addition returns 238, and own-hold double counting changes retention into erroneous release in the documented scenario.
-- [ ] 1.3 Assertion tests pass offline: schema errors, wrong verdicts, generic or unrelated failures, and known-finding omissions fail; acceptable wording variants pass.
+- [x] 1.1 Corpus validation passes: exactly three nonempty reviewable diffs with valid hunks, frozen before/after witnesses, path agreement, and no oracle fields in assembled model input.
+- [x] 1.2 Fixture witnesses pass offline: correct arithmetic returns 62, addition returns 238, and own-hold double counting changes retention into erroneous release in the documented scenario.
+- [x] 1.3 Assertion tests pass offline: schema errors, wrong verdicts, generic or unrelated failures, and known-finding omissions fail; acceptable wording variants pass.
 
 #### Manual
 

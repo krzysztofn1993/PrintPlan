@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "pass",
+  "changedLocation": "src/spool-availability.mjs:getAvailableGrams validation",
+  "mechanism": "finite nonnegative inputs and reserved-stock bounds are checked before subtraction",
+  "trigger": "recordedGrams=150 and reservedGrams=88, plus malformed negative, nonfinite, or over-reserved values",
+  "expectedBehavior": "availability is 62 g and invalid stock states are rejected",
+  "incorrectBehavior": "claiming the guarded calculation can produce negative availability for valid stock values",
+  "reproduction": "Call getAvailableGrams({recordedGrams:150,reservedGrams:88}); expect 62. Try negative, infinite, or reserved greater than recorded; expect rejection.",
+  "unacceptableAllegations": [
+    "valid stock can yield negative availability",
+    "the function accepts reservations above recorded stock"
+  ]
+}
