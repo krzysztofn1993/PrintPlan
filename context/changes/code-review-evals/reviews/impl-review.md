@@ -106,6 +106,6 @@
 - **2.10 resolved:** Cloned error-response metadata is bounded by the request deadline. The new stalled-clone test returns `DEADLINE_EXCEEDED` and confirms one provider attempt.
 - **2.11 complete:** After separate author approval, one SDK-backed synthetic-diff request completed. Sanitized output and usage are in [sdk-smoke.json](sdk-smoke.json); the author confirmed the result.
 - **2.12 complete:** The existing successful PR #39 pipeline, reviewer job/log, and review comment were captured in the adjacent screenshots.
-- **Still pending:** The human audit of all 72 saved summaries under 4.9. No additional provider requests are needed or authorized for this audit.
+- **4.9 complete:** The author reviewed all 72 saved summaries case by case; no unsupported or unrelated allegations were recorded. The grouped audit is in [summary-audit.md](summary-audit.md). No additional provider requests were made.
 
 The follow-up implementation gates passed: `npm run test:ai-review` (53/53), `npm run test:ai-review-evals` (31/31), `npm run lint`, and `npm run build`. The historical report above is retained as a record of the state at the original review, not the current verdict.
