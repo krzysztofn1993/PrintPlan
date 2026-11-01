@@ -1,7 +1,7 @@
 ---
 change_id: ai-review-input-size
 title: Investigate AI review input limits and archive rename inflation
-status: implementing
+status: implemented
 created: 2026-11-01
 updated: 2026-11-01
 archived_at: null
