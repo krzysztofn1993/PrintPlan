@@ -1,5 +1,5 @@
 export const LIMITS = Object.freeze({
-  inputBytes: 256 * 1024,
+  inputBytes: 1024 * 1024,
   changedPaths: 200,
   outputTokens: 8000,
   outputBytes: 64 * 1024,
