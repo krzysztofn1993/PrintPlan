@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm ci --ignore-scripts --prefix packages/ai-reviewer
+      - run: npm ci --ignore-scripts --prefix packages/ai-reviewer/evals
+      - run: npm run test:ai-review-evals
       - run: npm run test:ai-review
       - run: npm run test:hooks
       - run: npm run test:auth
