@@ -27,6 +27,10 @@ Read @context/foundation/prd.md for product rules and @context/foundation/tech-s
 ## Configuration
 
 Set `SUPABASE_URL` and `SUPABASE_KEY` using @.env.example; keep `.env` and `.dev.vars` untracked (@.gitignore). Preserve the server-only secret schema in @astro.config.mjs and cookie handling in @src/lib/supabase.ts.
+
+## Static reviewer evaluations
+
+The isolated harness lives in `packages/ai-reviewer/evals/`. Install with `npm ci --ignore-scripts --prefix packages/ai-reviewer/evals`, run its offline suite with `npm run test:ai-review-evals`, and use `npm --prefix packages/ai-reviewer/evals run preflight` for a no-key check. The trusted eval workflow reads only the fixed reviewer prompt blobs from PR heads as data. Keep its checked-in approval disabled until the author approves a specific budget; do not dispatch paid workflows or edit branch protection during bootstrap.
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
 ## 10xDevs AI Toolkit - Module 5, Lesson 5 (Async & Remote Agents)

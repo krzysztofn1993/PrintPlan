@@ -134,6 +134,12 @@ export async function cli(args = process.argv.slice(2)) {
   if (!process.env.EVAL_APPROVAL_FILE) throw new Error("APPROVAL_REQUIRED");
   const approval = JSON.parse(await readFile(process.env.EVAL_APPROVAL_FILE, "utf8"));
   const policy = JSON.parse(await readFile(resolve(root, "pricing.json"), "utf8"));
+  const promptContents = process.env.EVAL_PROMPT_DIRECTORY
+    ? {
+        system: await readFile(resolve(process.env.EVAL_PROMPT_DIRECTORY, "system.md"), "utf8"),
+        criteria: await readFile(resolve(process.env.EVAL_PROMPT_DIRECTORY, "criteria.md"), "utf8"),
+      }
+    : undefined;
   const corpusInputs = await Promise.all(cases.map((id) => readFile(resolve(root, "cases", id, "input.json"))));
   const expected = {
     runnerDigest: digest(await readFile(fileURLToPath(import.meta.url))),
@@ -142,7 +148,7 @@ export async function cli(args = process.argv.slice(2)) {
     pricingDigest: digest(policy),
     pricing: policy,
   };
-  const report = await runEvaluation({ approval, mode: command, expected });
+  const report = await runEvaluation({ approval, mode: command, expected, promptContents });
   await mkdir(resolve(root, "reports"), { recursive: true });
   await writeReport(resolve(root, "reports"), report);
   return report;
