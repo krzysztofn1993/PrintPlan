@@ -1,0 +1,17 @@
+{
+  "sourceRevision": "286c33ce11298eddeacda53d586f479021eb0c06",
+  "expectedVerdict": "fail",
+  "changedLocation": "DIFF_LIMIT and DIFF_ARGS",
+  "mechanism": "The change lowers the input cap and disables rename detection.",
+  "trigger": "A large review or a file move with unchanged content is prepared.",
+  "expectedBehavior": "The full bounded review input is retained and pure moves are represented as renames.",
+  "incorrectBehavior": "The diff can be truncated at 256 KiB and a move is emitted as delete/add, obscuring the change.",
+  "reproduction": "Compare a 300 KiB patch and a pure rename; the new settings truncate the former and disable rename detection for the latter.",
+  "unacceptableAllegations": ["Alleging unrelated vulnerabilities or claiming secret disclosure without evidence."],
+  "assertionAnchors": [
+    "DIFF_LIMIT|DIFF_ARGS|diff",
+    "truncat|limit|rename",
+    "large|256|move|rename|truncat|omit|missing"
+  ],
+  "evidenceStatus": "author-reviewed-accepted"
+}

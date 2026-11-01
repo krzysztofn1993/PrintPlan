@@ -1,0 +1,10 @@
+diff --git a/src/reservation-update.mjs b/src/reservation-update.mjs
+index e6d5345..d810900 100644
+--- a/src/reservation-update.mjs
++++ b/src/reservation-update.mjs
+@@ -1,4 +1,3 @@
+ export function acceptsReservation(requiredGrams, marginPercent, response) {
+-  const expected = Math.ceil((requiredGrams * (100 + marginPercent)) / 100);
+-  return response.recordedGrams === expected && response.availableGrams === expected;
++  return Number.isFinite(response.recordedGrams) && Number.isFinite(response.availableGrams);
+ }

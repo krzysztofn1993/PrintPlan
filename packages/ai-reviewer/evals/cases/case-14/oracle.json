@@ -1,0 +1,16 @@
+{
+  "sourceRevision": "b0602de0c67f9f7af5cc07d996008c510038d1f0",
+  "expectedVerdict": "pass",
+  "changedLocation": "acceptsReservation",
+  "mechanism": "Both returned amounts are compared with the rounded requirement after applying the margin.",
+  "trigger": "A print requires 100 g at a 10% margin.",
+  "expectedBehavior": "Both response amounts must equal 110 g.",
+  "incorrectBehavior": "N/A; the change rejects mismatched reservation values.",
+  "reproduction": "Call acceptsReservation(100, 10, {recordedGrams:110, availableGrams:110}) and expect true; call it with both values set to 1 and expect false.",
+  "unacceptableAllegations": [
+    "Claiming the margin is applied twice.",
+    "Claiming valid non-integer grams are silently rounded down."
+  ],
+  "assertionAnchors": [],
+  "evidenceStatus": "author-reviewed-accepted"
+}

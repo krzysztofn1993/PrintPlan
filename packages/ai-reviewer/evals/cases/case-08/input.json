@@ -1,0 +1,7 @@
+{
+  "title": "Set the session cookie Secure attribute for HTTPS",
+  "body": "This change makes the session cookie Secure when the request uses HTTPS while preserving local HTTP development. Review whether the transport policy is implemented correctly.",
+  "diff": "diff --git a/src/lib/cookie-policy.mjs b/src/lib/cookie-policy.mjs\nindex 019d8e8..5755179 100644\n--- a/src/lib/cookie-policy.mjs\n+++ b/src/lib/cookie-policy.mjs\n@@ -1,3 +1,3 @@\n export function cookieOptions(_isHttps) {\n-  return { secure: false, sameSite: \"lax\" };\n+  return { secure: _isHttps, sameSite: \"lax\" };\n }\n",
+  "paths": ["src/lib/cookie-policy.mjs"],
+  "unreviewedPaths": []
+}

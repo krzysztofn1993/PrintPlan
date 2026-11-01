@@ -1,0 +1,22 @@
+diff --git a/src/components/prints/PrintList.tsx b/src/components/prints/PrintList.tsx
+--- a/src/components/prints/PrintList.tsx
++++ b/src/components/prints/PrintList.tsx
+@@ -1,14 +1,10 @@
+-function refreshList({ conflictId, confirmDiscard, loadLatest }) {
+-  if (!conflictId && !confirmDiscard()) return false;
++function refreshList({ confirmDiscard, loadLatest }) {
++  if (!confirmDiscard()) return false;
+   loadLatest();
+   return true;
+ }
+-
++
+-export function retryListRefresh({ editingPrintId, confirmDiscard, loadLatest }) {
+-  return refreshList({
+-    conflictId: editingPrintId ?? undefined,
+-    confirmDiscard,
+-    loadLatest,
+-  });
++export function retryListRefresh({ confirmDiscard, loadLatest }) {
++  return refreshList({ confirmDiscard, loadLatest });
+ }

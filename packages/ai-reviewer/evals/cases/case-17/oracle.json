@@ -1,0 +1,17 @@
+{
+  "sourceRevision": "d440125c4d83173c65a23c0384df1b077027ad37",
+  "expectedVerdict": "fail",
+  "changedLocation": "actions",
+  "mechanism": "The review action is tied to source-print existence instead of the saved settlement result.",
+  "trigger": "A print is deleted after settlement and the user closes the result panel.",
+  "expectedBehavior": "A session-level action remains available to reopen the saved settlement receipt.",
+  "incorrectBehavior": "The only receipt review control disappears when the print no longer exists.",
+  "reproduction": "Call actions(savedResult, false); it returns no action even though a receipt is available.",
+  "unacceptableAllegations": ["Alleging unrelated vulnerabilities or claiming secret disclosure without evidence."],
+  "assertionAnchors": [
+    "actions|settlement|receipt",
+    "deleted|printExists|source|saved",
+    "review|reopen|access|disappear|unavailable|lost"
+  ],
+  "evidenceStatus": "author-reviewed-accepted"
+}

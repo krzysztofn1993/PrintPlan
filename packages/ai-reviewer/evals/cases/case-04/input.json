@@ -1,0 +1,7 @@
+{
+  "title": "Keep stock nonnegative after settlement",
+  "body": "When actual use exceeds the recorded estimate, subtract the actual use and clamp the remaining stock to zero. Stock on hand must never be negative.",
+  "diff": "diff --git a/src/settlement-stock.mjs b/src/settlement-stock.mjs\nindex 6666666..7777777 100644\n--- a/src/settlement-stock.mjs\n+++ b/src/settlement-stock.mjs\n@@ -1,3 +1,3 @@\n export function remainingStock(recorded, actual) {\n-  return Math.max(0, recorded - actual);\n+  return recorded - actual;\n }\n",
+  "paths": ["src/settlement-stock.mjs"],
+  "unreviewedPaths": []
+}

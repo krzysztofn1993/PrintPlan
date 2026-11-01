@@ -1,0 +1,7 @@
+{
+  "title": "Keep session cookies secure on HTTPS requests",
+  "body": "This change adjusts the cookie options for the server session. The application serves authenticated requests over HTTPS. Please review the changed behavior for security and correctness.",
+  "diff": "diff --git a/src/lib/cookie-policy.mjs b/src/lib/cookie-policy.mjs\nindex c11f71d..019d8e8 100644\n--- a/src/lib/cookie-policy.mjs\n+++ b/src/lib/cookie-policy.mjs\n@@ -1,3 +1,3 @@\n export function cookieOptions(_isHttps) {\n-  return { secure: true, sameSite: \"lax\" };\n+  return { secure: false, sameSite: \"lax\" };\n }\n",
+  "paths": ["src/lib/cookie-policy.mjs"],
+  "unreviewedPaths": []
+}
