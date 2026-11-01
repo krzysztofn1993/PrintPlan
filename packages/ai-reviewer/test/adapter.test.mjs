@@ -248,6 +248,41 @@ test("input size and changed-path caps reject before HTTP, mixed binary paths re
   );
 });
 
+test("serialized UTF-8 input accepts exactly 1 MiB and rejects one byte over before HTTP", async () => {
+  assert.equal(LIMITS.inputBytes, 1_048_576);
+  for (const body of ["ASCII", 'Evidence 🧵: "quoted" \\ path\nnext line\tend']) {
+    const seed = { ...input, body };
+    const padding = 1_048_576 - Buffer.byteLength(JSON.stringify(seed), "utf8");
+    const boundary = { ...seed, body: body + "x".repeat(padding) };
+    const serialized = assembleInput(boundary);
+    assert.equal(Buffer.byteLength(serialized, "utf8"), 1_048_576);
+    assert.deepEqual(JSON.parse(serialized), boundary);
+    if (body !== "ASCII") assert.ok(serialized.length < Buffer.byteLength(serialized, "utf8"));
+
+    let calls = 0;
+    const fetchImpl = async (_url, options) => {
+      calls++;
+      const request = JSON.parse(options.body);
+      assert.equal(request.input[1].content, serialized);
+      return { ok: true, json: async () => response() };
+    };
+    const accepted = await run(fetchImpl, { input: boundary });
+    assert.equal(calls, 1);
+    assert.equal(accepted.status, "completed");
+    assert.equal(accepted.review.verdict, "pass");
+
+    const oversized = { ...boundary, body: boundary.body + "x" };
+    assert.equal(Buffer.byteLength(JSON.stringify(oversized), "utf8"), 1_048_577);
+    assert.throws(() => assembleInput(oversized), /INPUT_SIZE/);
+    calls = 0;
+    const rejected = await run(fetchImpl, { input: oversized });
+    assert.equal(calls, 0);
+    assert.equal(rejected.status, "error");
+    assert.equal(rejected.error.code, "INPUT_SIZE");
+    assert.equal(rejected.review, null);
+  }
+});
+
 test("deadline aborts the HTTP request and does not retry, including stalled response parsing", async () => {
   let calls = 0;
   let signal;
