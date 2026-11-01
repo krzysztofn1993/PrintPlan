@@ -1,0 +1,2257 @@
+{
+  "version": 1,
+  "runType": "saved-matrix-replay",
+  "inferencePerformed": false,
+  "sourcePromptDigest": "7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631",
+  "sourceApprovalId": "printplan-code-review-evals-holdout-2026-11-01-once",
+  "models": ["gpt-6-luna", "gpt-6.1-sol"],
+  "caseIds": [
+    "case-07",
+    "case-08",
+    "case-09",
+    "case-10",
+    "case-11",
+    "case-12",
+    "case-13",
+    "case-14",
+    "case-15",
+    "case-16",
+    "case-17",
+    "case-18"
+  ],
+  "repetitions": 3,
+  "matrix": [
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-07",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 7,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 1,
+        "verdict": "fail",
+        "summary": "**Blocking security finding — `src/lib/cookie-policy.mjs`:** The change switches the session cookie option from `secure: true` to `secure: false`, contradicting the PR’s stated requirement to keep session cookies secure on HTTPS requests. For example, call `cookieOptions(true)` and use the returned options to set a session cookie: the expected result is a cookie with the `Secure` attribute, but the changed code returns `secure: false`. A browser can then send that cookie over HTTP if the same origin is reachable over HTTP, exposing it to interception. To confirm, run a unit test asserting `cookieOptions(true).secure === true`; it fails because this change returns `false`. The PR introduces this behavior directly by changing the returned value from `true` to `false`.\n\nTests were not executed by this reviewer. The assessment is limited to the supplied diff and path list; no paths were marked unreviewed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, false],
+        "findingComplete": false,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 636,
+        "totalTokens": 2083
+      },
+      "costUsd": 0.0004627,
+      "requestId": "resp_05dcad1182bd121f016ae73fe04fc087d29e325fbfd0cad486",
+      "reviewerDurationMs": 8857
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-07",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 7,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 1,
+        "verdict": "fail",
+        "summary": "**Blocking security finding — `src/lib/cookie-policy.mjs:2`:** The change switches `secure` from `true` to `false` unconditionally. The PR describes this as a session-cookie policy for an application serving authenticated requests over HTTPS. When this function supplies the session cookie options, the HTTPS response will therefore set a cookie without the `Secure` attribute. A browser can then send that cookie over an HTTP request, exposing the session credential to interception. Expected: the session cookie remains `Secure` on HTTPS. Actual: the returned options explicitly disable that protection. To confirm, run `node --input-type=module -e 'import { cookieOptions } from \"./src/lib/cookie-policy.mjs\"; console.log(cookieOptions(true))'`; it returns `secure: false` rather than `true`. This regression is introduced by the changed return value; the previous implementation returned `secure: true`.\n\nTests were not executed by this reviewer. The supplied diff contains only this file, so caller behavior and broader application safeguards could not be reviewed; that limits the analysis but does not change the demonstrated cookie-options regression."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 791,
+        "totalTokens": 2238
+      },
+      "costUsd": 0.0005402,
+      "requestId": "resp_05cdfd574c10e143016ae73fe8318487d292bc3c6ffbfb4235",
+      "reviewerDurationMs": 9334
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-07",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 2,
+        "verdict": "fail",
+        "summary": "Blocking finding — `src/lib/cookie-policy.mjs:2`: this change switches the session cookie option from `secure: true` to `secure: false`. That removes the browser restriction that prevents sending the cookie over unencrypted HTTP. For example, if a browser holding this session cookie makes a request to an HTTP endpoint on the cookie's host, the cookie may be sent in that request. The expected result for a secure session cookie is that the browser withholds it on HTTP requests; the changed option permits it to be sent, exposing the session credential to network interception. This is introduced by this PR, which directly changes the option from enabled to disabled; it conflicts with the title's stated goal of keeping session cookies secure. To confirm, import `cookieOptions` and assert `cookieOptions(true).secure === true`; the assertion fails because the function returns `false`. A browser-level check can additionally set a cookie using these options, make a same-host HTTP request, and inspect whether the cookie is included. Tests were not executed by this reviewer. Review is limited to the supplied diff and path; no other paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 680,
+        "totalTokens": 2127
+      },
+      "costUsd": 0.00048470000000000007,
+      "requestId": "resp_074643370c96f062016ae73ff185c087d28168034dce4a9770",
+      "reviewerDurationMs": 7042
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-08",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change sets `secure` directly from `_isHttps`, so HTTPS callers receive a Secure cookie and HTTP callers preserve the prior `false` value; `sameSite` is unchanged. No blocking defect is demonstrated in the supplied diff. The diff contains no tests, and the caller logic that determines `_isHttps` is not included, so transport detection cannot be assessed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 277,
+        "totalTokens": 1724
+      },
+      "costUsd": 0.00028320000000000005,
+      "requestId": "resp_0c41d6b5a8e935d4016ae73ff8b8a087d2ab41f7440ef6105d",
+      "reviewerDurationMs": 4406
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-08",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8.5,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 8.5,
+        "verdict": "pass",
+        "summary": "The change sets `secure` from the supplied `_isHttps` value and preserves `sameSite: \"lax\"`, matching the stated transport policy. The supplied diff does not show callers or tests, so whether the argument is always a boolean cannot be assessed; this is a context limitation, not evidence of a defect. Tests were not executed by this reviewer. Only the listed source file was reviewed; no unreviewed binary paths were provided."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 280,
+        "totalTokens": 1727
+      },
+      "costUsd": 0.00028470000000000004,
+      "requestId": "resp_0a93f4c78afe87b0016ae73ffd1dd087d295d201d05dc3f19a",
+      "reviewerDurationMs": 4696
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-08",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change directly uses the HTTPS flag to set the cookie’s `secure` option and preserves `sameSite: \"lax\"`; no concrete defect is demonstrated by the supplied diff. Test coverage and surrounding call-site behavior cannot be assessed from the provided material. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 256,
+        "totalTokens": 1703
+      },
+      "costUsd": 0.00027270000000000007,
+      "requestId": "resp_0231a977134d79d5016ae74001bfe887d297069130fa718638",
+      "reviewerDurationMs": 3473
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-09",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 6,
+        "idiomaticity": 7,
+        "complexity": 8,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The diff makes `retryListRefresh` skip `confirmDiscard()` when `editingPrintId` is set, then calls `loadLatest()`. Whether that refresh changes or discards the open form’s unsaved values depends on the callback implementation, which is not included; the supplied code alone does not establish that edits are lost or preserved. No blocking defect is demonstrated. Tests were not executed by this reviewer. The assessment is limited to the single supplied source-file diff; no unreviewed paths, including binary paths, were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": false,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 1155,
+        "totalTokens": 2726
+      },
+      "costUsd": 0.0007346000000000001,
+      "requestId": "resp_04915bb783497d2a016ae74005280487d2a626b28f4598bf24",
+      "reviewerDurationMs": 11562
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-09",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 6,
+        "idiomaticity": 8,
+        "complexity": 8,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change makes `retryListRefresh` skip `confirmDiscard` when `editingPrintId` is truthy, then calls `loadLatest`. The supplied diff does not show what `loadLatest` changes or whether refreshing the list affects the open edit form, so it does not establish that unsaved values are lost—or that they are preserved. No blocking defect can be demonstrated from the supplied material. Tests were not executed by this reviewer; only `PrintList.tsx` was supplied, so the relevant callback integrations and tests could not be reviewed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": false,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 1048,
+        "totalTokens": 2619
+      },
+      "costUsd": 0.0006811,
+      "requestId": "resp_0fcef86a8c5cad9f016ae74010b8a487d29bb321bf871679be",
+      "reviewerDurationMs": 10090
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-09",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 6,
+        "idiomaticity": 7,
+        "complexity": 8,
+        "testRiskCoverage": 4,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated by the supplied diff. When `editingPrintId` is truthy, `refreshList` skips `confirmDiscard` and calls `loadLatest`; however, the diff does not show what either callback does or whether refreshing the list changes the open form’s unsaved values. Therefore, it does not establish that edits are lost or that the stated preservation requirement is violated. A useful follow-up test would verify that retrying with an active edit retains the form’s unsaved values. Tests were not executed by this reviewer. The assessment is limited to the changed `src/components/prints/PrintList.tsx`; no binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": false,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 1067,
+        "totalTokens": 2638
+      },
+      "costUsd": 0.0006906,
+      "requestId": "resp_0c9c34ca9912d657016ae7401ad98487d2b196a9fad71590e2",
+      "reviewerDurationMs": 10689
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-10",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The retry now calls `confirmDiscard()` before `loadLatest()` in all cases, and returns without loading when confirmation is declined. This removes the prior `editingPrintId` condition that bypassed confirmation while editing, matching the stated behavior. No tests are included in the supplied change; tests were not executed by this reviewer. The review is limited to the supplied diff and path, so surrounding call sites and test coverage could not be assessed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 324,
+        "totalTokens": 1897
+      },
+      "costUsd": 0.0003193,
+      "requestId": "resp_077cfd14862a53db016ae740257f0087d2928023628bcf754a",
+      "reviewerDurationMs": 3556
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-10",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change removes the prior `editingPrintId`-based bypass and makes `retryListRefresh` call `confirmDiscard()` before `loadLatest()`. If confirmation is declined, it returns `false` without loading; otherwise it proceeds. This supports the requested confirmation-before-replacement behavior. The supplied diff does not show the callback implementation, so I cannot determine whether it only prompts when the form has unsaved values or whether retries without unsaved edits also prompt. No tests were included in the supplied change, and tests were not executed by this reviewer. Only `src/components/prints/PrintList.tsx` was reviewed; no binary paths or additional path context were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 782,
+        "totalTokens": 2355
+      },
+      "costUsd": 0.0005482999999999999,
+      "requestId": "resp_01853a47538f1d9a016ae7402919b487d2b774cea9966dd6b5",
+      "reviewerDurationMs": 8705
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-10",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The retry path now calls `confirmDiscard()` before `loadLatest()` on every invocation, and returns without loading when confirmation is declined. This supports the requested behavior when the callback represents the edit form’s discard confirmation. No blocking defect is demonstrated by the supplied diff. The callback implementation and call sites are not included, so whether it prompts only when unsaved values exist cannot be assessed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 478,
+        "totalTokens": 2051
+      },
+      "costUsd": 0.00039630000000000004,
+      "requestId": "resp_0013ffad36a23d29016ae74031d6dc87d2a88af44360b7e0f6",
+      "reviewerDurationMs": 5395
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-11",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 7,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "Blocking finding — `src/review-input.mjs:2` replaces `--find-renames=100%` with `--no-renames`, contradicting the stated requirement for readable move detection. In a repository where a committed file is moved without changing its contents, running the diff with the new option makes Git report a deletion and an addition rather than a rename; the expected result is a rename-aware diff. To reproduce: create and commit `old.txt`, run `git mv old.txt new.txt`, commit again, then run `git diff --no-renames HEAD^ HEAD` and compare it with `git diff --find-renames=100% HEAD^ HEAD`. The first shows separate deletion/addition; the second detects the rename. This regression is introduced by the changed option itself.\n\n`DIFF_LIMIT` is also reduced from 1,048,576 to 262,144 bytes. The code that consumes this constant is not included, so I cannot establish the precise effect on truncation or completeness from the supplied diff alone. Tests were not executed by this reviewer; the assessment is limited to the supplied changed file and PR description."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 1341,
+        "totalTokens": 2803
+      },
+      "costUsd": 0.0008167000000000001,
+      "requestId": "resp_02bf8279b0aebb13016ae74037276087d2a20d98adb2848400",
+      "reviewerDurationMs": 13677
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-11",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 4,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "**Blocking finding — rename detection is disabled (`src/review-input.mjs`, `DIFF_ARGS`).** The change replaces `--find-renames=100%` with `--no-renames`, which tells Git not to detect renames. For a commit that moves a file without changing its contents, passing these arguments to `git diff` yields a deletion and an addition rather than a rename-aware diff. That contradicts the stated requirement for readable move detection; the expected result is a detected rename, while the actual result is separate delete/add entries. To confirm, create and commit a file, move it with `git mv`, commit again, then run `git diff HEAD^ HEAD` with the exported `DIFF_ARGS`: the output will not contain a rename. This behavior is introduced by this PR's argument change. Tests were not executed by this reviewer.\n\nThe limit also decreases from 1,048,576 to 262,144 bytes. The supplied diff does not show how `DIFF_LIMIT` is enforced, so I cannot establish whether that change truncates or otherwise excludes diff content. No other paths or additional implementation context were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 1461,
+        "totalTokens": 2923
+      },
+      "costUsd": 0.0008767,
+      "requestId": "resp_079912ee461b01b3016ae74044d62887d2b7b87cdb11ce4eaf",
+      "reviewerDurationMs": 14157
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-11",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 7,
+        "complexity": 8,
+        "testRiskCoverage": 3,
+        "documentation": 6,
+        "securitySafety": 9,
+        "verdict": "fail",
+        "summary": "**Blocking finding — rename detection is disabled.** `src/review-input.mjs` changes `DIFF_ARGS` from `[\"--find-renames=100%\"]` to `[\"--no-renames\"]`. This directly conflicts with the PR description’s requirement for readable move detection. For a committed file rename, when this option is passed to `git diff`, Git reports a deletion and an addition rather than a rename; the expected result is a rename-aware diff. To reproduce, create a temporary Git repository, commit `old.txt`, rename it to `new.txt` and commit, then compare `git diff --find-renames=100% HEAD^ HEAD --summary` with `git diff --no-renames HEAD^ HEAD --summary`: the former reports a rename, while the latter reports a deletion and creation. This behavior is introduced by the changed option; the prior option explicitly enabled rename detection.\n\nThe diff also lowers `DIFF_LIMIT` from 1,048,576 to 262,144. The supplied material does not include its callers, so I cannot establish how that limit is applied or whether it truncates review input; I do not treat that as a separate confirmed defect. No binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, false],
+        "findingComplete": false,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 1474,
+        "totalTokens": 2936
+      },
+      "costUsd": 0.0008832,
+      "requestId": "resp_0b1210859fb8529c016ae74052fc0c87d2bd3b1847d75cdb88",
+      "reviewerDurationMs": 14487
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-12",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change raises the bounded diff limit from 256 KiB to 1 MiB and enables Git’s exact-content rename detection (`--find-renames=100%`), consistent with the stated intent. No concrete behavior defect is demonstrated by the supplied diff. Tests were not executed by this reviewer; the assessment is limited to the single changed file and lacks surrounding call-site and test context."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 296,
+        "totalTokens": 1749
+      },
+      "costUsd": 0.00029330000000000003,
+      "requestId": "resp_0ae5bae890265189016ae7406181ac87d2976efcb8f1002a1b",
+      "reviewerDurationMs": 3530
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-12",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change raises the diff limit from 262,144 to 1,048,576 bytes and asks Git to detect only exact-content renames. Nothing in the supplied diff demonstrates a concrete defect in either change. Downstream handling and any surrounding limits are not included, so this assessment is limited to the changed constants. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 314,
+        "totalTokens": 1767
+      },
+      "costUsd": 0.00030230000000000003,
+      "requestId": "resp_0ceb9f2b18fd5739016ae7406501a887d2ac070c9a092b12d2",
+      "reviewerDurationMs": 3818
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-12",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated in the supplied change: it raises the diff limit from 256 KiB to 1 MiB and changes Git’s diff arguments from disabling rename detection to detecting 100%-similarity renames, consistent with the stated intent to handle exact moves. The change remains bounded. Tests were not executed by this reviewer. Assessment is limited to the single supplied source diff; no unreviewed binary paths were listed, and the caller and surrounding tests were not provided."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 363,
+        "totalTokens": 1816
+      },
+      "costUsd": 0.00032680000000000003,
+      "requestId": "resp_0918e210945bdb8a016ae74068d1c087d28c2149f5bbb098f5",
+      "reviewerDurationMs": 4538
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-13",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 6,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "Blocking finding — `src/reservation-update.mjs`: the change replaces checks that both returned amounts equal `ceil(requiredGrams * (100 + marginPercent) / 100)` with checks that they are merely finite. For a 100 g print and 10% margin, the required value is 110 g. For example, `acceptsReservation(100, 10, { recordedGrams: 0, availableGrams: -1 })` now returns `true`; the expected result is `false`, because neither amount satisfies the 110 g policy. To confirm, run that call in Node after importing `acceptsReservation` from `./src/reservation-update.mjs` and observe the returned value. This regression is introduced by removing both equality checks, so invalid reservation amounts are now accepted.\n\nTests were not executed by this reviewer. Assessment is limited to the supplied diff and path list; no other files or unreviewed binary paths were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 457,
+        "totalTokens": 1942
+      },
+      "costUsd": 0.000377,
+      "requestId": "resp_027cafeb48e6a6b7016ae7406d642087d2878a1ac81f9c098e",
+      "reviewerDurationMs": 5551
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-13",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 1,
+        "idiomaticity": 6,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 5,
+        "verdict": "fail",
+        "summary": "**Blocking — `src/reservation-update.mjs`, `acceptsReservation`:** The PR replaces checks that both amounts equal `Math.ceil((requiredGrams * (100 + marginPercent)) / 100)` with checks that they are merely finite. For the stated requirement of 100 g with a 10% margin, the required amount is 110 g. A response with `recordedGrams: 0` and `availableGrams: 0` therefore now returns `true`, although neither amount satisfies the policy. Expected: reject amounts other than 110; incorrect: accept any finite amounts. This is introduced by the changed return expression, which removes the prior equality checks. Reproduce with `node --input-type=module -e 'import { acceptsReservation } from \"./src/reservation-update.mjs\"; console.log(acceptsReservation(100, 10, {recordedGrams: 0, availableGrams: 0}))'`; it prints `true`, whereas the required result is `false`. Tests were not executed by this reviewer. Analysis is limited to the supplied diff and PR description; no paths were listed as unreviewed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 447,
+        "totalTokens": 1932
+      },
+      "costUsd": 0.000372,
+      "requestId": "resp_0bace55c292a876f016ae74072eb3087d289d7c811c9f9a523",
+      "reviewerDurationMs": 5212
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-13",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 7,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 6,
+        "verdict": "fail",
+        "summary": "**Blocking finding — `src/reservation-update.mjs`:** The change accepts any finite returned amounts, dropping the prior check that both amounts equal `Math.ceil(requiredGrams * (100 + marginPercent) / 100)`. The PR description requires both values to satisfy the grams-and-margin policy. For `requiredGrams = 100`, `marginPercent = 10`, and a response with `recordedGrams: 1` and `availableGrams: 1`, both values are finite, so this function returns `true`; the expected result is rejection because the policy amount is 110 g. Confirm with `node --input-type=module -e \"import { acceptsReservation } from './src/reservation-update.mjs'; console.log(acceptsReservation(100, 10, { recordedGrams: 1, availableGrams: 1 }))\"` (the changed code prints `true`). This regression is introduced by replacing the exact expected-amount checks with finiteness checks. Tests were not executed by this reviewer. Assessment is limited to the supplied diff and PR description; no other paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 420,
+        "totalTokens": 1905
+      },
+      "costUsd": 0.0003585,
+      "requestId": "resp_0aa860136287ceba016ae740781f5087d28da1b63f51397c6f",
+      "reviewerDurationMs": 4172
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-14",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change computes the margin-adjusted whole-gram expectation and compares both returned fields to it, consistent with the stated requirement. No blocking defect is demonstrated by the supplied diff. The diff contains no tests, and caller/server schema context is not provided, so the intended semantics of exact equality cannot be assessed beyond the explicit description. Tests were not executed by this reviewer; only `src/reservation-update.mjs` was supplied, with no unreviewed binary paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 1409,
+        "totalTokens": 2889
+      },
+      "costUsd": 0.0008525,
+      "requestId": "resp_01774ad4a25c7c58016ae7407c516487d2baa8cdf50b5bda8b",
+      "reviewerDurationMs": 16477
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-14",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 7,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change computes the required amount with the stated percentage margin and upward whole-gram rounding, then checks both returned fields against that amount, matching the supplied PR description. No blocking defect is demonstrated by the supplied diff. No tests were included or executed by this reviewer; only `src/reservation-update.mjs` was available, so surrounding API semantics and validation could not be assessed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 470,
+        "totalTokens": 1950
+      },
+      "costUsd": 0.000383,
+      "requestId": "resp_0ddf6524dc0a6af2016ae7408cc3f887d28b00bbae2d470d1d",
+      "reviewerDurationMs": 5375
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-14",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change computes the configured-margin amount rounded up to a whole gram and requires both returned fields to equal it. That matches the stated requirement; no blocking defect is demonstrated by the supplied diff. The diff includes no tests, and tests were not executed by this reviewer. Assessment is limited to the one changed function; no binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 558,
+        "totalTokens": 2038
+      },
+      "costUsd": 0.000427,
+      "requestId": "resp_0619648a11deeb98016ae74092281887d294e290871928da23",
+      "reviewerDurationMs": 6246
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-15",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "**Blocking finding — `src/recovery-message.mjs:2`:** The new message says, “The request was rejected. Try again,” but the PR description explicitly states that an exact-version conflict during retry may occur after the first request already committed. In that scenario, the message incorrectly tells the user the request was rejected, contrary to the stated requirement to avoid that claim. The expected message should preserve the uncertainty that the original request may have completed (as the prior text did); the actual message asserts rejection and encourages another attempt. To confirm, call `recoveryMessage()` for the exact-version-conflict retry case and assert that its result does not claim rejection and communicates that the original request may have completed; the changed implementation returns the rejection text, so that assertion fails. This behavior is introduced by this PR’s replacement of the previous uncertainty-aware message. Tests were not executed by this reviewer. Assessment is limited to the supplied diff and description; no unreviewed paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 478,
+        "totalTokens": 1921
+      },
+      "costUsd": 0.0003833,
+      "requestId": "resp_0199e009faef18b4016ae74098691c87d28e3bace99dcf5f1d",
+      "reviewerDurationMs": 5365
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-15",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 10,
+        "verdict": "fail",
+        "summary": "**Blocking finding — `src/recovery-message.mjs:2`:** The new message says, “The request was rejected,” but the PR description states that an exact-version conflict during retry may occur after the first request already committed. In that scenario, displaying this message incorrectly tells the user the request was rejected; the previous wording explicitly preserved the possibility that it completed. The expected result is a message that does not assert rejection when the outcome may be committed. The incorrect result is the new definitive rejection claim. To reproduce, cause the first request to commit and its response to be lost, retry it so the exact-version conflict occurs, then display `recoveryMessage()`; it returns the rejection claim. A confirming test can assert that this output does not state the request was rejected in that scenario. This regression is introduced by replacing the previous ambiguous message with a definitive one.\n\nTests were not executed by this reviewer. The assessment is limited to the supplied diff and PR description; no other paths were listed as unreviewed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 670,
+        "totalTokens": 2113
+      },
+      "costUsd": 0.0004793,
+      "requestId": "resp_0d282393c0e00f70016ae7409dc69c87d2969d9f26580c00f7",
+      "reviewerDurationMs": 6941
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-15",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "Blocking finding — `src/recovery-message.mjs:2` replaces the prior message, “The original request may have completed,” with “The request was rejected. Try again.” The PR description explicitly says an exact-version conflict can occur after the first request already committed, and the title says to avoid claiming the conflicting retry was rejected. In that scenario, displaying this message incorrectly tells the user that the request was rejected and prompts another attempt; the expected message must not assert rejection and should communicate that the original request may have completed. This change introduces the contradiction by replacing the previous uncertainty-aware text with an unconditional rejection claim. To confirm, import and call `recoveryMessage()` and inspect its returned string: it unconditionally contains “The request was rejected. Try again.”; exercise the described post-commit conflict scenario and verify that this is the message returned. Tests were not executed by this reviewer. The assessment is limited to the supplied diff and PR description; no other paths were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 509,
+        "totalTokens": 1952
+      },
+      "costUsd": 0.0003988,
+      "requestId": "resp_0f59de16c8cae4de016ae740a4b4b887d2b4d2f3c6afb28e58",
+      "reviewerDurationMs": 5729
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-16",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The change replaces a definite rejection claim with neutral wording that the original request may have completed, while also stating that the submitted version is not current. No blocking defect is demonstrated by the supplied diff. The recovery-state definition and related tests were not supplied, so whether that wording matches every recovery state cannot be assessed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 330,
+        "totalTokens": 1772
+      },
+      "costUsd": 0.00030920000000000003,
+      "requestId": "resp_0d228172f55da3ce016ae740aa726087d2a63438096d9d4859",
+      "reviewerDurationMs": 4210
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-16",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The wording is neutral about whether the original request completed and states that the submitted version is no longer current, matching the stated purpose. The supplied diff contains only this message change; no blocking defect is demonstrated. Tests were not executed by this reviewer, and the surrounding recovery-state logic was not supplied, so the assessment is limited to the changed wording."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 247,
+        "totalTokens": 1689
+      },
+      "costUsd": 0.00026770000000000006,
+      "requestId": "resp_046fe1be1589686e016ae740aea45487d29beced6123bca23a",
+      "reviewerDurationMs": 3268
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-16",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 8,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The revised message is neutral about whether the original request completed and explains that the submitted version is not current, matching the stated requirement. No blocking defect is evident in the supplied change. Tests were not executed by this reviewer; no tests are shown in the supplied diff. Review is limited to `src/recovery-message.mjs`; no unreviewed binary paths were listed, and broader recovery-state context was not provided."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 346,
+        "totalTokens": 1788
+      },
+      "costUsd": 0.00031720000000000007,
+      "requestId": "resp_0d800a9621565912016ae740b1ea1c87d29798d2b67ecf2452",
+      "reviewerDurationMs": 4089
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-17",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 1,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "**Blocking finding — `src/settlement-actions.mjs`, `actions`**\n\nThe change returns no actions when `_printExists` is false: `return _printExists ? [\"review\"] : [];`. This contradicts the PR description’s explicit requirement that saved settlement results remain reviewable after their source record is deleted. Reproduction: call `actions({}, false)` (for example, with `node --input-type=module -e 'import { actions } from \"./src/settlement-actions.mjs\"; console.log(actions({}, false))'`). Expected: `[\"review\"]`, so the saved result can be reviewed; actual: `[]`, so the review action is unavailable. The changed conditional introduces this behavior; the prior implementation returned `[\"review\"]` regardless of source existence. Tests were not executed by this reviewer.\n\nAssessment is limited to the supplied one-file diff; no unreviewed paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 520,
+        "totalTokens": 1966
+      },
+      "costUsd": 0.0004046,
+      "requestId": "resp_063f3218425d81bc016ae740b5fef887d2870ca3ac94bfb3d8",
+      "reviewerDurationMs": 6050
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-17",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 1,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "**Blocking — `src/settlement-actions.mjs`**: The change removes the review action when `_printExists` is false (`return _printExists ? [\"review\"] : [];`). This contradicts the stated requirement that saved settlement results remain reviewable after their source record is deleted. Calling `actions(savedResult, false)`—the condition after source deletion—should return `[\"review\"]`, but this code returns `[]`. To reproduce, import `actions` and run `assert.deepEqual(actions({}, false), [\"review\"])`; the assertion fails because the actual result is an empty array. This regression is introduced by the changed conditional; the prior implementation always returned the review action. Tests were not executed by this reviewer. The supplied diff contains only this function, so surrounding call-site behavior could not be assessed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 381,
+        "totalTokens": 1827
+      },
+      "costUsd": 0.0003351,
+      "requestId": "resp_08fc29e74f15e534016ae740bc0ee487d29390e74f0d252945",
+      "reviewerDurationMs": 4542
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-17",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 1,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "**Blocking — `src/settlement-actions.mjs`, `actions`**: The PR description says saved settlement results should remain reviewable after their source record is deleted. Before this change, `actions` always returned `[\"review\"]`; the new condition returns `[]` when `_printExists` is false. For a saved result whose source print has been removed, the expected action is `[\"review\"]`, but this implementation supplies no review action. This behavior is introduced by the PR. A confirming test is to call `actions(savedResult, false)` and assert that the result equals `[\"review\"]`; the changed conditional instead returns `[]`. Tests were not executed by this reviewer. The assessment is limited to the supplied diff and paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 317,
+        "totalTokens": 1763
+      },
+      "costUsd": 0.00030310000000000005,
+      "requestId": "resp_013ccca25433fefc016ae740c09ab487d28f52c177cca60a1d",
+      "reviewerDurationMs": 3569
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-18",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The change makes `actions` return `review` regardless of whether the source print exists, matching the stated goal for a saved settlement result. This function only returns an action list; the diff shows no settlement-state mutation. The supplied material does not establish that `actions` is called when there is no saved result, so an unintended action in that scenario is not demonstrated. Tests were not executed by this reviewer; no test files or additional context were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 531,
+        "totalTokens": 1972
+      },
+      "costUsd": 0.00040960000000000004,
+      "requestId": "resp_0e8071de3ec60fbe016ae740c426dc87d29cff7d2cbf467ba7",
+      "reviewerDurationMs": 6533
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-18",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 7,
+        "securitySafety": 10,
+        "verdict": "pass",
+        "summary": "The change makes `actions` always return `review`, matching the stated goal of keeping review available when a saved settlement’s source print is absent. The supplied material does not establish that this function is called for results other than saved settlement results, so unconditional availability is not a demonstrated defect. Tests were not executed by this reviewer. Assessment is limited to the supplied diff; no test changes or additional caller context were provided."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 579,
+        "totalTokens": 2020
+      },
+      "costUsd": 0.0004336,
+      "requestId": "resp_0dec8a5871916b1b016ae740cab13087d2ad35c51bdfc4497f",
+      "reviewerDurationMs": 6443
+    },
+    {
+      "model": "gpt-6-luna",
+      "caseId": "case-18",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "The change unconditionally returns `review`, preserving the action when the source print is absent and leaving settlement state untouched in the supplied function. The diff provides no evidence that this function is called for results other than saved settlements, so broader action availability cannot be established as a defect. No tests were included, and tests were not executed by this reviewer; surrounding callers and behavior were not supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 436,
+        "totalTokens": 1877
+      },
+      "costUsd": 0.0003621,
+      "requestId": "resp_074f82018cefd909016ae740d120c087d2a113b35f68faa2e0",
+      "reviewerDurationMs": 4650
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-07",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 3,
+        "securitySafety": 2,
+        "verdict": "fail",
+        "summary": "**Blocking: HTTPS session cookies lose the Secure attribute.**\n\n- **Location:** `src/lib/cookie-policy.mjs:2`, the return value of `cookieOptions`.\n- **Evidence and PR attribution:** The change replaces `secure: true` with `secure: false` unconditionally. Consequently, even `cookieOptions(true)` disables Secure, contradicting the stated requirement to keep session cookies secure on HTTPS requests. The previous implementation retained Secure for that same input.\n- **Trigger and result:** Request cookie options for an HTTPS authenticated session by calling `cookieOptions(true)`. The expected result is `secure: true`; the actual result is `secure: false`. When these options are used to serialize the session cookie, they no longer require the browser to restrict its transmission to secure connections. `sameSite: \"lax\"` does not enforce HTTPS transport.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { cookieOptions } from \"./src/lib/cookie-policy.mjs\"; assert.equal(cookieOptions(true).secure, true);'` from the repository root. The changed implementation necessarily fails this assertion because it returns the literal value `false`; the previous implementation passes it.\n- **Suggested correction:** Preserve `secure: true` for HTTPS sessions rather than disabling it unconditionally.\n\n**Review limits:** This assessment is static and limited to the supplied diff. Cookie serialization, callers, and deployment configuration were not provided, so actual network exposure was not verified. No unreviewed binary paths were listed. No tests were supplied, and tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, false],
+        "findingComplete": false,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 419,
+        "totalTokens": 1866
+      },
+      "costUsd": 0.007084,
+      "requestId": "resp_0dfe6de7abb77a58016ae740d5c94887d2818c8a39f1a8791e",
+      "reviewerDurationMs": 6716
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-07",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 3,
+        "securitySafety": 2,
+        "verdict": "fail",
+        "summary": "### Blocking: HTTPS session cookies lose the Secure flag\n- **Location:** `src/lib/cookie-policy.mjs`, `cookieOptions()` return value.\n- **Evidence and PR attribution:** This PR changes `secure: true` to `secure: false` unconditionally. Consequently, even `cookieOptions(true)` disables the Secure attribute, directly contradicting the stated requirement to keep session cookies secure on HTTPS requests. `sameSite: \"lax\"` does not enforce HTTPS transport.\n- **Trigger:** An authenticated HTTPS request creates or refreshes a session cookie using these options.\n- **Expected result:** The options retain `secure: true`, so the session cookie is restricted to secure transport.\n- **Incorrect result:** The options explicitly disable that protection. A cookie issued without Secure is eligible for transmission over matching HTTP requests; issuing it initially over HTTPS does not preserve the restriction. The options regression itself is directly demonstrated by the supplied code, independent of whether this deployment exposes an HTTP endpoint.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { cookieOptions } from \"./src/lib/cookie-policy.mjs\"; assert.equal(cookieOptions(true).secure, true);'`. This assertion passes with the original implementation and fails with this change because the returned value is `false`.\n- **Fix:** Retain `secure: true` for HTTPS session cookies and add a regression test for `cookieOptions(true)`.\n\n**Review limits:** Assessment is static and limited to the supplied single-file diff; session-cookie consumers and deployment configuration were not supplied. No binary or other unreviewed paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 430,
+        "totalTokens": 1877
+      },
+      "costUsd": 0.007194,
+      "requestId": "resp_0c8ecb79bae9c654016ae740dc8e8887d2804fc6aa47b13b55",
+      "reviewerDurationMs": 6793
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-07",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 3,
+        "securitySafety": 2,
+        "verdict": "fail",
+        "summary": "### Blocking: HTTPS session cookies lose the Secure flag\n- **Location:** `src/lib/cookie-policy.mjs`, `cookieOptions`, returned `secure` property.\n- **Evidence and PR attribution:** The PR changes `secure: true` to `secure: false` unconditionally. The `_isHttps` argument remains unused, so even `cookieOptions(true)` disables Secure. This directly contradicts the stated requirement to keep session cookies secure on HTTPS requests and removes the protection present before this change.\n- **Trigger:** Generate session-cookie options for an authenticated HTTPS request by calling `cookieOptions(true)`.\n- **Expected result:** The options contain `secure: true`, preserving the cookie's HTTPS-only transport restriction.\n- **Incorrect result:** The options contain `secure: false`. When applied to the session cookie as described in the PR, they no longer require a Secure attribute. `sameSite: \"lax\"` does not enforce HTTPS-only transport.\n- **Confirming test:** From the repository root, run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { cookieOptions } from \"./src/lib/cookie-policy.mjs\"; assert.equal(cookieOptions(true).secure, true);'`. The assertion fails with the changed code because the returned value is `false`; it passes with the previous implementation.\n\n**Review limits:** Static review covered the supplied one-file diff only. Call sites, cookie serialization, and deployment configuration were not supplied; no claim is made that an actual session leak was observed. No binary or other unreviewed paths were listed. Tests were not executed by this reviewer, and no test changes were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, false],
+        "findingComplete": false,
+        "passed": false
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 422,
+        "totalTokens": 1869
+      },
+      "costUsd": 0.007114,
+      "requestId": "resp_006f4a1d43f73d77016ae740e34d9887d2971ea9d3d2428c5a",
+      "reviewerDurationMs": 5989
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-08",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The change in `src/lib/cookie-policy.mjs` correctly makes `secure` follow the supplied HTTPS flag while retaining `sameSite: \"lax\"`. With boolean inputs, HTTPS receives `secure: true` and local HTTP retains `secure: false`. No blocking defect is demonstrated.\n\nNo tests are supplied; useful coverage would assert the exact options returned for both `true` and `false`. Tests were not executed by this reviewer. Static review is limited to the supplied diff: callers, HTTPS detection, and cookie serialization are not shown, so end-to-end transport handling cannot be assessed. There are no unreviewed binary paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 204,
+        "totalTokens": 1651
+      },
+      "costUsd": 0.004934,
+      "requestId": "resp_0d168f4397906455016ae740e949f887d2a1e0fdc879cf2396",
+      "reviewerDurationMs": 3758
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-08",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The change implements the stated policy when the argument is a boolean indicating HTTPS: `cookieOptions(true)` returns `secure: true`, while `cookieOptions(false)` preserves HTTP development with `secure: false`. `sameSite: \"lax\"` is unchanged. No blocking defect is demonstrated by the supplied diff.\n\nNo tests were supplied, and tests were not executed by this reviewer. Useful coverage would assert both boolean cases. Review is limited to the supplied function; callers and transport detection were not provided, so their correctness cannot be assessed. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 168,
+        "totalTokens": 1615
+      },
+      "costUsd": 0.004574,
+      "requestId": "resp_0c09b9fc3230a697016ae740ed0a2487d2a3ec9c87361d1c1f",
+      "reviewerDurationMs": 3628
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-08",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 8,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The change directly implements the stated policy when `cookieOptions` receives a boolean HTTPS indicator: HTTPS produces `secure: true`, HTTP retains `secure: false`, and `sameSite: \"lax\"` is unchanged. No blocking defect is demonstrated in the supplied diff.\n\nNo tests are supplied; useful coverage would assert the options returned for both `true` and `false`. The caller and HTTPS-detection logic are not provided, so whether the argument accurately represents the request transport cannot be assessed. All supplied changed paths were reviewed; no unreviewed binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1447,
+        "outputTokens": 199,
+        "totalTokens": 1646
+      },
+      "costUsd": 0.004884,
+      "requestId": "resp_05b0d5d754dd3d5c016ae740f0aac087d2841392df348ad32c",
+      "reviewerDurationMs": 3570
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-09",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 8,
+        "complexity": 8,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 5,
+        "verdict": "fail",
+        "summary": "### Blocking: An active edit bypasses the discard-confirmation gate\n**Location:** `src/components/prints/PrintList.tsx`, the conditional in `refreshList` and the `conflictId` assignment in `retryListRefresh`.\n\n**Evidence:** The retry now passes `editingPrintId` as `conflictId`. For any truthy ID, `if (!conflictId && !confirmDiscard())` short-circuits without calling `confirmDiscard()`, then unconditionally calls `loadLatest()` and returns `true`. Previously, every retry required `confirmDiscard()` to permit the refresh.\n\n**Trigger:** A failed list refresh is retried while editing print `\"print-1\"`, with unsaved changes for which the supplied confirmation callback would return `false`.\n\n**Expected:** Consult the confirmation callback and, when it refuses permission, do not call `loadLatest()`; return `false` so the existing edit-protection gate remains effective.\n\n**Actual:** The callback is never consulted, `loadLatest()` runs, and the retry returns `true`. Thus this change removes the supplied protection precisely when an editing ID is present, contrary to the stated goal.\n\n**Reproduction:** Invoke the exported function with these callbacks and inspect the results:\n```ts\nlet confirmations = 0;\nlet loads = 0;\nconst result = retryListRefresh({\n  editingPrintId: 'print-1',\n  confirmDiscard: () => { confirmations++; return false; },\n  loadLatest: () => { loads++; },\n});\n// Expected: confirmations === 1, loads === 0, result === false.\n// From the changed code: confirmations === 0, loads === 1, result === true.\n```\nThis regression is introduced by the new truthiness guard together with forwarding `editingPrintId`; the original implementation honors the same refusal.\n\n**Review limits:** Tests were not executed by this reviewer. The supplied diff contains no tests or surrounding form/loading implementation, so the precise downstream effect on draft values cannot be established; the confirmation bypass itself is directly demonstrated. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 724,
+        "totalTokens": 2295
+      },
+      "costUsd": 0.010382,
+      "requestId": "resp_03da9386cfd4cb4e016ae740f4439887d2bf6b2ddd5c813f62",
+      "reviewerDurationMs": 12867
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-09",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 6,
+        "verdict": "fail",
+        "summary": "### Blocking: An active edit bypasses the discard-confirmation guard\n**Location:** `src/components/prints/PrintList.tsx`, the condition in `refreshList` and the `conflictId` assignment in `retryListRefresh`.\n\n**Evidence:** The retry now passes `editingPrintId` as `conflictId`. For a truthy editing ID, `!conflictId` is false, so `!confirmDiscard()` is never evaluated. `loadLatest()` runs unconditionally in that case. Previously, every retry required `confirmDiscard()` to allow it.\n\n**Trigger:** An edit form has unsaved values and a truthy print ID, and the user would decline discarding those edits (`confirmDiscard` returns false).\n\n**Expected:** Retry honors the discard guard, returns false, and does not call `loadLatest`. **Actual:** The guard is skipped, the latest list is loaded, and retry returns true. This removes the existing protection precisely when an identified edit is open, contrary to the stated goal.\n\n**Confirming steps:** Invoke the exported function with these callbacks in a TypeScript-capable test environment:\n\n```ts\nlet confirmations = 0;\nlet loads = 0;\nconst result = retryListRefresh({\n  editingPrintId: 'print-1',\n  confirmDiscard: () => { confirmations++; return false; },\n  loadLatest: () => { loads++; },\n});\nconsole.assert(result === false, 'Retry must be cancelled');\nconsole.assert(confirmations === 1, 'Discard guard must run');\nconsole.assert(loads === 0, 'Cancelled retry must not load');\n```\n\nThe changed code instead produces `result === true`, `confirmations === 0`, and `loads === 1`. The prior implementation honors the rejecting callback and does not load.\n\n**Limits:** This is a static review of the supplied diff only. The form and `loadLatest` implementation were not supplied, so actual downstream loss of form values cannot be established; the demonstrated defect is bypassing the existing cancellation safeguard. No test changes were supplied. Tests were not executed by this reviewer. No binary or other unreviewed paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 790,
+        "totalTokens": 2361
+      },
+      "costUsd": 0.011042,
+      "requestId": "resp_06a96c394d10328e016ae741011e0487d2a2011004757fb6c5",
+      "reviewerDurationMs": 14056
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-09",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 8,
+        "complexity": 8,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 5,
+        "verdict": "fail",
+        "summary": "### Blocking: Active edits bypass the discard-confirmation guard\n- **Location:** `src/components/prints/PrintList.tsx`, the condition in `refreshList` and the `conflictId` argument supplied by `retryListRefresh`.\n- **Evidence:** The previous implementation always called `confirmDiscard()` and stopped when it returned `false`. The new implementation uses `if (!conflictId && !confirmDiscard()) return false`, while supplying `editingPrintId` as `conflictId`. A truthy editing ID therefore short-circuits the confirmation call and proceeds directly to `loadLatest()`.\n- **Trigger:** Retry a failed list refresh while editing print `\"p1\"`, with a discard-confirmation callback that would return `false` to protect unsaved edits.\n- **Expected:** Consult the discard guard, return `false`, and do not call `loadLatest()` when permission is denied.\n- **Actual:** The guard is never consulted, `loadLatest()` is called, and the retry returns `true`. This PR introduces the bypass specifically when an editing ID is present—the case highlighted by the PR's edit-preservation requirement.\n- **Confirming test:** Import `retryListRefresh`, then run:\n  ```js\n  let confirmations = 0;\n  let loads = 0;\n  const result = retryListRefresh({\n    editingPrintId: \"p1\",\n    confirmDiscard: () => { confirmations++; return false; },\n    loadLatest: () => { loads++; }\n  });\n  if (result !== false || confirmations !== 1 || loads !== 0) {\n    throw new Error(JSON.stringify({ result, confirmations, loads }));\n  }\n  ```\n  The changed code produces `{ \"result\": true, \"confirmations\": 0, \"loads\": 1 }`, failing the cancellation expectation. Preserve the confirmation guard for active edits unless a separately established safe refresh mechanism makes it unnecessary.\n\n**Coverage and limitations:** No tests accompany the supplied diff, and tests were not executed by this reviewer. Review was limited to the supplied source change; the form state and `loadLatest` implementation were not provided, so actual loss of form values cannot be established. The demonstrated defect is the newly introduced confirmation bypass, not a claim that every refresh erases edits. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1571,
+        "outputTokens": 715,
+        "totalTokens": 2286
+      },
+      "costUsd": 0.010292,
+      "requestId": "resp_0e96a42b4d1b24b8016ae7410f2f7c87d299e2afdc824b2945",
+      "reviewerDurationMs": 11968
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-10",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "No blocking defect demonstrated. In `src/components/prints/PrintList.tsx`, the retry previously bypassed `confirmDiscard()` when `editingPrintId` was truthy. The change removes that bypass: a falsy confirmation result returns `false` without calling `loadLatest()`, while approval calls `loadLatest()` and returns `true`. This supports the stated requirement to confirm before replacing unsaved edits.\n\nNo tests were supplied. Useful regression cases would verify that declining confirmation prevents loading and approving confirmation loads exactly once, including when an edit form is open.\n\nReview was limited to the supplied diff; callers and the implementation of `confirmDiscard` were not provided, so actual dialog behavior could not be assessed. No unreviewed binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 301,
+        "totalTokens": 1874
+      },
+      "costUsd": 0.006156,
+      "requestId": "resp_09f48df42b72cc89016ae7411b258c87d2800b4c6aeddf106c",
+      "reviewerDurationMs": 5693
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-10",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "**No blocking defect demonstrated.** In `src/components/prints/PrintList.tsx`, retry now always calls `confirmDiscard()` before `loadLatest()`. A falsy confirmation result returns `false` without loading; a truthy result permits loading and returns `true`. Removing the `conflictId` bypass directly addresses the prior behavior where an open edit form could be replaced without confirmation.\n\n**Coverage:** No tests were supplied. Useful regression cases would verify that declining confirmation prevents loading even when `editingPrintId` is present, and that accepting confirmation loads exactly once.\n\n**Limitations:** Review was limited to the supplied diff; caller behavior and the implementation of `confirmDiscard` were not available. No unreviewed or binary paths were reported. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 320,
+        "totalTokens": 1893
+      },
+      "costUsd": 0.006346,
+      "requestId": "resp_07c380f3e1efd220016ae74120d60887d2a3ec6475c88a1e9a",
+      "reviewerDurationMs": 6196
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-10",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "No blocking defect demonstrated. In `src/components/prints/PrintList.tsx`, retry now always calls `confirmDiscard()` before `loadLatest()`. A declined confirmation returns `false` without loading; an accepted confirmation loads and returns `true`. This removes the previous bypass when `editingPrintId` was present and matches the requested behavior.\n\nNo tests were supplied. Useful regression coverage would verify that declining confirmation with an open edit form prevents loading, while accepting it loads exactly once.\n\nReview was limited to the supplied diff; call sites, confirmation callback implementation, and actual form replacement behavior were not available. There were no listed unreviewed binary paths. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1573,
+        "outputTokens": 265,
+        "totalTokens": 1838
+      },
+      "costUsd": 0.005796,
+      "requestId": "resp_09c719edb797fc6c016ae741270a2087d29093de72f168b8ee",
+      "reviewerDurationMs": 5265
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-11",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 4,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "### Blocking: Rename detection is explicitly disabled\n- **Location:** `src/review-input.mjs:2`, `DIFF_ARGS`.\n- **Evidence:** The stated requirement is to preserve readable move detection. This change replaces `--find-renames=100%` with `--no-renames`, which explicitly disables Git rename detection.\n- **Trigger:** An existing tracked file is moved without any content changes.\n- **Expected:** The configured diff reports a rename, preserving the relationship between the old and new paths.\n- **Actual:** With the new argument, Git reports a deletion and an addition instead. This contradicts the move-detection requirement and can substantially enlarge diffs for moved files.\n- **Reproduction:** In a disposable directory, run `git init`, create `old.txt` with nonempty text, run `git add old.txt`, then `git -c user.name=Reviewer -c user.email=reviewer@example.com commit -m initial`. Run `git mv old.txt new.txt`, then compare `git diff --cached --find-renames=100%` with `git diff --cached --no-renames`. The former reports a rename; the latter produces separate deletion and addition patches. These are exactly the old and new exported argument settings.\n- **PR attribution:** The previous configuration detected identical-file renames; this PR explicitly disables that behavior.\n\n### Sizing and assessment limits\n`DIFF_LIMIT` also decreases from 1,048,576 to 262,144, a 75% reduction. Its consumer and overflow handling are not supplied, so whether this causes truncation, rejection, or another outcome cannot be established from this diff. Complete large-diff preservation therefore remains unverified; that uncertainty is not a separate blocking finding.\n\nReview was limited to the supplied two-line configuration change. No tests or consumer implementation were supplied, no binary paths were listed as unreviewed, and tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 750,
+        "totalTokens": 2212
+      },
+      "costUsd": 0.010424,
+      "requestId": "resp_07313dab51a0ae4e016ae7412c5dbc87d29dfce19216a7abb8",
+      "reviewerDurationMs": 15898
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-11",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 4,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "### Blocking: rename detection is explicitly disabled\n- **Location:** `src/review-input.mjs:2`, `DIFF_ARGS`.\n- **Evidence:** The PR requires rename-aware diffs and readable move detection, but replaces `--find-renames=100%` with `--no-renames`. Git's latter option disables rename detection, including detection of unchanged files moved to another path.\n- **Trigger:** A tracked file is renamed without content changes, and a diff is generated with the exported arguments.\n- **Expected:** A rename entry identifying the old and new paths, rather than presenting the entire file as deleted and added.\n- **Actual:** Git reports a deletion and an addition. This loses the requested move detection and unnecessarily expands the diff.\n- **Confirming steps:** In a temporary directory, run:\n  ```sh\n  git init -q\n  printf 'unchanged content\\n' > old.txt\n  git add old.txt\n  git -c user.name=Reviewer -c user.email=reviewer@example.com commit -qm base\n  git mv old.txt new.txt\n  git diff --cached --find-renames=100%\n  git diff --cached --no-renames\n  ```\n  The first diff identifies a 100%-similarity rename; the second produces separate deletion and addition patches. These commands directly compare the previous and new argument values.\n- **PR attribution:** The previous option detected exact renames; this change explicitly disables that behavior. Restore rename detection to meet the stated requirement.\n\n### Additional observation and assessment limits\n`DIFF_LIMIT` also decreases from 1,048,576 to 262,144, a 75% reduction. Its consumer and overflow handling are not supplied, so whether this truncates, rejects, or otherwise affects large review inputs cannot be established from this diff. It is not a separate blocking finding. No tests or explanatory documentation accompany the change.\n\nReview was limited to the supplied two-line module diff; integration and sizing behavior were not available. No binary paths were listed as unreviewed. **Tests were not executed by this reviewer.**"
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 723,
+        "totalTokens": 2185
+      },
+      "costUsd": 0.010154,
+      "requestId": "resp_0cf004f11387aea9016ae7413c37fc87d2b1ffc34630a557f7",
+      "reviewerDurationMs": 12599
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-11",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 4,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "**Blocking: rename detection is explicitly disabled.**\n\n- **Location:** `src/review-input.mjs:2`, exported `DIFF_ARGS`.\n- **Evidence and PR attribution:** This PR replaces `--find-renames=100%` with `--no-renames`. The stated requirement calls for readable move detection; the new option explicitly disables Git's rename detection, including detection of unchanged files moved between paths.\n- **Trigger:** Rename a tracked file without modifying its contents and generate a diff using the new arguments.\n- **Expected result:** The diff identifies the move with `similarity index 100%`, `rename from`, and `rename to` metadata, preserving the previous behavior.\n- **Incorrect result:** Git represents the move as a deletion and an addition, repeating the file contents rather than identifying the rename. This directly contradicts the requested move detection and can substantially enlarge review input.\n- **Reproduction:** Run the following in a disposable directory:\n  ```sh\n  git init -q\n  printf 'unchanged content\\n' > before.txt\n  git add before.txt\n  git -c user.name=Reviewer -c user.email=reviewer@example.com commit -qm initial\n  git mv before.txt after.txt\n  git diff --find-renames=100% HEAD\n  git diff --no-renames HEAD\n  ```\n  The first diff identifies a rename; the second emits separate addition and deletion patches. These are the old and new exported options, respectively.\n\n**Additional limitation:** `DIFF_LIMIT` is reduced from 1,048,576 to 262,144. Its consumers, units, and overflow handling are not supplied, so I cannot establish whether this truncates large diffs, rejects them, or triggers another handling path. The reduction does not demonstrate preservation of complete large diffs, but missing consumer context is not an additional blocking defect.\n\n**Review scope:** Static review of the supplied two-line change only. No tests or reproduction commands were executed by this reviewer. No binary or other unreviewed paths were listed, and no tests or downstream integration code were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1462,
+        "outputTokens": 781,
+        "totalTokens": 2243
+      },
+      "costUsd": 0.010734,
+      "requestId": "resp_09afcfb7d72d473b016ae74148c97487d2902b02b6eeb83a20",
+      "reviewerDurationMs": 14038
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-12",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 6,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated by the supplied diff. The change raises `DIFF_LIMIT` fourfold, from 262,144 to 1,048,576, and replaces disabled rename detection with Git's 100%-similarity rename detection, consistent with the stated intent.\n\nAssessment is limited to the two exported constants. Their consumers, limit enforcement, downstream capacity constraints, and handling of rename-only diffs were not supplied, so end-to-end safety and compatibility cannot be established. Useful coverage would include limit-boundary cases and an unchanged file moved to a new path.\n\nNo tests were supplied or executed by this reviewer. No unreviewed binary paths were reported."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 330,
+        "totalTokens": 1783
+      },
+      "costUsd": 0.006206,
+      "requestId": "resp_0e9c20474036681d016ae74156d76c87d28f0ab1d879e13726",
+      "reviewerDurationMs": 6635
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-12",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 7,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 6,
+        "securitySafety": 7,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated by the supplied diff. `DIFF_LIMIT` increases fourfold, from 262,144 to 1,048,576, and `DIFF_ARGS` replaces disabled rename detection with Git's 100%-similarity rename detection, consistent with the stated intent.\n\nAssessment is limited to the two exported constants in `src/review-input.mjs`. Their consumers, limit enforcement, downstream capacity constraints, and handling of rename-only diff records are not supplied, so end-to-end capacity safety and move handling cannot be established. These missing details are limitations, not demonstrated defects. No binary or other unreviewed paths were listed.\n\nNo tests are included in the supplied change, and tests were not executed by this reviewer. Useful coverage would exercise the new limit's boundary and an unchanged file moved to another path, including downstream parsing of the resulting rename-only diff."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 317,
+        "totalTokens": 1770
+      },
+      "costUsd": 0.006076,
+      "requestId": "resp_009e57b9192a0f05016ae7415d7ac887d2a5ff2a306ef13688",
+      "reviewerDurationMs": 5828
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-12",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 6,
+        "securitySafety": 7,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated by the supplied diff. `src/review-input.mjs` increases `DIFF_LIMIT` fourfold, from 262,144 to 1,048,576, and replaces disabled rename detection with Git’s 100%-similarity rename detection. Both edits are consistent with the stated intent and preserve the existing constant-export structure.\n\n**Assessment limits:** Only these constants were supplied. Their consumers, limit enforcement, resource budgets, and handling of rename-only diffs are unavailable, so end-to-end capacity and move handling cannot be established. This missing context is not evidence of a defect. No tests were supplied, and tests were not executed by this reviewer. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1453,
+        "outputTokens": 366,
+        "totalTokens": 1819
+      },
+      "costUsd": 0.006566,
+      "requestId": "resp_018709370239f1a3016ae7416350ec87d2ac6865fbdb87e6fb",
+      "reviewerDurationMs": 7762
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-13",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 4,
+        "securitySafety": 4,
+        "verdict": "fail",
+        "summary": "**Blocking: reservation amounts are no longer checked against the required grams and margin.** In `src/reservation-update.mjs`, `acceptsReservation` now checks only whether both response amounts are finite numbers; `requiredGrams` and `marginPercent` are ignored. The explicit requirement is that both amounts satisfy the reservation policy. For a 100 g print with a 10% margin, the previous calculation requires 110 g for each amount, but the new implementation accepts even zero or negative amounts.\n\n**Trigger and result:** Call `acceptsReservation(100, 10, { recordedGrams: 110, availableGrams: 0 })`. Expected: `false`, because the available reservation does not meet the 110 g requirement. Actual: `true`, because both values pass `Number.isFinite`. The same defect affects `recordedGrams` independently. This PR introduces the regression by removing both comparisons with the calculated expected amount; the finite-number checks do not enforce the policy.\n\n**Confirming test** (run from the repository root):\n```sh\nnode --input-type=module <<'JS'\nimport assert from 'node:assert/strict';\nimport { acceptsReservation } from './src/reservation-update.mjs';\nassert.equal(acceptsReservation(100, 10, { recordedGrams: 110, availableGrams: 110 }), true);\nassert.equal(acceptsReservation(100, 10, { recordedGrams: 110, availableGrams: 0 }), false);\nassert.equal(acceptsReservation(100, 10, { recordedGrams: 0, availableGrams: 110 }), false);\nJS\n```\nThe second assertion fails under the changed implementation; the third would also fail if evaluated independently.\n\nNo tests were supplied, and tests were not executed by this reviewer. Analysis is limited to the supplied requirement and single-file diff; callers and the wider repository were not available. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 494,
+        "totalTokens": 1979
+      },
+      "costUsd": 0.00791,
+      "requestId": "resp_062390ac3e49d6d2016ae7416b230c87d2a3fc5e45e3df92cc",
+      "reviewerDurationMs": 6984
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-13",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 4,
+        "verdict": "fail",
+        "summary": "### Blocking: Required reservation amounts are no longer validated\n- **Location:** `src/reservation-update.mjs`, return expression in `acceptsReservation`.\n- **Evidence:** The previous implementation calculated `Math.ceil((requiredGrams * (100 + marginPercent)) / 100)` and required both returned amounts to equal it. The replacement only checks `Number.isFinite`, ignoring both policy inputs. For the explicitly specified 100 g requirement and 10% margin, the required reservation is 110 g.\n- **Trigger and result:** Calling `acceptsReservation(100, 10, { recordedGrams: 100, availableGrams: 100 })` should return `false`, because neither amount includes the required margin. It now returns `true`: both values are finite. Likewise, either amount can independently be insufficient and still pass.\n- **Confirming test:** From the repository root, run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { acceptsReservation } from \"./src/reservation-update.mjs\"; for (const response of [{recordedGrams:100,availableGrams:110},{recordedGrams:110,availableGrams:100},{recordedGrams:100,availableGrams:100}]) assert.equal(acceptsReservation(100,10,response), false);'`. The new implementation fails the assertions; the previous implementation rejects all three responses.\n- **PR attribution:** This change removes the amount comparisons that previously enforced the policy. Finite-number checks do not replace validation against the required grams and margin.\n\n**Review limits:** Assessment is limited to the supplied single-file diff and PR requirements; surrounding callers and tests were not supplied. No unreviewed binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 451,
+        "totalTokens": 1936
+      },
+      "costUsd": 0.00748,
+      "requestId": "resp_093bd46a053ba35f016ae74172197087d2906aea47e5d247c8",
+      "reviewerDurationMs": 6406
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-13",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 8,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 4,
+        "verdict": "fail",
+        "summary": "### Blocking: finite values bypass the required reservation amount\n- **Location:** `src/reservation-update.mjs`, `acceptsReservation` return expression.\n- **Evidence:** The previous implementation required both amounts to equal `Math.ceil((requiredGrams * (100 + marginPercent)) / 100)`. The replacement checks only `Number.isFinite`, leaving `requiredGrams` and `marginPercent` unused. The PR explicitly requires both returned amounts to satisfy the 100 g requirement plus 10% margin (110 g).\n- **Trigger and result:** Calling `acceptsReservation(100, 10, { recordedGrams: 110, availableGrams: 0 })` should return `false` because the available reservation is insufficient. It now returns `true` because both values are finite. Likewise, an insufficient recorded amount is accepted independently.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { acceptsReservation } from \"./src/reservation-update.mjs\"; assert.equal(acceptsReservation(100, 10, { recordedGrams: 110, availableGrams: 0 }), false); assert.equal(acceptsReservation(100, 10, { recordedGrams: 0, availableGrams: 110 }), false);'`. Both cases evaluate to `true` in the changed implementation, so the first assertion fails. Both were rejected by the previous implementation.\n- **PR attribution:** Replacing the amount comparisons with finiteness checks directly introduces this policy bypass; the visible function contains no remaining amount validation.\n\n**Review limits:** Assessment is limited to the supplied diff and PR requirements; surrounding callers and tests were not supplied. No unreviewed binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1485,
+        "outputTokens": 453,
+        "totalTokens": 1938
+      },
+      "costUsd": 0.0075,
+      "requestId": "resp_06137e2c79698a61016ae74178711c87d29884feaae818d607",
+      "reviewerDurationMs": 6248
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-14",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 3,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "Both returned fields are covered: `recordedGrams` and `availableGrams` must each strictly equal `Math.ceil((requiredGrams * (100 + marginPercent)) / 100)`. This implements the stated margin and upward-rounding requirement; no blocking defect was demonstrated in the supplied material.\n\nNo tests were supplied. Useful coverage would include fractional results requiring rounding, zero margin, and cases where either returned field independently differs from the expected amount.\n\nReview was limited to the supplied diff; caller input constraints and surrounding validation were not provided. There were no listed unreviewed binary paths. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 372,
+        "totalTokens": 1852
+      },
+      "costUsd": 0.00668,
+      "requestId": "resp_0c637d63e8f4ca42016ae7417eb5ac87d2869909902f1c79a7",
+      "reviewerDurationMs": 8367
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-14",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 7,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "No blocking defect demonstrated. In `src/reservation-update.mjs`, the expected amount applies the percentage margin and rounds upward with `Math.ceil`. Both `response.recordedGrams` and `response.availableGrams` must independently equal that amount, satisfying the stated requirement.\n\nNo tests were supplied. Useful coverage would include fractional-gram rounding, an exact whole-gram result, and separate cases where only one returned field matches.\n\nReview was limited to the supplied function and diff; caller-side input constraints were not provided. No binary or unreviewed paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 242,
+        "totalTokens": 1722
+      },
+      "costUsd": 0.00538,
+      "requestId": "resp_08d82d59b33bacca016ae741871aac87d2883e1926436c5a8a",
+      "reviewerDurationMs": 5171
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-14",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 8,
+        "securitySafety": 8,
+        "verdict": "pass",
+        "summary": "**Both returned fields are covered.** In `src/reservation-update.mjs`, the function computes the margin-adjusted requirement with `Math.ceil((requiredGrams * (100 + marginPercent)) / 100)` and accepts only when both `response.recordedGrams` and `response.availableGrams` strictly equal that value. A mismatch in either field rejects the response. No blocking defect is demonstrated by the supplied change.\n\nNo tests were supplied or executed by this reviewer. Useful coverage would include a fractional result requiring upward rounding, both fields matching, and each field independently mismatching. Review was limited to the supplied function diff; caller input constraints and surrounding integration were unavailable. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1480,
+        "outputTokens": 306,
+        "totalTokens": 1786
+      },
+      "costUsd": 0.00602,
+      "requestId": "resp_0025479ef2254f44016ae7418c3d1087d2b1229c36ee68bfe0",
+      "reviewerDurationMs": 5884
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-15",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 2,
+        "documentation": 6,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "**Blocking: The replacement message contradicts the stated recovery requirement.**\n\n- **Location:** `src/recovery-message.mjs:2`, the return value of `recoveryMessage()`.\n- **Evidence:** The PR explicitly describes an exact-version conflict during retry where the original request may already have committed. The new unconditional text, `The request was rejected. Try again.`, claims rejection without preserving that uncertainty.\n- **Triggering scenario:** The original request commits, and a retry encounters an exact-version conflict. When this function supplies the recovery message, it has no conditional logic or parameters that could distinguish that state.\n- **Expected result:** Explain the conflict without claiming that the original request was rejected; preserve the possibility that it completed.\n- **Incorrect result:** The user receives an unqualified rejection claim and an instruction to retry even though the original request has already completed in this scenario.\n- **Confirming test:** From the repository root, run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { recoveryMessage } from \"./src/recovery-message.mjs\"; assert.doesNotMatch(recoveryMessage(), /the request was rejected/i);'`. This requirement-focused assertion fails because the function always returns the rejection claim. It passes with the previous message.\n- **PR attribution:** The previous text explicitly said the original request may have completed. This change removes that qualification and introduces the contradictory claim. Retain the uncertainty, for example: `The retry encountered a version conflict. The original request may have completed.`\n\n**Review limits:** Only the supplied function, diff, and PR context were available; retry handling and callers were not supplied. No binary paths were listed as unreviewed. No tests were added in the supplied diff, and tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 647,
+        "totalTokens": 2090
+      },
+      "costUsd": 0.009356,
+      "requestId": "resp_059695439529e33b016ae74192243487d289515fda054575f1",
+      "reviewerDurationMs": 12097
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-15",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 6,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "### Blocking: Recovery message incorrectly asserts rejection\n- **Location:** `src/recovery-message.mjs:2`, the return value of `recoveryMessage()`.\n- **Evidence and requirement:** The PR explicitly says an exact-version conflict during retry can occur after the first request already committed, and its title requires avoiding a claim that the request was rejected. The replacement unconditionally states, `The request was rejected. Try again.`\n- **Triggering scenario:** The first submission commits, and a retry encounters the exact-version conflict described in the PR. When this recovery message is displayed, the original request has already completed.\n- **Expected result:** Wording that preserves uncertainty about the original request's outcome rather than asserting rejection.\n- **Incorrect result:** The function categorically reports rejection despite the original request having committed. Nothing in this function qualifies that assertion; it always returns the same text.\n- **Confirming test:** From the repository root, run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { recoveryMessage } from \"./src/recovery-message.mjs\"; assert.doesNotMatch(recoveryMessage(), /the request was rejected/i);'`. This checks the explicit requirement against the message used for the described recovery state. It fails with the new string and passes with the previous string.\n- **PR attribution:** The previous text explicitly acknowledged that the original request may have completed. This change removes that qualification and introduces the contradictory rejection claim.\n\n**Review limits:** Static review covered only the supplied one-file diff and PR context; the caller and retry implementation were not supplied. No unreviewed binary paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 528,
+        "totalTokens": 1971
+      },
+      "costUsd": 0.008166,
+      "requestId": "resp_0ab058eb7cc68689016ae7419e3c0087d29e06a3c8c94ae92d",
+      "reviewerDurationMs": 8422
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-15",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 3,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 5,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "### Blocking: The replacement message makes the claim this PR explicitly intends to avoid\n- **Location:** `src/recovery-message.mjs:2`, the return value of `recoveryMessage()`.\n- **Evidence:** The PR describes an exact-version retry conflict that can occur after the first request already committed. Nevertheless, the replacement says, `\"The request was rejected. Try again.\"` The previous message explicitly acknowledged that the original request may have completed.\n- **Triggering scenario:** The first request commits, its outcome is not received, and an exact-version retry conflicts. When this helper supplies the recovery message for that state, it unconditionally describes the request as rejected.\n- **Expected result:** The message should preserve uncertainty about the original request's outcome and acknowledge that it may already have completed, rather than imply that the operation did not happen.\n- **Incorrect result:** The user receives an unqualified rejection claim and an instruction to try again even though the original operation has committed. Although the retry itself may have been rejected, the message does not distinguish it from the original request. This materially contradicts the stated requirement.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { recoveryMessage } from \"./src/recovery-message.mjs\"; assert.doesNotMatch(recoveryMessage(), /the request was rejected/i);'`. This checks the explicit requirement to avoid that claim; it fails directly because the new return value contains it. The prior return value passes this check.\n- **PR attribution:** The change introduces the unconditional rejection claim and removes the acknowledgment of possible prior completion.\n\n**Review limits:** Only the supplied helper diff and PR context were reviewed; callers and integration tests were not supplied. The test above checks the message, not an end-to-end retry flow. There were no listed unreviewed binary paths. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1443,
+        "outputTokens": 592,
+        "totalTokens": 2035
+      },
+      "costUsd": 0.008806,
+      "requestId": "resp_0af5b2cdb6591c14016ae741a6a5b887d287d137732b552577",
+      "reviewerDurationMs": 9578
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-16",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 8,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The replacement text matches the stated intent: it explains that the submitted version is no longer current without asserting that the original request was rejected or completed. The change preserves the function's interface and introduces no demonstrated blocking defect.\n\nReview was limited to the supplied text-only diff. Callers and recovery-state logic were not provided, so whether this message is shown exclusively for exact-version conflicts could not be assessed. No tests were supplied or executed by this reviewer. There were no unreviewed binary paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 216,
+        "totalTokens": 1658
+      },
+      "costUsd": 0.005044,
+      "requestId": "resp_0cd62ca67f1d97cb016ae741b03ef887d28d5152723dde9d87",
+      "reviewerDurationMs": 4042
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-16",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 8,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated. The replacement text matches the stated intent: it explains that the submitted version is no longer current without asserting rejection or definite completion of the original request. The function signature and return type remain unchanged.\n\nReview is limited to the supplied one-line message change. Call sites and recovery-state logic were not provided, so whether this message is displayed exclusively for exact-version conflicts cannot be verified. No tests were supplied or executed by this reviewer. There are no listed unreviewed binary paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 238,
+        "totalTokens": 1680
+      },
+      "costUsd": 0.005264,
+      "requestId": "resp_063de426a7bcee98016ae741b4476087d29f2367e866835df2",
+      "reviewerDurationMs": 4882
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-16",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 8,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 3,
+        "documentation": 8,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The replacement string in `src/recovery-message.mjs` matches the stated requirement: it explains that the submitted version is not current without asserting that the original request was rejected or completed. No blocking defect is demonstrated by the supplied diff.\n\nAssessment is limited to the wording change. Caller logic and recovery-state definitions were not supplied, so whether this message is displayed only for the appropriate conflict state could not be assessed. No tests were supplied or executed by this reviewer. There are no listed unreviewed binary paths."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1442,
+        "outputTokens": 235,
+        "totalTokens": 1677
+      },
+      "costUsd": 0.005234,
+      "requestId": "resp_083c7f3e49f856a5016ae741b9282087d29dad749dca74fcc7",
+      "reviewerDurationMs": 4693
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-17",
+      "repetition": 1,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "### Blocking: Removing the source print removes the required review action\n- **Location:** `src/settlement-actions.mjs:2`.\n- **Evidence:** The explicit requirement says saved settlement results must remain reviewable after source-record deletion. The new expression `_printExists ? [\"review\"] : []` returns no actions when the source print does not exist; `_result` provides no recovery branch.\n- **Trigger:** Request actions for a saved settlement after its source print has been deleted, passing `false` as `_printExists`.\n- **Expected:** The returned actions retain `\"review\"` so the saved result remains reviewable.\n- **Actual:** The function returns `[]`, removing the review action precisely in the required recovery case.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { actions } from \"./src/settlement-actions.mjs\"; assert.ok(actions({ saved: true }, false).includes(\"review\"));'` from the repository root. The assertion fails because the false branch returns an empty array regardless of the result object.\n- **PR attribution:** Previously, the function always returned `[\"review\"]`, including when the source print was absent. This change introduces the loss of that action.\n\nThe implementation is otherwise simple and idiomatic, but no tests were supplied for the recovery requirement. Review was limited to the supplied diff and PR context; callers, persistence behavior, and UI integration were not provided. There were no listed unreviewed binary paths. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 409,
+        "totalTokens": 1855
+      },
+      "costUsd": 0.006982,
+      "requestId": "resp_0721969c43be4078016ae741bdd4cc87d2a6ecb2a7f1e9f05a",
+      "reviewerDurationMs": 6094
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-17",
+      "repetition": 2,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 7,
+        "verdict": "fail",
+        "summary": "### Blocking: Removing the source record removes the required review action\n- **Location:** `src/settlement-actions.mjs:2`, the new conditional return in `actions`.\n- **Evidence:** The explicit requirement says saved settlement results must remain reviewable after source-record deletion. However, `actions(_result, false)` now returns `[]`, whereas the previous implementation returned `[\"review\"]` regardless of source existence.\n- **Trigger:** A saved settlement result remains available, but its source print has been deleted, so `_printExists` is `false`.\n- **Expected:** The returned actions include `\"review\"` so the saved result retains its review action.\n- **Actual:** The function returns no actions. There is no fallback or recovery branch in the supplied code; `_result` is ignored.\n- **Confirming test:** From the repository root, run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { actions } from \"./src/settlement-actions.mjs\"; assert.ok(actions({ saved: true }, false).includes(\"review\"));'`. This assertion fails because the new false branch returns an empty array. It would pass before this change.\n- **PR attribution:** This change introduces the regression by replacing the unconditional review action with a source-existence check, directly contradicting the stated deleted-source recovery requirement.\n\n**Scope and validation:** Review was limited to the supplied diff and PR metadata; callers, UI behavior, and any separate recovery mechanisms were not supplied. No paths were listed as unreviewed binaries. No tests were supplied, and tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 419,
+        "totalTokens": 1865
+      },
+      "costUsd": 0.007082,
+      "requestId": "resp_0110aff9a28b4912016ae741c3f08087d2a869c3554dddecb8",
+      "reviewerDurationMs": 7408
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-17",
+      "repetition": 3,
+      "expectedVerdict": "fail",
+      "review": {
+        "implementationCorrectness": 2,
+        "idiomaticity": 9,
+        "complexity": 9,
+        "testRiskCoverage": 2,
+        "documentation": 5,
+        "securitySafety": 8,
+        "verdict": "fail",
+        "summary": "### Blocking: Source deletion removes the required review action\n- **Location:** `src/settlement-actions.mjs:2`.\n- **Evidence:** The explicit requirement says saved settlement results must remain reviewable after source-record deletion. The changed return statement produces `[]` whenever `_printExists` is false, instead of the previous `[\"review\"]`.\n- **Trigger:** Call `actions(savedResult, false)` for a saved settlement whose source print has been deleted.\n- **Expected:** The returned actions include `\"review\"`, preserving access to review the saved result.\n- **Actual:** The function returns an empty array, removing the review action in precisely the recovery case this PR is intended to support.\n- **Confirming test:** Run `node --input-type=module -e 'import assert from \"node:assert/strict\"; import { actions } from \"./src/settlement-actions.mjs\"; assert.ok(actions({}, false).includes(\"review\"));'`. This assertion fails because the new false branch returns `[]`; it passes with the previous implementation.\n- **PR attribution:** The new conditional introduces this regression; previously the review action was returned regardless of source existence.\n\n**Limits:** Review was limited to the supplied diff and description; callers and broader recovery behavior were not supplied. No binary paths were listed as unreviewed. Tests were not executed by this reviewer, and no test changes were supplied."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [true, true, true],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1446,
+        "outputTokens": 371,
+        "totalTokens": 1817
+      },
+      "costUsd": 0.006602,
+      "requestId": "resp_0daaaf0de6c446e6016ae741cb5c5087d2b92e2dc4f856380a",
+      "reviewerDurationMs": 4798
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-18",
+      "repetition": 1,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 8,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "The change makes `actions()` return `[\"review\"]` regardless of source-print availability, matching the stated requirement. The function does not mutate either argument or any settlement state; it only returns a new array. No blocking defect is demonstrated by the supplied diff.\n\nNo tests were supplied or executed by this reviewer. Useful regression coverage would assert that both `actions(savedResult, true)` and `actions(savedResult, false)` return `[\"review\"]` without modifying `savedResult`.\n\nReview was limited to the supplied function and diff; callers, receipt retrieval, and the review handler were not provided, so end-to-end receipt access could not be assessed. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 217,
+        "totalTokens": 1658
+      },
+      "costUsd": 0.005052,
+      "requestId": "resp_0aebfb0775ddd09d016ae741d02b5087d2a64cb3f6e3f7b490",
+      "reviewerDurationMs": 3931
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-18",
+      "repetition": 2,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 5,
+        "documentation": 8,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "No blocking defect is demonstrated. In `src/settlement-actions.mjs`, returning `[\"review\"]` unconditionally preserves the review action when the source print is absent, while retaining the existing action when it is present. The function does not mutate either argument or settlement state.\n\nNo tests are supplied. Useful coverage would assert `[\"review\"]` for both values of `_printExists` and verify that the saved result remains unchanged.\n\nThis assessment is limited to the supplied one-line change; callers and the review-action implementation are not shown, so end-to-end receipt access cannot be verified. No binary or unreviewed paths were listed. Tests were not executed by this reviewer."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 213,
+        "totalTokens": 1654
+      },
+      "costUsd": 0.005012,
+      "requestId": "resp_015a092c3398683d016ae741d4192487d295bb3b541d24a321",
+      "reviewerDurationMs": 4000
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "caseId": "case-18",
+      "repetition": 3,
+      "expectedVerdict": "pass",
+      "review": {
+        "implementationCorrectness": 9,
+        "idiomaticity": 9,
+        "complexity": 10,
+        "testRiskCoverage": 4,
+        "documentation": 7,
+        "securitySafety": 9,
+        "verdict": "pass",
+        "summary": "No blocking defect demonstrated. In `src/settlement-actions.mjs`, `actions()` now returns `[\"review\"]` regardless of `_printExists`, preserving the review action when the source print is absent while leaving the existing action unchanged when it is present. The function does not mutate either argument or any settlement state.\n\nNo tests were supplied or executed by this reviewer. Useful regression coverage would assert `[\"review\"]` for both values of `_printExists` and confirm that the supplied result remains unchanged. Analysis is limited to the supplied function; callers, receipt persistence, and the review handler were not provided, so end-to-end receipt access cannot be established. No unreviewed binary paths were listed."
+      },
+      "assertion": {
+        "schemaValid": true,
+        "verdictMatches": true,
+        "findingAnchors": [],
+        "findingComplete": true,
+        "passed": true
+      },
+      "usage": {
+        "inputTokens": 1441,
+        "outputTokens": 216,
+        "totalTokens": 1657
+      },
+      "costUsd": 0.005042,
+      "requestId": "resp_032df3eb8b5ab0bd016ae741d812a487d2a3ac4776201ea906",
+      "reviewerDurationMs": 3435
+    }
+  ]
+}

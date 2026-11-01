@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { LIMITS } from "../config.mjs";
 import { validateContext, validateEnvelope } from "../contracts/validate.mjs";
 import { loadPrompt } from "../prompts/load.mjs";
@@ -57,9 +58,31 @@ export function safeError(error) {
   return { code, message: `Review operation failed (${code}). No code verdict is available.` };
 }
 
-export async function reviewChange({ context, input, apiKey, model, fetchImpl, deadlineMs, promptId = "code-review" }) {
+export async function reviewChange({
+  context,
+  input,
+  apiKey,
+  model,
+  fetchImpl,
+  deadlineMs,
+  promptId = "code-review",
+  promptContents,
+  onDiagnostic,
+}) {
   validateContext(context);
-  const prompt = await loadPrompt(promptId);
+  let prompt = await loadPrompt(promptId);
+  if (promptContents !== undefined) {
+    if (!promptContents || typeof promptContents.system !== "string" || typeof promptContents.criteria !== "string")
+      throw new Error("INVALID_PROMPT");
+    prompt = {
+      id: promptId,
+      system: promptContents.system,
+      criteria: promptContents.criteria,
+      digest: createHash("sha256")
+        .update(JSON.stringify([promptContents.system, promptContents.criteria]))
+        .digest("hex"),
+    };
+  }
   const startedAt = new Date().toISOString();
   const envelope = {
     version: 1,
@@ -73,19 +96,64 @@ export async function reviewChange({ context, input, apiKey, model, fetchImpl, d
     review: null,
     error: null,
   };
+  let providerDiagnostics = null;
   try {
     const assembled = assembleInput(input);
     const result = await requestReview({ apiKey, model, prompt, input: assembled, fetchImpl, deadlineMs });
-    Object.assign(envelope, result, { status: "completed", error: null });
+    const { diagnostics, ...reviewResult } = result;
+    providerDiagnostics = diagnostics;
+    Object.assign(envelope, reviewResult, { status: "completed", error: null });
     validateEnvelope(envelope, context);
+    try {
+      onDiagnostic?.(diagnostics);
+    } catch {
+      // Diagnostic consumers must not replace the original review result.
+    }
   } catch (error) {
+    const safe = safeError(error);
     Object.assign(envelope, {
       status: "error",
       review: null,
       requestId: error instanceof ReviewResponseError ? error.requestId : envelope.requestId,
       usage: error instanceof ReviewResponseError ? error.usage : envelope.usage,
-      error: safeError(error),
+      error: safe,
     });
+    let diagnostics;
+    if (error instanceof ReviewResponseError) diagnostics = error.diagnostics;
+    else if (providerDiagnostics) {
+      diagnostics = {
+        ...providerDiagnostics,
+        category: "review_operation",
+        phase: "envelope_validation",
+        errorCode: safe.code,
+        internalCode: safe.code,
+      };
+    } else {
+      diagnostics = {
+        version: 1,
+        category: "review_operation",
+        phase: "preflight",
+        errorCode: safe.code,
+        internalCode: null,
+        startedAt,
+        completedAt: new Date().toISOString(),
+        durationMs: Math.max(0, Date.now() - Date.parse(startedAt)),
+        deadlineMs: deadlineMs ?? LIMITS.deadlineMs,
+        runtime: { node: process.version, platform: process.platform, arch: process.arch },
+        requestAttempted: false,
+        request: null,
+        http: null,
+        provider: null,
+        usage: null,
+        causeChain: [],
+        aborted: false,
+      };
+    }
+    try {
+      onDiagnostic?.(diagnostics);
+    } catch {
+      // Diagnostic consumers must not replace the original review result.
+    }
   }
   envelope.timing = { startedAt, completedAt: new Date().toISOString() };
   return validateEnvelope(envelope, context);

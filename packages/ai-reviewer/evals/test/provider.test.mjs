@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ReviewEvalProvider } from "../provider.mjs";
 
+const issuedAt = new Date().toISOString();
 test("provider maps valid reviewer response and sanitized operational error", async () => {
   const approval = {
     enabled: true,
     mode: "comparison",
     models: ["model-a", "model-b"],
-    requestCount: 18,
+    caseIds: ["case-01", "case-02", "case-03", "case-04", "case-05", "case-06"],
+    requestCount: 36,
     repetitions: 3,
     usdLimit: 2,
     approvalId: "approved",
-    expiresAt: "2999-01-01T00:00:00Z",
+    invocationId: "invocation-provider-a1",
+    issuedAt,
+    expiresAt: new Date(Date.parse(issuedAt) + 24 * 60 * 60 * 1000).toISOString(),
     runnerDigest: "a".repeat(64),
     corpusDigest: "b".repeat(64),
     schemaDigest: "c".repeat(64),

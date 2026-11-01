@@ -1,0 +1,87 @@
+{
+  "kind": "one-shot-sdk-smoke-test",
+  "model": "gpt-6.1-sol",
+  "status": "completed",
+  "requestId": "req_c120d1b9f84244fda521e5d18e44281e",
+  "prompt": {
+    "id": "code-review",
+    "digest": "7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631"
+  },
+  "timing": {
+    "startedAt": "2026-11-01T19:13:34.867Z",
+    "completedAt": "2026-11-01T19:13:41.917Z"
+  },
+  "usage": {
+    "inputTokens": 1406,
+    "outputTokens": 306,
+    "totalTokens": 1712
+  },
+  "estimatedCostUsd": 0.005872,
+  "review": {
+    "implementationCorrectness": 1,
+    "idiomaticity": 9,
+    "complexity": 10,
+    "testRiskCoverage": 2,
+    "documentation": 7,
+    "securitySafety": 5,
+    "verdict": "fail",
+    "summary": "**Blocking: reserved stock is added instead of subtracted** — `src/stock.js`, line 2.\n\n- **Evidence:** The PR explicitly defines available stock as recorded grams minus reserved grams, but changes `return recorded - reserved;` to `return recorded + reserved;`.\n- **Trigger:** Call `available(150, 88)`.\n- **Expected:** `62` grams available.\n- **Incorrect result:** `238` grams, because the changed expression adds the two arguments. There is no intervening validation or error handling in the supplied function.\n- **Confirming test:** Import `available` from `src/stock.js` in the project's JavaScript test environment and run `assert.equal(available(150, 88), 62)` using Node's strict assertion module. The changed implementation returns `238`, so the assertion fails.\n- **PR attribution:** The previous subtraction produced the required result; this PR directly introduces the incorrect calculation.\n\nReview was limited to the supplied diff and PR description. No tests were supplied or executed by this reviewer. No unreviewed binary paths were listed."
+  },
+  "error": null,
+  "diagnostics": {
+    "version": 1,
+    "category": "success",
+    "phase": "completed",
+    "errorCode": null,
+    "internalCode": null,
+    "startedAt": "2026-11-01T19:13:34.868Z",
+    "completedAt": "2026-11-01T19:13:41.917Z",
+    "durationMs": 7049,
+    "deadlineMs": 600000,
+    "runtime": {
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "x64"
+    },
+    "requestAttempted": true,
+    "request": {
+      "method": "POST",
+      "host": "api.openai.com",
+      "path": "/v1/responses",
+      "model": "gpt-6.1-sol",
+      "maxOutputTokens": 8000,
+      "maxRetries": 0,
+      "inputBytes": 466,
+      "promptDigest": "7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631",
+      "store": false,
+      "requestBodyBytes": 7893
+    },
+    "http": {
+      "status": 200,
+      "requestId": "req_c120d1b9f84244fda521e5d18e44281e",
+      "headers": {
+        "content-type": "application/json",
+        "server": "cloudflare",
+        "cf-ray": "a53d37b1cae2daca-WAW",
+        "x-ratelimit-limit-requests": "5000",
+        "x-ratelimit-remaining-requests": "4999",
+        "x-ratelimit-reset-requests": "12ms",
+        "x-ratelimit-limit-tokens": "1000000",
+        "x-ratelimit-remaining-tokens": "999837",
+        "x-ratelimit-reset-tokens": "9ms"
+      }
+    },
+    "provider": {
+      "finishReason": "stop",
+      "responseModel": "gpt-6.1-sol",
+      "stepCount": 1
+    },
+    "usage": {
+      "inputTokens": 1406,
+      "outputTokens": 306,
+      "totalTokens": 1712
+    },
+    "causeChain": [],
+    "aborted": false
+  }
+}
