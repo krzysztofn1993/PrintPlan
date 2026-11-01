@@ -170,16 +170,16 @@ No database or input schema migration is required. Preserve the trusted-base bou
 
 #### Automated
 
-- [x] 1.1 Adapter tests pass, including exact-byte acceptance and one-byte-over rejection before HTTP: `npm --prefix packages/ai-reviewer run test:adapter`.
-- [x] 1.2 Workflow tests pass, including large moves, edited text, binary paths, unusual filenames, and Git isolation: `npm --prefix packages/ai-reviewer run test:workflow`.
+- [x] 1.1 Adapter tests pass, including exact-byte acceptance and one-byte-over rejection before HTTP: `npm --prefix packages/ai-reviewer run test:adapter`. — 8aba0df
+- [x] 1.2 Workflow tests pass, including large moves, edited text, binary paths, unusual filenames, and Git isolation: `npm --prefix packages/ai-reviewer run test:workflow`. — 8aba0df
 
 ### Phase 2: Verification and CI Readiness
 
 #### Automated
 
-- [ ] 2.1 The complete offline reviewer suite passes: `npm run test:ai-review`.
-- [ ] 2.2 The repository native, lint, type, and build gate passes: `npm run verify:deploy`.
+- [x] 2.1 The complete offline reviewer suite passes: `npm run test:ai-review`.
+- [x] 2.2 The repository native, lint, type, and build gate passes: `npm run verify:deploy`.
 
 #### Manual
 
-- [ ] 2.3 Review the README and verification evidence against the accepted limit, coverage rules, and trusted-base adoption prerequisite; confirm no hosted or model-capacity claim relies solely on offline tests.
+- [x] 2.3 Review the README and verification evidence against the accepted limit, coverage rules, and trusted-base adoption prerequisite; confirm no hosted or model-capacity claim relies solely on offline tests.
