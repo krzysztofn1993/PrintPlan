@@ -14,7 +14,7 @@ test("reports distinguish model verdict, evaluation outcome, unknown costs and s
       review: { verdict: "pass", summary: "<script>alert(1)</script>" },
       usage: { inputTokens: 10, outputTokens: 2 },
       costUsd: 0.1,
-      providerLatencyMs: 12,
+      reviewerDurationMs: 9,
     },
     {
       model: "m",
@@ -39,6 +39,9 @@ test("reports distinguish model verdict, evaluation outcome, unknown costs and s
     falseRejectionRate: 0,
     falseAcceptanceRate: 1,
     denominators: { precision: 0, recall: 1, falseRejectionRate: 1, falseAcceptanceRate: 1 },
+    contractValidCompleted: 2,
+    positiveClass: "review verdict fail / accepted defect",
+    falsePositiveDefinition: "review verdict fail on an accepted safe fixture",
   });
   assert.equal(report.totals.errors, 1);
   assert.equal(report.totals.notRun, 1);
@@ -50,4 +53,73 @@ test("reports distinguish model verdict, evaluation outcome, unknown costs and s
   assert.match(renderHtml(report), /&lt;script&gt;/);
   assert.doesNotMatch(renderHtml(report), /<script>/);
   assert.match(renderSummary(report), /not run/);
+});
+
+test("summarizes production reviewer envelope timing separately from whole-run elapsed time", () => {
+  const approval = { approvalId: "a", mode: "comparison", models: ["m"], usdLimit: 1 };
+  const report = buildReport({
+    matrix: [
+      { model: "m", caseId: "case-01", repetition: 1, status: "pass", reviewerDurationMs: 40 },
+      { model: "m", caseId: "case-02", repetition: 1, status: "error", reviewerDurationMs: 20 },
+      { model: "m", caseId: "case-03", repetition: 1, status: "not-run", reviewerDurationMs: null },
+    ],
+    planned: 3,
+    promptDigest: "d".repeat(64),
+    approval,
+  });
+  assert.deepEqual(report.latency.m, { sampleSize: 2, medianMs: 20, p95Ms: 40 });
+  assert.equal(report.timing.totalEvaluationElapsedMs, null);
+});
+
+test("reports per-model confusion, distinct fixture denominators, and text-only misses separately", () => {
+  const approval = {
+    approvalId: "a",
+    mode: "comparison",
+    models: ["m"],
+    caseIds: ["case-01"],
+    repetitions: 3,
+    usdLimit: 1,
+  };
+  const report = buildReport({
+    matrix: [
+      {
+        model: "m",
+        caseId: "case-01",
+        repetition: 1,
+        expectedVerdict: "fail",
+        status: "fail",
+        review: { verdict: "fail" },
+      },
+      {
+        model: "m",
+        caseId: "case-01",
+        repetition: 2,
+        expectedVerdict: "fail",
+        status: "fail",
+        review: { verdict: "fail" },
+      },
+      {
+        model: "m",
+        caseId: "case-01",
+        repetition: 3,
+        expectedVerdict: "fail",
+        status: "pass",
+        review: { verdict: "pass" },
+      },
+    ],
+    planned: 3,
+    promptDigest: "d".repeat(64),
+    approval,
+    evaluationElapsedMs: 1234,
+  });
+  assert.equal(report.perModel.m.confusion.tp, 2);
+  assert.equal(report.perModel.m.confusion.fn, 1);
+  assert.equal(report.perModel.m.distinctCases.acceptedDefects, 1);
+  assert.equal(report.perModel.m.distinctCases.knownDefectCasesHit, 1);
+  assert.equal(report.perModel.m.distinctCases.cases[0].responseTrials, 3);
+  assert.equal(report.perModel.m.verdictErrors, 1);
+  assert.equal(report.perModel.m.textAssertionOnlyMisses, 2);
+  assert.equal(report.humanReview.status, "pending");
+  assert.equal(report.humanReview.unsupportedAllegations, null);
+  assert.equal(report.timing.totalEvaluationElapsedMs, 1234);
 });

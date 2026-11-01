@@ -14,6 +14,8 @@
     "test:github": "node --import ./test/offline.mjs --test test/github.test.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai": "4.0.106",
+    "ai": "7.0.159",
     "ajv": "8.20.0"
   },
   "devDependencies": {

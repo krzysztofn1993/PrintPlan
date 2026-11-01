@@ -362,16 +362,16 @@ No application or database migration is needed. The runner and trusted workflow 
 
 #### Automated
 
-- [x] 1.1 (historical scope) The original six-case corpus had nonempty reviewable diffs, frozen before/after witnesses, path agreement, and oracle separation; the reported offline suite covered it. The original three-case subset landed in f9eeef9; cases 04–06 were added later in the current working tree.
-- [x] 1.1a Validate the twelve holdout fixtures, source witnesses, hunk counts, and oracle separation with the offline suite. — 27/27, 2026-11-01.
+- [x] 1.1 (historical scope) The original six-case corpus had nonempty reviewable diffs, frozen before/after witnesses, path agreement, and oracle separation; the reported offline suite covered it. The original three-case subset landed in f9eeef9; cases 04–18 were added in follow-up commit b5e2b24.
+- [x] 1.1a Validate the twelve holdout fixtures, source witnesses, hunk counts, and oracle separation with the offline suite. — 27/27, 2026-11-01; b5e2b24.
 - [x] 1.2 (historical scope) The prior six-case fixture witnesses were covered by the reported offline suite.
-- [x] 1.2a Add and validate the twelve new before/after witnesses. — 27/27, 2026-11-01.
+- [x] 1.2a Add and validate the twelve new before/after witnesses. — 27/27, 2026-11-01; b5e2b24.
 - [x] 1.3 (historical scope) The prior assertion suite reported 22/22 offline checks.
-- [x] 1.3a Review the new holdout anchors against the shared rubric and validate positive and negative examples offline; do not tune them to future holdout answers. — 27/27, 2026-11-01.
+- [x] 1.3a Review the new holdout anchors against the shared rubric and validate positive and negative examples offline; do not tune them to future holdout answers. — 27/27, 2026-11-01; b5e2b24.
 
 #### Manual
 
-- [x] 1.4 The author accepted all six reference outcomes and the limits of this development corpus. — 2026-11-01.
+- [x] 1.4 The author accepted all six reference outcomes and the limits of this development corpus. — 2026-11-01; b5e2b24.
 
 ### Phase 2: Production adapter, spending guard, and reports
 

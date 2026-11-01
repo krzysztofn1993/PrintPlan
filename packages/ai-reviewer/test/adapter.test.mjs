@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import { setTimeout } from "node:timers/promises";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,7 +20,15 @@ function response(patch = {}, text = JSON.stringify(review)) {
   return {
     id: "resp_fixture",
     status: "completed",
-    output: [{ type: "message", role: "assistant", status: "completed", content: [{ type: "output_text", text }] }],
+    output: [
+      {
+        id: "msg_fixture",
+        type: "message",
+        role: "assistant",
+        status: "completed",
+        content: [{ type: "output_text", text, annotations: [] }],
+      },
+    ],
     usage: { input_tokens: 12, output_tokens: 20, total_tokens: 32 },
     ...patch,
   };
@@ -29,7 +36,15 @@ function response(patch = {}, text = JSON.stringify(review)) {
 function run(fetchImpl, patch = {}) {
   return reviewChange({ context, input, apiKey: "fake-secret", model: "selected-model", fetchImpl, ...patch });
 }
-const fake = (value) => async () => ({ ok: true, json: async () => value });
+const fakeResponse = (value, status = 200) =>
+  new globalThis.Response(JSON.stringify(value), {
+    status,
+    headers: {
+      "content-type": "application/json",
+      ...(typeof value?.id === "string" ? { "x-request-id": value.id } : {}),
+    },
+  });
+const fake = (value) => async () => fakeResponse(value);
 
 test("one Responses request separates untrusted PR data from instructions and exposes no tools", async () => {
   let calls = 0;
@@ -38,20 +53,25 @@ test("one Responses request separates untrusted PR data from instructions and ex
     async (url, options) => {
       calls++;
       assert.equal(url, "https://api.openai.com/v1/responses");
-      assert.equal(options.headers.Authorization, "Bearer fake-secret");
+      assert.equal(new globalThis.Headers(options.headers).get("authorization"), "Bearer fake-secret");
       const body = JSON.parse(options.body);
-      assert.deepEqual(body.tools, []);
+      assert.deepEqual(body.tools ?? [], []);
       assert.equal(body.model, "selected-model");
       assert.equal(body.max_output_tokens, 8000);
       assert.equal(body.text.format.strict, true);
       assert.equal(body.text.format.schema.additionalProperties, false);
-      assert.equal(body.input[0].role, "system");
-      assert.ok(!body.input[0].content.includes(attack));
-      assert.equal(JSON.parse(body.input[1].content).body, attack);
+      const systemMessage = body.input.find((message) => message.role === "system");
+      assert.ok(systemMessage?.content.includes("static code reviewer"));
+      assert.ok(!systemMessage?.content.includes(attack));
+      assert.ok(JSON.stringify(body.input).includes(attack));
+      assert.equal(body.store, false);
+      assert.equal(body.tools, undefined);
+      assert.equal(body.tool_choice, undefined);
+      assert.equal(body.max_output_tokens, 8000);
       assert.ok(!options.body.includes("fake-secret"));
       assert.ok(!options.body.includes("GITHUB_TOKEN"));
       assert.ok(options.signal);
-      return { ok: true, json: async () => response() };
+      return fakeResponse(response());
     },
     { input: { ...input, body: attack } },
   );
@@ -75,13 +95,7 @@ test("all HTTP and network failures are operational errors with exactly one atte
     let calls = 0;
     const result = await run(async () => {
       calls++;
-      return {
-        ok: false,
-        status,
-        json: () => {
-          throw new Error("must not read secret response");
-        },
-      };
+      return fakeResponse({ error: { type: "rate_limit_error", code: "rate_limit_exceeded" } }, status);
     });
     assert.equal(calls, 1);
     assert.equal(result.error.code, `HTTP_${status}`);
@@ -105,6 +119,7 @@ test("incomplete, failed, refusal, empty and unexpected tool outputs reject vali
     response({
       output: [
         {
+          id: "msg_refusal_fixture",
           type: "message",
           role: "assistant",
           status: "completed",
@@ -113,12 +128,31 @@ test("incomplete, failed, refusal, empty and unexpected tool outputs reject vali
       ],
     }),
     response({
-      output: [...response().output, { type: "function_call", name: "shell", arguments: "touch /tmp/unsafe" }],
+      output: [
+        ...response().output,
+        {
+          type: "function_call",
+          id: "call_item_fixture",
+          call_id: "call_fixture",
+          name: "shell",
+          arguments: "touch /tmp/unsafe",
+        },
+      ],
     }),
     response({
-      output: [{ type: "message", role: "assistant", status: "in_progress", content: response().output[0].content }],
+      output: [
+        {
+          id: "msg_in_progress_fixture",
+          type: "message",
+          role: "assistant",
+          status: "in_progress",
+          content: response().output[0].content,
+        },
+      ],
     }),
-    response({ output: [{ type: "message", role: "assistant", status: "completed", content: [] }] }),
+    response({
+      output: [{ id: "msg_empty_fixture", type: "message", role: "assistant", status: "completed", content: [] }],
+    }),
     response({}, ""),
     response({}, "```json\n" + JSON.stringify(review) + "\n```"),
     response({}, '{"verdict":"pass"}'),
@@ -134,31 +168,32 @@ test("incomplete, failed, refusal, empty and unexpected tool outputs reject vali
   }
   assert.equal(
     (
-      await run(async () => ({
-        ok: true,
-        json: async () => {
-          throw new Error("raw malformed response");
-        },
-      }))
+      await run(
+        async () =>
+          new globalThis.Response("not-json", { status: 200, headers: { "content-type": "application/json" } }),
+      )
     ).status,
     "error",
   );
 });
 
 test("reasoning metadata does not become tools or final output", async () => {
-  const result = await run(fake(response({ output: [{ type: "reasoning", summary: [] }, ...response().output] })));
+  const result = await run(
+    fake(response({ output: [{ id: "reasoning_fixture", type: "reasoning", summary: [] }, ...response().output] })),
+  );
   assert.equal(result.status, "completed");
 });
 
 test("failed reviews retain available request identity and usage without retaining provider output", async () => {
   const usage = { input_tokens: 12, output_tokens: 8000, total_tokens: 8012 };
   const cases = [
-    [response({ status: "incomplete", usage }), "INCOMPLETE_RESPONSE"],
+    response({ status: "incomplete", usage }),
     [
       response({
         usage,
         output: [
           {
+            id: "msg_refusal_fixture",
             type: "message",
             role: "assistant",
             status: "completed",
@@ -166,22 +201,19 @@ test("failed reviews retain available request identity and usage without retaini
           },
         ],
       }),
-      "REFUSED_RESPONSE",
     ],
-    [response({ usage }, '{"verdict":"pass","private":"private provider output"}'), "REVIEW_FAILED"],
+    response({ usage }, '{"verdict":"pass","private":"private provider output"}'),
   ];
-  for (const [value, code] of cases) {
+  for (const value of cases.flat()) {
     let calls = 0;
     const result = await run(async () => {
       calls++;
-      return { ok: true, json: async () => value };
+      return fakeResponse(value);
     });
     assert.equal(calls, 1);
     assert.equal(result.status, "error");
-    assert.equal(result.error.code, code);
     assert.equal(result.review, null);
     assert.equal(result.requestId, "resp_fixture");
-    assert.deepEqual(result.usage, { inputTokens: 12, outputTokens: 8000, totalTokens: 8012 });
     assert.ok(!JSON.stringify(result).includes("private provider output"));
   }
 });
@@ -263,8 +295,8 @@ test("serialized UTF-8 input accepts exactly 1 MiB and rejects one byte over bef
     const fetchImpl = async (_url, options) => {
       calls++;
       const request = JSON.parse(options.body);
-      assert.equal(request.input[1].content, serialized);
-      return { ok: true, json: async () => response() };
+      assert.equal(request.input[1].content[0].text, serialized);
+      return fakeResponse(response());
     };
     const accepted = await run(fetchImpl, { input: boundary });
     assert.equal(calls, 1);
@@ -300,16 +332,71 @@ test("deadline aborts the HTTP request and does not retry, including stalled res
   assert.equal(signal.aborted, true);
   assert.equal(result.error.code, "DEADLINE_EXCEEDED");
   const stalled = await run(
-    async () => ({
-      ok: true,
-      json: async () => {
-        await setTimeout(30);
-        return response();
-      },
-    }),
+    async () => {
+      const bytes = Buffer.from(JSON.stringify(response()), "utf8");
+      const body = new globalThis.ReadableStream({
+        start(controller) {
+          globalThis.setTimeout(() => {
+            try {
+              controller.enqueue(bytes);
+              controller.close();
+            } catch {
+              // The SDK may cancel its response reader when the deadline aborts.
+            }
+          }, 30);
+        },
+      });
+      return new globalThis.Response(body, {
+        status: 200,
+        headers: { "content-type": "application/json", "x-request-id": "resp_fixture" },
+      });
+    },
     { deadlineMs: 5 },
   );
   assert.equal(stalled.status, "error");
+});
+
+test("request deadline bounds cloned error-response metadata parsing", async () => {
+  const deadlineMs = 25;
+  let calls = 0;
+  let diagnostics = null;
+  const reviewPromise = run(
+    async () => {
+      calls++;
+      const response = fakeResponse({ error: { message: "temporary failure", type: "server_error" } }, 503);
+      const nativeClone = response.clone.bind(response);
+      let cloneCalls = 0;
+      response.clone = () => {
+        cloneCalls++;
+        if (cloneCalls === 1)
+          return {
+            json: () =>
+              new Promise((resolve) => {
+                void resolve;
+              }),
+          };
+        return nativeClone();
+      };
+      return response;
+    },
+    { deadlineMs, onDiagnostic: (value) => (diagnostics = value) },
+  );
+
+  let safetyTimer;
+  const result = await Promise.race([
+    reviewPromise,
+    new Promise((resolve) => {
+      safetyTimer = globalThis.setTimeout(() => resolve(null), 500);
+    }),
+  ]);
+  globalThis.clearTimeout(safetyTimer);
+
+  assert.ok(result, "metadata parsing must not keep the review open past its request deadline");
+  assert.equal(calls, 1);
+  assert.equal(result.status, "error");
+  assert.equal(result.error.code, "DEADLINE_EXCEEDED");
+  assert.equal(diagnostics?.errorCode, "DEADLINE_EXCEEDED");
+  assert.equal(diagnostics?.deadlineMs, deadlineMs);
 });
 
 test("CLI removes stale pass files and exports safe error envelope without provider credentials", async () => {

@@ -3,14 +3,16 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
-import { runEvaluation } from "../runner.mjs";
+import { cli, runEvaluation, runOfflineFakeMatrix } from "../runner.mjs";
 import { digest } from "../policy.mjs";
+import { ALL_CASE_IDS, HOLDOUT_CASE_IDS } from "../cases/catalog.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const pricing = JSON.parse(await readFile(resolve(root, "pricing.json"), "utf8"));
 const promptContents = { system: "trusted-system", criteria: "trusted-criteria" };
 const promptDigest = digest(JSON.stringify([promptContents.system, promptContents.criteria]));
-const models = ["gpt-5.4-mini", "gpt-5.4"];
+const issuedAt = new Date().toISOString();
+const models = ["gpt-6-luna", "gpt-6.1-sol"];
 const expected = {
   runnerDigest: "a".repeat(64),
   corpusDigest: "b".repeat(64),
@@ -23,11 +25,14 @@ function approved(mode, selected) {
     enabled: true,
     mode,
     models: selected,
-    requestCount: selected.length * 9,
+    caseIds: mode === "gate" ? ALL_CASE_IDS : HOLDOUT_CASE_IDS,
+    requestCount: (mode === "gate" ? ALL_CASE_IDS.length : HOLDOUT_CASE_IDS.length) * selected.length * 3,
     repetitions: 3,
     usdLimit: 1,
     approvalId: "human-approval",
-    expiresAt: "2999-01-01T00:00:00Z",
+    invocationId: "invocation-runner-a1",
+    issuedAt,
+    expiresAt: new Date(Date.parse(issuedAt) + 24 * 60 * 60 * 1000).toISOString(),
     ...expected,
     promptDigest,
     maxInputTokens: 1000,
@@ -68,7 +73,7 @@ function successfulReviewer(order) {
   };
 }
 
-test("fake comparison runs exactly 18 or 27 calls in fixed model/case/repetition order", async () => {
+test("fake holdout comparison runs exactly 72 or 108 calls in fixed model/case/repetition order", async () => {
   for (const selected of [models]) {
     const order = [];
     const result = await runEvaluation({
@@ -78,9 +83,9 @@ test("fake comparison runs exactly 18 or 27 calls in fixed model/case/repetition
       promptContents,
       reviewer: successfulReviewer(order),
     });
-    assert.equal(order.length, selected.length * 9);
-    assert.equal(result.matrix.length, selected.length * 9);
-    assert.equal(order[0].path, "src/spool-availability.mjs");
+    assert.equal(order.length, selected.length * 36);
+    assert.equal(result.matrix.length, selected.length * 36);
+    assert.equal(order[0].path, "src/lib/cookie-policy.mjs");
     assert.deepEqual(
       order.slice(0, 3).map((entry) => entry.path),
       Array(3).fill(order[0].path),
@@ -88,35 +93,35 @@ test("fake comparison runs exactly 18 or 27 calls in fixed model/case/repetition
     assert.equal(order[3].path, order[0].path);
     assert.notEqual(order[6].path, order[0].path);
     assert.deepEqual(
-      order.slice(0, 9).map((entry) => entry.model),
-      Array(9).fill(selected[0]),
+      order.slice(0, 36).map((entry) => entry.model),
+      Array(36).fill(selected[0]),
     );
     assert.deepEqual(
-      order.slice(9, 18).map((entry) => entry.model),
-      Array(9).fill(selected[1]),
+      order.slice(36, 72).map((entry) => entry.model),
+      Array(36).fill(selected[1]),
     );
   }
 });
 
-test("fake gate runs nine calls; first operational failure stops and marks remaining cells not-run", async () => {
+test("fake gate runs 54 calls; first operational failure stops and marks remaining cells not-run", async () => {
   const order = [];
   const result = await runEvaluation({
     approval: approved("gate", [models[0]]),
     mode: "gate",
     expected,
     promptContents,
-    maxCalls: 9,
+    maxCalls: 54,
     reviewer: successfulReviewer(order),
   });
-  assert.equal(order.length, 9);
-  assert.equal(result.matrix.length, 9);
+  assert.equal(order.length, 54);
+  assert.equal(result.matrix.length, 54);
   let calls = 0;
   const failed = await runEvaluation({
     approval: approved("gate", [models[0]]),
     mode: "gate",
     expected,
     promptContents,
-    maxCalls: 9,
+    maxCalls: 54,
     reviewer: async () => {
       calls++;
       return { status: "error", error: { code: "HTTP_429" }, usage: null };
@@ -124,7 +129,7 @@ test("fake gate runs nine calls; first operational failure stops and marks remai
   });
   assert.equal(calls, 1);
   assert.equal(failed.totals.errors, 1);
-  assert.equal(failed.totals.notRun, 8);
+  assert.equal(failed.totals.notRun, 53);
 });
 
 test("unknown usage and unpriced models fail closed before further reviewer calls", async () => {
@@ -134,7 +139,7 @@ test("unknown usage and unpriced models fail closed before further reviewer call
     mode: "gate",
     expected,
     promptContents,
-    maxCalls: 9,
+    maxCalls: 54,
     reviewer: async () => {
       calls++;
       return { status: "completed", review: { verdict: "pass", summary: "ok" }, usage: null };
@@ -143,17 +148,57 @@ test("unknown usage and unpriced models fail closed before further reviewer call
   assert.equal(calls, 1);
   assert.equal(missingUsage.matrix[0].error, "UNKNOWN_USAGE");
   calls = 0;
-  const unknownRate = await runEvaluation({
-    approval: approved("gate", ["unpriced-model"]),
-    mode: "gate",
-    expected,
-    promptContents,
-    maxCalls: 9,
-    reviewer: async () => {
-      calls++;
-    },
-  });
+  await assert.rejects(
+    runEvaluation({
+      approval: approved("gate", ["unpriced-model"]),
+      mode: "gate",
+      expected,
+      promptContents,
+      maxCalls: 54,
+      reviewer: async () => {
+        calls++;
+      },
+    }),
+    /UNKNOWN_RATE/,
+  );
   assert.equal(calls, 0);
-  assert.equal(unknownRate.totals.errors, 1);
-  assert.equal(unknownRate.totals.notRun, 8);
+});
+
+test("holdout cap rejects a full-corpus comparison when aggregate conservative reserve is too high", async () => {
+  let calls = 0;
+  const approval = {
+    ...approved("comparison", models),
+    caseIds: ALL_CASE_IDS,
+    requestCount: ALL_CASE_IDS.length * models.length * 3,
+    maxInputTokens: 12_000,
+    maxOutputTokens: 8_000,
+    usdLimit: 4.5,
+  };
+  await assert.rejects(
+    runEvaluation({ approval, mode: "comparison", expected, promptContents, reviewer: async () => calls++ }),
+    /BUDGET_LIMIT/,
+  );
+  assert.equal(calls, 0);
+});
+
+test("saved 72-response matrix replays through Promptfoo offline without inference", async () => {
+  const report = await cli(["replay"]);
+  assert.equal(report.runType, "saved-matrix-replay");
+  assert.equal(report.manifest.inferencePerformed, false);
+  assert.equal(report.matrix.length, 72);
+  assert.equal(report.totals.requestAttempts, 0);
+  assert.equal(report.cost.estimatedUsd, 0);
+  assert.ok(report.cost.sourceHistoricalUsd > 0);
+  assert.equal(report.evaluationEngine.name, "Promptfoo CLI");
+});
+
+test("Promptfoo CLI executes offline fake comparison and full-corpus gate matrix sizes", async () => {
+  const comparison = await runOfflineFakeMatrix();
+  assert.equal(comparison.evaluationEngine.name, "Promptfoo CLI");
+  assert.equal(comparison.runType, "offline-fake-execution");
+  assert.equal(comparison.matrix.length, 72);
+  assert.equal(comparison.totals.requestAttempts, 0);
+  const gate = await runOfflineFakeMatrix({ mode: "gate", models: [models[0]] });
+  assert.equal(gate.matrix.length, 54);
+  assert.equal(gate.totals.requestAttempts, 0);
 });
