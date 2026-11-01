@@ -1,0 +1,9 @@
+{
+  "identity": "standard-uncached-2026-11-01",
+  "asOf": "2026-11-01",
+  "currency": "USD",
+  "models": {
+    "gpt-5.4-mini": { "inputPerMillion": 0.75, "outputPerMillion": 4.5 },
+    "gpt-5.4": { "inputPerMillion": 2.5, "outputPerMillion": 15 }
+  }
+}

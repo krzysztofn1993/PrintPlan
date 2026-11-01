@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "mode",
+    "models",
+    "requestCount",
+    "repetitions",
+    "usdLimit",
+    "approvalId",
+    "expiresAt",
+    "runnerDigest",
+    "corpusDigest",
+    "schemaDigest",
+    "pricingDigest"
+  ],
+  "properties": {
+    "enabled": { "type": "boolean" },
+    "mode": { "enum": ["comparison", "gate"] },
+    "models": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "requestCount": { "type": "integer", "minimum": 1, "maximum": 27 },
+    "repetitions": { "const": 3 },
+    "usdLimit": { "type": "number", "exclusiveMinimum": 0 },
+    "approvalId": { "type": "string", "minLength": 1 },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "runnerDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "corpusDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "schemaDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "pricingDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "maxOutputTokens": { "type": "integer", "minimum": 1 },
+    "promptDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "recurringAuthorized": { "type": "boolean" },
+    "candidatePaths": { "type": "array", "items": { "type": "string" } },
+    "maxPromptBytes": { "type": "integer", "minimum": 1 },
+    "maxInputTokens": { "type": "integer", "minimum": 1 }
+  }
+}
