@@ -121,6 +121,36 @@ jobs:
             ${{ runner.temp }}/eval-candidate/packages/ai-reviewer/prompts/code-review/criteria.md
             ${{ runner.temp }}/eval-identity.json
           retention-days: 7
+      - name: Complete pending check if preparation cannot continue
+        if: always() && steps.open-check.outputs.check_id != '' && (failure() || cancelled() || steps.prepare.outputs.eligible != 'true')
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CHECK_ID: ${{ steps.open-check.outputs.check_id }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          ELIGIBLE: ${{ steps.prepare.outputs.eligible }}
+          CANCELLED: ${{ cancelled() }}
+        run: |
+          [[ "$CHECK_ID" =~ ^[1-9][0-9]*$ ]]
+          if [[ "$CANCELLED" == "true" ]]; then
+            conclusion="cancelled"
+            title="Reviewer evaluation cancelled"
+            summary="Trusted preparation was cancelled. See the workflow logs."
+          elif [[ "$PREPARE_OUTCOME" == "success" && "$ELIGIBLE" != "true" ]]; then
+            conclusion="failure"
+            title="Reviewer evaluation blocked"
+            summary="This pull request is not eligible for evaluation. No model request was made."
+          else
+            conclusion="failure"
+            title="Reviewer evaluation preparation failed"
+            summary="Trusted preparation did not complete. See the workflow logs."
+          fi
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 1 -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H 'Content-Type: application/json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs/${CHECK_ID}" \
+            -d "{\"status\":\"completed\",\"conclusion\":\"${conclusion}\",\"output\":{\"title\":\"${title}\",\"summary\":\"${summary}\"}}"
 
   infer:
     needs: prepare

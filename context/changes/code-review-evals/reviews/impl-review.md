@@ -2,110 +2,91 @@
 
 # Implementation Review: Code Reviewer Evaluations
 
-> Historical snapshot: this review predates the follow-up fixes and manual evidence recorded below. Current status is in the follow-up section and [verification.md](../verification.md).
-
 - **Plan**: [plan.md](../plan.md)
-- **Scope**: Current working tree, including uncommitted changes; plan items 2.6–2.10 and 4.8; course evidence for lessons 22–24 and the 10xChampion submission.
-- **Reviewed phases**: 1–4 implementation state and evidence state.
+- **Scope**: Full plan; all completed phases.
+- **Reviewed phases**: 1, 2, 3, 4
 - **Date**: 2026-11-01
-- **Verdict**: NEEDS ATTENTION — 2.6, 2.8, 2.9, and 4.8 are implemented and evidenced; the 2.7 process-restart proof and the 2.10 deadline edge remain open; course evidence remains pending.
-- **Findings**: 0 critical, 6 warnings, 1 observation.
+- **Verdict**: APPROVED
+- **Findings**: 0 critical, 3 warnings, 1 observation
 
 ## Verdicts
 
-| Dimension           | Verdict                                                                                                         |
-| ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Plan adherence      | WARNING; the 2.7 ledger exists, but the exact restart/zero-fetch verification criterion is not proven.          |
-| Scope discipline    | PASS; no provider calls, hosted workflow dispatches, approval activation, or branch-protection changes.         |
-| Safety and quality  | WARNING; offline gates pass, but the production SDK error path has an uncovered deadline edge.                  |
-| Architecture        | PASS against the updated plan; runner/provider adaptations still need course-reviewer acceptance.               |
-| Pattern consistency | PASS; shared reviewer contract, deterministic assertions, and sanitized reporting are retained.                 |
-| Success criteria    | WARNING until 2.7 and 2.10 are verified, and 4.9, the SDK demonstration, and Champion screenshots are supplied. |
-
-## Completed implementation and evidence
-
-- **2.6 — implemented and recorded.** Reports include per-model confusion counts, denominators, and distinct-fixture outcomes. Holdout results: Luna TP/TN/FP/FN = 15/18/0/3 and 5/6 distinct defect cases hit; Sol = 18/18/0/0 and 6/6 hit. Repetitions are identified as response trials.
-- **Verdict versus text assertions — separated.** The seven failed historical assertions are three wrong verdicts (Luna case-09 repetitions 1–3) plus four verdict-matching text-anchor misses (Luna case-07 rep 1 and case-11 rep 3; Sol case-07 reps 1 and 3). Neither category scores unsupported allegations; that requires 4.9.
-- **2.7 — implementation present; verification proof incomplete.** A local comparison approval is atomically consumed in a durable filesystem ledger before Promptfoo starts. The test reuses the ledger twice in one process-like test and does not spawn a new process or assert zero fetches after restart, as the detailed plan criterion requires. Hosted one-shot comparisons remain fail-closed because the local ledger does not protect isolated workflow attempts. The checked-in approval is disabled.
-- **2.8 — implemented.** The trusted runner invokes the pinned Promptfoo CLI and custom provider as the matrix engine; deterministic assertions and the safe report boundary remain. The saved 72-row replay completed with 65 assertions passing, 7 failing, zero provider attempts, and `inferencePerformed: false`. Promptfoo's nonzero matrix result represents the seven reproduced assertion misses; the replay wrapper exits successfully after saving the artifact.
-- **2.9 — implemented.** Total evaluation elapsed time is reported separately from per-reviewer duration and covered by tests.
-- **2.10 — SDK integration present; deadline contract incomplete.** Vercel AI SDK 7 `ToolLoopAgent` with the OpenAI Responses provider replaces the direct transport. Offline tests cover request construction, status/output validation, usage, stalled main response, and sanitized metadata. The error handler can still await cloned-response metadata outside the deadline race; current tests do not cover an early SDK error with a stalled cloned body. No live SDK call was made.
-- **4.8 — evidence recorded.** Per-model confusion and distinct-case results are derived from the saved 72-response matrix in [verification.md](../verification.md); no new model call was used.
-- The implementation changes are uncommitted. Plan item 2.7 remains unchecked pending the restart/zero-fetch test. No Manual checkbox was changed by this review.
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | WARNING |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | PASS    |
 
 ## Findings
 
-### F1 — Human audit of 72 summaries remains open (4.9)
+### F1 — Manual dispatch can execute code from a non-master ref with the API key
 
 - **Severity**: ⚠️ WARNING
-- **Dimension**: Success criteria
-- **Location**: [plan.md](../plan.md:429), [verification.md](../verification.md:113)
-- **Detail**: No human audit of unsupported or unrelated allegations has been recorded. The four anchor misses are not that audit, and deterministic anchors cannot establish semantic support. The replay report records 0/72 summaries reviewed.
-- **Smallest next step**: Read the existing 72 summaries against their accepted oracles and record unsupported allegations separately from verdict misses and anchor misses. Make no provider calls. Keep 4.9 unchecked until the author completes it.
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Safety & Quality
+- **Location**: [.github/workflows/reviewer-evals.yml](../../../../.github/workflows/reviewer-evals.yml:43)
+- **Detail**: The `workflow_dispatch` event accepts a selected branch or tag. GitHub documents that `GITHUB_SHA` is the last commit on `GITHUB_REF`, and the API/CLI can dispatch against a non-default ref ([workflow_dispatch reference](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch), [manual dispatch](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow#running-a-workflow)). The prepare checkout falls back to `github.sha` at line 43, and the inference checkout does the same at line 138. For comparison mode, the workflow then runs the checked-out eval package with `OPENAI_API_KEY` available at lines 155–166. There is no guard requiring `github.ref == 'refs/heads/master'`. The author says they are the only person using this repository and accessing the key, so unauthorized third-party access is not the current threat; the remaining concern is accidentally dispatching from the wrong branch. The plan still requires the manual entrypoint to use trusted code, and the workflow test does not check the dispatch ref.
+- **Fix**: Reject manual dispatches unless the ref is `refs/heads/master` before checkout or any token/secret use; explicitly check out trusted `master` for comparisons and trusted PR base code for PR reruns, then add an offline test for a non-master ref.
+  - **Strength**: Restores the trusted-code boundary required by the plan.
+  - **Tradeoff**: Dispatches from other refs must be restarted from `master`.
+  - **Confidence**: HIGH — workflow expressions use the selected ref and no trusted-ref guard exists.
+  - **Blind spot**: I did not dispatch the workflow or access its secrets.
+- **Decision**: ACCEPTED — The author is the only repository user with access to the key and accepts the accidental wrong-ref risk for this solo setup. No code change was requested.
 
-### F2 — Live SDK communication proof remains pending (2.11)
-
-- **Severity**: ⚠️ WARNING
-- **Dimension**: Course evidence / success criteria
-- **Location**: [kurs_23.md](/home/ubuntu/10x/kurs_23.md:48), [plan.md](../plan.md:394)
-- **Detail**: The SDK is integrated and the offline adapter tests pass, but a fake fetch does not prove communication with a model. The saved 72-call authorization predates the SDK and does not authorize another request.
-- **Smallest next step**: If this proof is needed for the submission, obtain separate budget approval, run one synthetic-diff review through the SDK, and retain only sanitized output and usage. Keep 2.11 unchecked until then.
-
-### F3 — 10xChampion screenshots are absent (2.12)
+### F2 — An opened check can remain in progress indefinitely
 
 - **Severity**: ⚠️ WARNING
-- **Dimension**: Course evidence / success criteria
-- **Location**: [kurs_22.md](/home/ubuntu/10x/kurs_22.md:277), [archived run evidence](../../../archive/2026-10-29-ci-code-review/verification.md:92)
-- **Detail**: The archived evidence records successful run `41175988320`, check `124463575649`, and the PR #39 review comment. No screenshots were found for the pipeline/job, job logs, or LLM review comment.
-- **Smallest next step**: Capture those three views from the existing run and PR; this requires no model run. Keep 2.12 unchecked until the author supplies them.
+- **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
+- **Dimension**: Plan Adherence
+- **Location**: [.github/workflows/reviewer-evals.yml](../../../../.github/workflows/reviewer-evals.yml:212)
+- **Detail**: The workflow opens an `AI Reviewer Evals` check before fetch and preparation at lines 67–82. The `publish` job runs only if preparation succeeded and marked the PR eligible. If preparation fails after opening the check, or the PR is ineligible, publication is skipped and the check is never completed. Ineligible PRs are left with the “Trusted preparation is in progress” status instead of the explanation required by the plan.
+- **Fix**: Add an always-running finalizer that completes opened checks as failure after preparation errors, as a blocked failure with an explanation for ineligible PRs, and as cancelled when the preparation job is cancelled.
+  - **Strength**: Every opened check reaches a terminal, understandable result and ineligible cases remain blocked if this check later becomes required.
+  - **Tradeoff**: Adds a small GitHub Checks API update path to the preparation job.
+  - **Confidence**: HIGH — the finalizer runs after any earlier step failure and requires a known check ID.
+  - **Blind spot**: A GitHub API outage could still prevent the update after retries.
+- **Decision**: FIXED — Added the finalizer after artifact upload and an offline workflow contract test. The eval suite passed 31/31 and lint passed. No hosted workflow was dispatched.
 
-### F4 — Historical matrix provenance differs from the integrated course path
+### F3 — Approval digest omits the production SDK dependency manifests
 
 - **Severity**: ⚠️ WARNING
-- **Dimension**: Course evidence
-- **Location**: [kurs_24.md](/home/ubuntu/10x/kurs_24.md:572), [verification.md](../verification.md:170)
-- **Detail**: The historical 72-response matrix compares two models on twelve cases and records pass/fail assertions, estimated cost, and reviewer duration, but it ran through the earlier custom runner and direct HTTP transport. Current code uses Promptfoo for the matrix and Vercel AI SDK 7 for production review. The Promptfoo replay proves offline integration only; it does not turn historical responses into fresh Promptfoo/SDK inference evidence.
-- **Smallest next step**: Present both provenance facts and the replay report to the course reviewers. A new paid matrix is outside the current authorization; this review does not decide whether the adapted path is acceptable.
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Plan Adherence
+- **Location**: [runner.mjs](../../../../packages/ai-reviewer/evals/runner.mjs:14)
+- **Detail**: `runnerIdentityFiles` hashes the eval package manifest and lockfile, plus production reviewer source files, but omits `packages/ai-reviewer/package.json` and `packages/ai-reviewer/package-lock.json`. Those files select the `ai` and `@ai-sdk/openai` runtime dependencies. Updating them can change the transport used for inference without changing the `runnerDigest` bound to an approval. The checked-in approval is disabled, so this is a future approval identity gap rather than a current paid-run bypass.
+- **Fix**: Include the production reviewer manifest and lockfile in `runnerIdentityFiles`, and add a test proving that changing either changes the runner digest.
+  - **Strength**: Approval identities cover the pinned SDK dependency set.
+  - **Tradeoff**: Dependency changes require a fresh approval digest.
+  - **Confidence**: HIGH — both files are absent from the digest input list.
+  - **Blind spot**: Existing request and budget limits still apply.
+- **Decision**: FIXED — Added both production dependency manifests to the digest and an offline test that changes each file and verifies the digest changes. `npm run test:ai-review-evals` passed 32/32 and lint passed.
 
-### F5 — Custom runner remains the trusted boundary around Promptfoo
+### F4 — Historical six-case metrics link to the 72-case holdout report
 
 - **Severity**: 👁 OBSERVATION
-- **Dimension**: Course alignment / architecture
-- **Location**: [runner.mjs](../../../../packages/ai-reviewer/evals/runner.mjs:79), [kurs_24.md](/home/ubuntu/10x/kurs_24.md:572)
-- **Detail**: Promptfoo is now the actual matrix engine, but `runner.mjs` still performs approval, budget, invocation, and report duties. This separation is intentional in the plan and tested offline. The historical result came from the custom runner directly. Whether the course expects Promptfoo to own more of the workflow, or accepts this controlled wrapper, is for the instructors to decide.
-- **Smallest next step**: Include the implementation and historical-run distinction in the submission; request an instructor decision only if acceptance remains unclear. No code change is indicated by the current project plan.
-
-### F6 — Local approval replay is not tested across a process restart
-
-- **Severity**: ⚠️ WARNING
-- **Dimension**: Plan adherence / verification coverage
-- **Location**: [policy.test.mjs](../../../../packages/ai-reviewer/evals/test/policy.test.mjs:131), [plan.md](../plan.md:191)
-- **Detail**: The ledger implementation uses exclusive file creation and fsync, and the runner consumes a comparison approval before spawning Promptfoo. The current test calls the consume function twice in the same process against a temporary directory. It does not prove that a new process rejects the same approval or that the integrated replay path makes zero provider fetches after restart, as the plan's automated success criterion requires. This is a verification gap; the inspected code path appears fail-closed.
-- **Smallest next step**: Add an offline child-process test that consumes the approval once, starts a second process with the same ledger and approval, and verifies rejection before the fake provider is called. Keep automated item 2.7 unchecked until this evidence exists.
-
-### F7 — SDK error handling can wait beyond the configured deadline
-
-- **Severity**: ⚠️ WARNING
-- **Dimension**: Safety and quality / plan adherence
-- **Location**: [openai.mjs](../../../../packages/ai-reviewer/src/providers/openai.mjs)
-- **Detail**: `requestReview()` races its main operation against the deadline, but its outer `catch` awaits `responseBodyMetadataPromise` after that race rejects. If the SDK rejects before the cloned response stream finishes and the abort timer has not yet fired, this wait is no longer bounded by the race; a stalled stream can extend the call past `deadlineMs`. Existing tests cover a stalled main response and a delayed successful body, not an early provider error with a stalled metadata clone. This conflicts with the 2.10 deadline contract.
-- **Smallest next step**: Remove the unbounded await or bound it by the same deadline while preserving sanitized error behavior. Add an offline test where the SDK fails early and the cloned error body stalls; assert the call resolves as a deadline error within the configured limit. Keep 2.10 unchecked until fixed and verified.
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Success Criteria
+- **Location**: [verification.md](../verification.md:55)
+- **Detail**: The “Observed comparison report” section records the historical 36-response run and links to `packages/ai-reviewer/evals/reports/report.json`. The available report at that path has a 72-response manifest for cases 07–18; it does not support the adjacent 36-response historical figures. Generated reports are ignored by Git, and no separate 36-response report is retained in the change. The documented figures may be correct, but this link does not let another reviewer verify them.
+- **Fix**: Point to a retained historical artifact if one exists; otherwise label the figures as transcribed historical evidence and remove the misleading source link.
+  - **Strength**: Makes the evidence boundary clear without implying a second model run.
+  - **Tradeoff**: The original raw matrix may not be recoverable.
+  - **Confidence**: MEDIUM — the current local report is definitively the holdout report; no separate historical report was found in the tracked change.
+  - **Blind spot**: The author may have an external copy of the original report.
+- **Decision**: FIXED — Clarified that the 36-response figures are transcribed from historical run notes and removed the misleading link to the 72-response holdout report. No model calls were made.
 
 ## Verification performed
 
-- `npm run test:ai-review`: PASS, 52/52.
-- `npm run test:ai-review-evals`: PASS, 31/31, including Promptfoo no-network replay and offline fake compare/gate execution.
+- `npm run test:ai-review-evals`: PASS, 31/31. One test intentionally invoked invalid Git tree data and printed `fatal: not a tree object`; the containing test passed.
+- `npm run test:ai-review`: PASS, 53/53.
 - `npm run lint`: PASS.
-- `npm run build`: PASS; Astro skips sitemap generation because `site` is not configured.
+- `npm run build`: PASS. Astro skipped sitemap generation because `site` is not configured.
+- After F2 was fixed, `npm run test:ai-review-evals`: PASS, 31/31; `npm run lint`: PASS.
+- After F3 was fixed, `npm run test:ai-review-evals`: PASS, 32/32; `npm run lint`: PASS.
 - `git diff --check`: PASS.
-- No paid provider calls or hosted workflow dispatches were made; no Manual checkbox was changed.
+- Manual progress items are complete as recorded. Phase 3.5 is marked not applicable because no hosted evaluation was requested; no hosted run, new model call, recurring approval, or branch-protection change was made.
 
-## Follow-up verification (2026-11-01)
-
-- **2.7 resolved:** The policy test now starts separate processes against the same durable ledger. The replay process is rejected with `APPROVAL_CONSUMED` before the fake provider fetch; the test also confirms the processes have different PIDs.
-- **2.10 resolved:** Cloned error-response metadata is bounded by the request deadline. The new stalled-clone test returns `DEADLINE_EXCEEDED` and confirms one provider attempt.
-- **2.11 complete:** After separate author approval, one SDK-backed synthetic-diff request completed. Sanitized output and usage are in [sdk-smoke.json](sdk-smoke.json); the author confirmed the result.
-- **2.12 complete:** The existing successful PR #39 pipeline, reviewer job/log, and review comment were captured in the adjacent screenshots.
-- **4.9 complete:** The author reviewed all 72 saved summaries case by case; no unsupported or unrelated allegations were recorded. The grouped audit is in [summary-audit.md](summary-audit.md). No additional provider requests were made.
-
-The follow-up implementation gates passed: `npm run test:ai-review` (53/53), `npm run test:ai-review-evals` (31/31), `npm run lint`, and `npm run build`. The historical report above is retained as a record of the state at the original review, not the current verdict.
+The file-scope comparison covered the change history from the reviewed plan through the current head. I found no confirmed unplanned changed paths; fixture, workflow, reviewer-package, and evidence changes map to the planned phases.
