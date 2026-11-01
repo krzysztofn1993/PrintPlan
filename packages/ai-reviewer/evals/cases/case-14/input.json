@@ -1,0 +1,7 @@
+{
+  "title": "Check each returned reservation amount against the configured material margin",
+  "body": "This change validates both server-returned reservation fields against required grams after applying the configured percentage margin and rounding upward to a whole gram. Review whether both fields are covered.",
+  "diff": "diff --git a/src/reservation-update.mjs b/src/reservation-update.mjs\nindex d810900..e6d5345 100644\n--- a/src/reservation-update.mjs\n+++ b/src/reservation-update.mjs\n@@ -1,3 +1,4 @@\n export function acceptsReservation(requiredGrams, marginPercent, response) {\n-  return Number.isFinite(response.recordedGrams) && Number.isFinite(response.availableGrams);\n+  const expected = Math.ceil((requiredGrams * (100 + marginPercent)) / 100);\n+  return response.recordedGrams === expected && response.availableGrams === expected;\n }\n",
+  "paths": ["src/reservation-update.mjs"],
+  "unreviewedPaths": []
+}

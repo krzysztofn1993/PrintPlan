@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "fail",
+  "changedLocation": "src/settlement-stock.mjs: changed behavior",
+  "mechanism": "The changed remainingStock calculation subtracts actual consumption without the zero clamp, so recorded stock 100 g and actual use 130 g leaves -30 g instead of 0 g.",
+  "trigger": "The spool estimate is 100 g and the completed print consumed 130 g.",
+  "expectedBehavior": "The estimate is clamped to 0 g when consumption exceeds the recorded estimate.",
+  "incorrectBehavior": "The remaining estimate becomes -30 g, an invalid negative stock value.",
+  "reproduction": "Call the before and after fixture with {\"recorded\": 100, \"actual\": 130}; compare the result to verify the described behavior.",
+  "unacceptableAllegations": [
+    "the fixture directly executes a production database migration",
+    "the fixture proves unrelated application behavior"
+  ]
+}

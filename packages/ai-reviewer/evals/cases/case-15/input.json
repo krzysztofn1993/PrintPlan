@@ -1,0 +1,7 @@
+{
+  "title": "Avoid claiming that a conflicting retry was rejected",
+  "body": "This change updates the message shown after an exact-version conflict during retry. A conflict may happen after the first request already committed. Please review whether the message accurately describes that state.",
+  "diff": "diff --git a/src/recovery-message.mjs b/src/recovery-message.mjs\nindex c35bc02..ae8ef5d 100644\n--- a/src/recovery-message.mjs\n+++ b/src/recovery-message.mjs\n@@ -1,3 +1,3 @@\n export function recoveryMessage() {\n-  return \"Your submitted version is not current. The original request may have completed.\";\n+  return \"The request was rejected. Try again.\";\n }\n",
+  "paths": ["src/recovery-message.mjs"],
+  "unreviewedPaths": []
+}

@@ -1,0 +1,9 @@
+diff --git a/src/recovery-message.mjs b/src/recovery-message.mjs
+index ae8ef5d..c35bc02 100644
+--- a/src/recovery-message.mjs
++++ b/src/recovery-message.mjs
+@@ -1,3 +1,3 @@
+ export function recoveryMessage() {
+-  return "The request was rejected. Try again.";
++  return "Your submitted version is not current. The original request may have completed.";
+ }

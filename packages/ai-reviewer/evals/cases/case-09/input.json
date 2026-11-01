@@ -1,0 +1,7 @@
+{
+  "title": "Preserve unsaved print edits when retrying a failed list refresh",
+  "body": "This change updates the generic retry action shown after a print-list read fails. A user may still have unsaved values in an open edit form while the list is stale. Please review whether retrying the read protects those edits.",
+  "diff": "diff --git a/src/components/prints/PrintList.tsx b/src/components/prints/PrintList.tsx\n--- a/src/components/prints/PrintList.tsx\n+++ b/src/components/prints/PrintList.tsx\n@@ -1,9 +1,13 @@\n-function refreshList({ confirmDiscard, loadLatest }) {\n-  if (!confirmDiscard()) return false;\n+function refreshList({ conflictId, confirmDiscard, loadLatest }) {\n+  if (!conflictId && !confirmDiscard()) return false;\n   loadLatest();\n   return true;\n }\n-\n+\n-export function retryListRefresh({ confirmDiscard, loadLatest }) {\n-  return refreshList({ confirmDiscard, loadLatest });\n+export function retryListRefresh({ editingPrintId, confirmDiscard, loadLatest }) {\n+  return refreshList({\n+    conflictId: editingPrintId ?? undefined,\n+    confirmDiscard,\n+    loadLatest,\n+  });\n }\n",
+  "paths": ["src/components/prints/PrintList.tsx"],
+  "unreviewedPaths": []
+}

@@ -1,0 +1,7 @@
+{
+  "title": "Adjust reservation capacity checks",
+  "body": "Reuses the current reservation while checking the capacity for an edited print.",
+  "diff": "diff --git a/src/reservation-capacity.mjs b/src/reservation-capacity.mjs\nindex 4444444..5555555 100644\n--- a/src/reservation-capacity.mjs\n+++ b/src/reservation-capacity.mjs\n@@ -1,6 +1,6 @@\n export function resizeReservation({ recorded, otherHolds, ownHold, requested }) {\n-  const capacity = recorded - otherHolds;\n+  const capacity = recorded - otherHolds - ownHold;\n   if (requested <= capacity) return { status: \"retained\", grams: requested };\n   if (ownHold <= capacity) return { status: \"retained\", grams: ownHold };\n   return { status: \"released\", grams: 0 };\n }\n",
+  "paths": ["src/reservation-capacity.mjs"],
+  "unreviewedPaths": []
+}

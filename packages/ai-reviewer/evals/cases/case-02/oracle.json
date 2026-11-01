@@ -1,0 +1,11 @@
+{
+  "sourceRevision": "controlled-fixture-v1",
+  "expectedVerdict": "fail",
+  "changedLocation": "src/spool-availability.mjs:getAvailableGrams return expression",
+  "mechanism": "addition counts reserved grams as available instead of subtracting them",
+  "trigger": "recordedGrams=150 and reservedGrams=88",
+  "expectedBehavior": "available material is 62 g",
+  "incorrectBehavior": "the changed expression reports 238 g and may permit an over-reservation",
+  "reproduction": "Call getAvailableGrams({recordedGrams:150,reservedGrams:88}); the before version returns 62 and the changed version returns 238.",
+  "unacceptableAllegations": ["input validation was removed", "negative values are accepted"]
+}
