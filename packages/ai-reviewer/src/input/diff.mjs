@@ -7,7 +7,7 @@ export function collectDiff({ cwd, head, base, title, body = "", git = execFileS
     git("git", ["-c", "core.hooksPath=/dev/null", "-c", "diff.external=", ...args], {
       cwd,
       encoding: "utf8",
-      maxBuffer: 1024 * 1024,
+      maxBuffer: 1_572_864,
       env: {
         PATH: process.env.PATH,
         GIT_CONFIG_NOSYSTEM: "1",
