@@ -258,21 +258,23 @@ test("trusted preparation through fake provider to publication binds head/base/m
     apiKey: "fake-provider-key",
     fetchImpl: async () => {
       calls++;
-      return {
-        ok: true,
-        json: async () => ({
+      return new globalThis.Response(
+        JSON.stringify({
           status: "completed",
           id: "resp_combined",
           output: [
             {
+              id: "msg_combined",
               type: "message",
               role: "assistant",
               status: "completed",
-              content: [{ type: "output_text", text: JSON.stringify(envelope().review) }],
+              content: [{ type: "output_text", text: JSON.stringify(envelope().review), annotations: [] }],
             },
           ],
+          usage: { input_tokens: 1, output_tokens: 2, total_tokens: 3 },
         }),
-      };
+        { status: 200, headers: { "content-type": "application/json", "x-request-id": "resp_combined" } },
+      );
     },
   });
   assert.equal(calls, 1);
