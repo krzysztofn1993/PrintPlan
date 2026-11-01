@@ -27,6 +27,15 @@ test("candidate evaluation is trusted-base PR target without path filters", () =
     workflow.jobs.prepare.steps.findIndex((step) => step.name === "Open pending check before fallible preparation") <
       workflow.jobs.prepare.steps.findIndex((step) => step.name === "Fetch PR head as Git data"),
   );
+  const finalizer = workflow.jobs.prepare.steps.at(-1);
+  assert.equal(finalizer.name, "Complete pending check if preparation cannot continue");
+  assert.match(finalizer.if, /always\(\).*failure\(\).*cancelled\(\).*steps\.prepare\.outputs\.eligible/s);
+  assert.match(finalizer.if, /steps\.open-check\.outputs\.check_id/);
+  assert.match(finalizer.run, /status\\":\\"completed/);
+  assert.match(finalizer.run, /conclusion="failure"/);
+  assert.match(finalizer.run, /Reviewer evaluation blocked/);
+  assert.match(finalizer.run, /not eligible for evaluation/);
+  assert.match(finalizer.run, /Reviewer evaluation preparation failed/);
   const secretSteps = workflow.jobs.infer.steps.filter((step) => step.env?.OPENAI_API_KEY);
   assert.equal(secretSteps.length, 1);
   assert.equal(secretSteps[0].env.OPENAI_API_KEY, "${{ secrets.OPENAI_API_KEY }}");

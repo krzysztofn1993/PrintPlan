@@ -52,7 +52,7 @@ The report records that the comparison ran with one-time approval ID `printplan-
 
 ## Observed comparison report
 
-Source: [`packages/ai-reviewer/evals/reports/report.json`](../../../packages/ai-reviewer/evals/reports/report.json). Report manifest prompt digest: `7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631`.
+The figures below are transcribed from the original six-case run notes. Its raw 36-response report is not retained in this change. The generated `packages/ai-reviewer/evals/reports/report.json` now contains the later 72-response holdout run, so it is not a source for the historical figures below. The prompt digest recorded for the original run was `7e5260d50a6b4d8d42688efc9f07e1faa4b99f6f15f815d540d5b67e8e301631`.
 
 | Measure                             | Observed result         |
 | ----------------------------------- | ----------------------- |

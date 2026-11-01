@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { cli, runEvaluation, runOfflineFakeMatrix } from "../runner.mjs";
+import { cli, runEvaluation, runOfflineFakeMatrix, runnerDigest, runnerIdentityFiles } from "../runner.mjs";
 import { digest } from "../policy.mjs";
 import { ALL_CASE_IDS, HOLDOUT_CASE_IDS } from "../cases/catalog.mjs";
 
@@ -72,6 +73,29 @@ function successfulReviewer(order) {
     };
   };
 }
+
+test("runner digest binds production reviewer package manifest and lockfile", async () => {
+  const sandbox = await mkdtemp(join(tmpdir(), "ai-reviewer-runner-digest-"));
+  const evalRoot = join(sandbox, "packages/ai-reviewer/evals");
+  try {
+    for (const path of runnerIdentityFiles) {
+      const file = resolve(evalRoot, path);
+      await mkdir(dirname(file), { recursive: true });
+      await writeFile(file, `fixture:${path}`);
+    }
+
+    const initial = await runnerDigest(evalRoot);
+    await writeFile(resolve(evalRoot, "../package.json"), "changed production manifest");
+    const manifestChanged = await runnerDigest(evalRoot);
+    assert.notEqual(manifestChanged, initial);
+
+    await writeFile(resolve(evalRoot, "../package-lock.json"), "changed production lockfile");
+    const lockfileChanged = await runnerDigest(evalRoot);
+    assert.notEqual(lockfileChanged, manifestChanged);
+  } finally {
+    await rm(sandbox, { recursive: true, force: true });
+  }
+});
 
 test("fake holdout comparison runs exactly 72 or 108 calls in fixed model/case/repetition order", async () => {
   for (const selected of [models]) {

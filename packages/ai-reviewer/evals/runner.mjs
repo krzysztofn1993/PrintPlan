@@ -11,7 +11,7 @@ import { buildReport, writeReport } from "./report.mjs";
 import { ALL_CASE_IDS, HOLDOUT_CASE_IDS } from "./cases/catalog.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const runnerIdentityFiles = [
+export const runnerIdentityFiles = Object.freeze([
   "runner.mjs",
   "policy.mjs",
   "assertions.mjs",
@@ -20,6 +20,8 @@ const runnerIdentityFiles = [
   "promptfooconfig.mjs",
   "package.json",
   "package-lock.json",
+  "../package.json",
+  "../package-lock.json",
   "cases/catalog.mjs",
   "approval.schema.json",
   "github/checks.mjs",
@@ -33,11 +35,11 @@ const runnerIdentityFiles = [
   "../src/contracts/validate.mjs",
   "../src/contracts/review.schema.json",
   "../../../.github/workflows/reviewer-evals.yml",
-];
+]);
 
-async function runnerDigest() {
+export async function runnerDigest(baseDir = root) {
   const entries = await Promise.all(
-    runnerIdentityFiles.map(async (path) => [path, await readFile(resolve(root, path), "utf8")]),
+    runnerIdentityFiles.map(async (path) => [path, await readFile(resolve(baseDir, path), "utf8")]),
   );
   return digest(entries);
 }

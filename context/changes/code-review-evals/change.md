@@ -1,7 +1,7 @@
 ---
 change_id: code-review-evals
 title: Evaluate the static code reviewer
-status: implemented
+status: impl_reviewed
 created: 2026-11-01
 updated: 2026-11-01
 archived_at: null
