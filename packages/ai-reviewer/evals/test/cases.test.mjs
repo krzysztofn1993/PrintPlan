@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
+import { promisify } from "node:util";
 import { assembleInput } from "../../src/core/review.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../cases");
 const oracleTerms = /expectedVerdict|mechanism|trigger|incorrectBehavior|unacceptableAllegations|238|91 g|88 g/i;
+const execFileAsync = promisify(execFile);
 
 test("the frozen corpus has six development and twelve holdout reviewable cases", async () => {
   const ids = (await readdir(root, { withFileTypes: true }))
@@ -39,6 +42,43 @@ test("the frozen corpus has six development and twelve holdout reviewable cases"
     const modelInput = assembleInput(input);
     assert.equal(Object.keys(JSON.parse(modelInput)).sort().join(","), "body,diff,paths,title,unreviewedPaths");
     assert.doesNotMatch(modelInput, oracleTerms);
+  }
+});
+
+test("each frozen diff matches its input and applies from before to after", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "printplan-ai-review-evals-"));
+  try {
+    await execFileAsync("git", ["init", "--quiet"], { cwd: scratch });
+    const ids = (await readdir(root, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+
+    for (const id of ids) {
+      const dir = join(root, id);
+      const input = JSON.parse(await readFile(join(dir, "input.json"), "utf8"));
+      const [before, after, patch] = await Promise.all(
+        ["before.mjs", "after.mjs", "diff.patch"].map((name) => readFile(join(dir, name), "utf8")),
+      );
+      assert.equal(input.diff, patch, `${id}: model input contains the checked-in patch`);
+
+      const target = resolve(scratch, input.paths[0]);
+      assert.ok(target.startsWith(`${scratch}/`), `${id}: patch path stays inside scratch directory`);
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, before);
+      const patchPath = join(scratch, "fixture.patch");
+      await writeFile(patchPath, patch);
+
+      await assert.doesNotReject(
+        () => execFileAsync("git", ["apply", "--check", patchPath], { cwd: scratch }),
+        undefined,
+        `${id}: patch applies cleanly to before.mjs`,
+      );
+      await execFileAsync("git", ["apply", patchPath], { cwd: scratch });
+      assert.equal(await readFile(target, "utf8"), after, `${id}: patch produces after.mjs`);
+    }
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
   }
 });
 

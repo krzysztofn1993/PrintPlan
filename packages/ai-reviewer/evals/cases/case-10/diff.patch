@@ -1,7 +1,7 @@
 diff --git a/src/components/prints/PrintList.tsx b/src/components/prints/PrintList.tsx
 --- a/src/components/prints/PrintList.tsx
 +++ b/src/components/prints/PrintList.tsx
-@@ -1,14 +1,10 @@
+@@ -1,13 +1,9 @@
 -function refreshList({ conflictId, confirmDiscard, loadLatest }) {
 -  if (!conflictId && !confirmDiscard()) return false;
 +function refreshList({ confirmDiscard, loadLatest }) {
