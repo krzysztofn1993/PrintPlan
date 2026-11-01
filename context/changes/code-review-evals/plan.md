@@ -325,10 +325,10 @@ No application or database migration is needed. Land the runner and disabled pol
 
 #### Automated
 
-- [x] 3.1 Workflow contract tests prove trusted-base execution, fixed-path blob extraction, rejection of symlink/deleted/oversized prompts, isolated secret/token permissions, locked installs, and no head-code execution.
-- [x] 3.2 Check lifecycle tests cover unchanged prompt with zero calls, changed prompt with nine expected results, unauthorized owner/fork/bot with no secret use, missing approval/artifacts, invalid provenance, stale head/base, duplicate delivery, and newer attempts.
-- [x] 3.3 Offline integration tests show a candidate prompt changes request text/digest, candidate runner/assertion/corpus/policy edits do not execute in privileged inference, and reports persist on failed evals without changing the production check.
-- [x] 3.4 Candidate offline eval tests and existing reviewer tests pass through CI; `npm run lint` and `npm run build` pass.
+- [x] 3.1 Workflow contract tests prove trusted-base execution, fixed-path blob extraction, rejection of symlink/deleted/oversized prompts, isolated secret/token permissions, locked installs, and no head-code execution. — 4f68f47
+- [x] 3.2 Check lifecycle tests cover unchanged prompt with zero calls, changed prompt with nine expected results, unauthorized owner/fork/bot with no secret use, missing approval/artifacts, invalid provenance, stale head/base, duplicate delivery, and newer attempts. — 4f68f47
+- [x] 3.3 Offline integration tests show a candidate prompt changes request text/digest, candidate runner/assertion/corpus/policy edits do not execute in privileged inference, and reports persist on failed evals without changing the production check. — 4f68f47
+- [x] 3.4 Candidate offline eval tests and existing reviewer tests pass through CI; `npm run lint` and `npm run build` pass. — 4f68f47
 
 #### Manual
 
