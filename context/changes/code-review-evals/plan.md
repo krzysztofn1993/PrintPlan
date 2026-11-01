@@ -383,16 +383,16 @@ No application or database migration is needed. The runner and trusted workflow 
 - [x] 2.3a Verify the updated 72/108 holdout comparison and 54-cell full-corpus gate offline. — 27/27, 2026-11-01.
 - [x] 2.4 Report tests verify confusion matrices, denominators, pass/fail distinction, timing units, uncached price arithmetic, missing-usage handling, partial runs, and safe JSON/HTML exports. — 2ba002e
 - [x] 2.5 `npm run test:ai-review`, `npm run lint`, and `npm run build` pass with production reviewer behavior unchanged. — 2ba002e
-- [x] 2.6 Add per-model confusion matrices, distinct-fixture outcomes, and clear repetition denominators; test verdict errors separately from human-scored unsupported allegations. — `verification.md`; native eval suite 31/31.
-- [x] 2.7 Bind local comparison approvals to one invocation and durably consume them; prove local replay is rejected before any provider request after a process restart. Hosted comparison remains fail-closed until cross-run claiming exists. — separate-process replay test confirms the second process is rejected before any provider request.
-- [x] 2.8 Use Promptfoo as the actual matrix engine behind the trusted runner and add a no-network replay of saved results; retain deterministic assertions and the approval/budget/report boundary. — Promptfoo replay plus fake compare/gate tests, eval suite 31/31.
-- [x] 2.9 Record total evaluation-run elapsed time separately from production-envelope reviewer duration and test the timing contract. — timing report tests, eval suite 31/31.
-- [x] 2.10 Migrate the production reviewer transport to Vercel AI SDK 7 while preserving the Responses contract and request deadline; do not make a live request. — cloned error-response metadata is bounded by the deadline and covered by an offline stalled-body test.
+- [x] 2.6 Add per-model confusion matrices, distinct-fixture outcomes, and clear repetition denominators; test verdict errors separately from human-scored unsupported allegations. — `verification.md`; native eval suite 31/31; 7c8aae6.
+- [x] 2.7 Bind local comparison approvals to one invocation and durably consume them; prove local replay is rejected before any provider request after a process restart. Hosted comparison remains fail-closed until cross-run claiming exists. — separate-process replay test confirms the second process is rejected before any provider request; 7c8aae6.
+- [x] 2.8 Use Promptfoo as the actual matrix engine behind the trusted runner and add a no-network replay of saved results; retain deterministic assertions and the approval/budget/report boundary. — Promptfoo replay plus fake compare/gate tests, eval suite 31/31; 7c8aae6.
+- [x] 2.9 Record total evaluation-run elapsed time separately from production-envelope reviewer duration and test the timing contract. — timing report tests, eval suite 31/31; 7c8aae6.
+- [x] 2.10 Migrate the production reviewer transport to Vercel AI SDK 7 while preserving the Responses contract and request deadline; do not make a live request. — cloned error-response metadata is bounded by the deadline and covered by an offline stalled-body test; 7c8aae6.
 
 #### Manual
 
-- [x] 2.11 After separate budget approval, demonstrate one SDK-backed review of a synthetic diff and retain its sanitized output and usage. This is a course communication proof; it is not authorized by the saved 72-call comparison.
-- [x] 2.12 Capture the existing successful PR #39 pipeline/job view, logs, and LLM review comment as 10xChampion evidence; do not start a new model run.
+- [x] 2.11 After separate budget approval, demonstrate one SDK-backed review of a synthetic diff and retain its sanitized output and usage. This is a course communication proof; it is not authorized by the saved 72-call comparison. — 7c8aae6
+- [x] 2.12 Capture the existing successful PR #39 pipeline/job view, logs, and LLM review comment as 10xChampion evidence; do not start a new model run. — 7c8aae6
 
 ### Phase 3: Trusted GitHub Actions and bootstrap
 

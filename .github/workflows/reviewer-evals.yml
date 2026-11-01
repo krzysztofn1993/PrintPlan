@@ -158,6 +158,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EVAL_APPROVAL_FILE: packages/ai-reviewer/evals/approval.json
+          EVAL_IDENTITY_FILE: ${{ (github.event_name == 'pull_request_target' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pull-request')) && format('{0}/eval-input/eval-identity.json', runner.temp) || '' }}
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "${{ inputs.mode }}" == "comparison" ]]; then
             npm --prefix packages/ai-reviewer/evals run compare
