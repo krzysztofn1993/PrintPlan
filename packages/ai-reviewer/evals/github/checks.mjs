@@ -1,5 +1,6 @@
 export const EVAL_CHECK_NAME = "AI Reviewer Evals";
 export const EVAL_WORKFLOW = ".github/workflows/reviewer-evals.yml";
+const gateCases = Array.from({ length: 18 }, (_, index) => `case-${String(index + 1).padStart(2, "0")}`);
 
 export async function openEvalCheck(client, identity) {
   return client.request("POST", "/check-runs", {
@@ -28,15 +29,17 @@ export function validateEvalMatrix(report, expected) {
     !report ||
     report.manifest?.promptDigest !== expected.promptDigest ||
     report.manifest?.mode !== "gate" ||
-    report.manifest?.planned !== 9 ||
-    report.matrix?.length !== 9
+    report.manifest?.planned !== 54 ||
+    report.manifest?.caseIds?.length !== 18 ||
+    gateCases.some((id, index) => report.manifest.caseIds[index] !== id) ||
+    report.matrix?.length !== 54
   )
     return false;
   const cells = new Set();
   for (const row of report.matrix) {
     const key = `${row.caseId}/${row.repetition}`;
     if (
-      !["case-01", "case-02", "case-03"].includes(row.caseId) ||
+      !gateCases.includes(row.caseId) ||
       !Number.isInteger(row.repetition) ||
       row.repetition < 1 ||
       row.repetition > 3 ||
@@ -47,5 +50,5 @@ export function validateEvalMatrix(report, expected) {
       return false;
     cells.add(key);
   }
-  return cells.size === 9;
+  return cells.size === 54;
 }

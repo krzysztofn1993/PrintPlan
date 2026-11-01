@@ -137,14 +137,25 @@ test("eligibility and provenance are scoped to the eval workflow and complete ma
     false,
   );
   const promptDigest = "c".repeat(64);
-  const matrix = Array.from({ length: 9 }, (_, index) => ({
-    caseId: `case-0${Math.floor(index / 3) + 1}`,
+  const matrix = Array.from({ length: 54 }, (_, index) => ({
+    caseId: `case-${String(Math.floor(index / 3) + 1).padStart(2, "0")}`,
     repetition: (index % 3) + 1,
     status: "pass",
     promptDigest,
   }));
   assert.equal(
-    validateEvalMatrix({ manifest: { promptDigest, mode: "gate", planned: 9 }, matrix }, { promptDigest }),
+    validateEvalMatrix(
+      {
+        manifest: {
+          promptDigest,
+          mode: "gate",
+          planned: 54,
+          caseIds: Array.from({ length: 18 }, (_, index) => `case-${String(index + 1).padStart(2, "0")}`),
+        },
+        matrix,
+      },
+      { promptDigest },
+    ),
     true,
   );
   assert.equal(validateEvalMatrix({ promptDigest, matrix: [] }, { promptDigest }), false);
@@ -159,7 +170,15 @@ test("eligibility and provenance are scoped to the eval workflow and complete ma
       pull_requests: [{ number: 7 }],
     },
     livePR: { state: "open", head: { sha: identity.head }, base: { sha: "b".repeat(40) } },
-    report: { manifest: { promptDigest, mode: "gate", planned: 9 }, matrix },
+    report: {
+      manifest: {
+        promptDigest,
+        mode: "gate",
+        planned: 54,
+        caseIds: Array.from({ length: 18 }, (_, index) => `case-${String(index + 1).padStart(2, "0")}`),
+      },
+      matrix,
+    },
   };
   assert.deepEqual(evaluatePublication(publication), { conclusion: "success", reason: "ALL_CASES_PASSED" });
   assert.equal(
