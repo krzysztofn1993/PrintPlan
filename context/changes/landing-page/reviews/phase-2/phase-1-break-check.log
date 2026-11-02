@@ -1,0 +1,6 @@
+
+> 10x-astro-starter@0.0.1 smoke
+> node scripts/smoke.mjs
+
+FAIL  local preview responds — Expected HTTP 200 from the app
+Smoke failed: Smoke stopped after a failed prerequisite

@@ -22,6 +22,9 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
         <span class="carbon-landing-brand-suffix">/ FILAMENT WORKSPACE</span>
       </a>
       <nav aria-label="Account navigation" class="carbon-landing-nav">
+        <a href="#workflow" class="carbon-terminal-link">
+          How it works
+        </a>
         {user ? (
           <a href="/dashboard" class="carbon-terminal-link">
             Open dashboard <span aria-hidden="true">↗</span>
@@ -68,7 +71,182 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
           </div>
           <p class="carbon-landing-micro">Manual inputs. Clear numbers. Built for hobbyists.</p>
         </div>
+        <figure
+          class="carbon-panel carbon-panel-highlight carbon-landing-preview"
+          aria-label="Filament stock application preview with fictional data"
+        >
+          <figcaption class="carbon-landing-preview-heading">
+            <span>FILAMENT STOCK / APPLICATION PREVIEW</span>
+            <span class="carbon-landing-tag">SAMPLE DATA</span>
+          </figcaption>
+          <picture>
+            <source media="(max-width: 600px)" srcset="/landing/filament-stock-mobile.png" width="390" height="1436" />
+            <img
+              src="/landing/filament-stock-desktop.png"
+              width="1440"
+              height="700"
+              alt="PrintPlan Filament stock: sidebar navigation, Your spools and the inventory table. PLA Coral has 150 g recorded, 88 g reserved and 62 g available; PETG Black has 420 g recorded, 0 g reserved and 420 g available. Each spool has Edit and Delete actions."
+            />
+          </picture>
+          <p class="carbon-landing-preview-note">
+            Actual inventory component rendered with fictional records. Static preview; controls in the image are not
+            interactive.
+          </p>
+        </figure>
+      </section>
+
+      <section id="workflow" class="carbon-landing-workflow" aria-labelledby="workflow-title">
+        <div class="carbon-landing-section-heading">
+          <div>
+            <p class="carbon-label">A SMALL ROUTINE. A CLEARER WORKBENCH.</p>
+            <h2 id="workflow-title">From spool to finished print.</h2>
+          </div>
+          <span class="carbon-landing-section-number" aria-hidden="true">
+            01 — 03
+          </span>
+        </div>
+        <div class="carbon-landing-steps">
+          <article>
+            <span class="carbon-landing-step-number">01 / RECORD</span>
+            <h3>Know your starting point.</h3>
+            <p>
+              Add your spools and estimated grams remaining. See recorded, reserved and available material separately.
+            </p>
+          </article>
+          <article>
+            <span class="carbon-landing-step-number">02 / RESERVE</span>
+            <h3>Give the next job its share.</h3>
+            <p>
+              Enter a print’s requirements. Use best-fit or choose an eligible spool, with your configured safety
+              margin.
+            </p>
+          </article>
+          <article>
+            <span class="carbon-landing-step-number">03 / SETTLE</span>
+            <h3>Close the loop.</h3>
+            <p>
+              Record actual consumption when the print is done. Update your recorded stock and release its reservation.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="carbon-landing-details" aria-labelledby="details-title">
+        <div class="carbon-landing-detail-intro">
+          <p class="carbon-label">THE NUMBERS HAVE DIFFERENT JOBS</p>
+          <h2 id="details-title">
+            A useful estimate.
+            <br />
+            An intentional plan.
+          </h2>
+          <p>
+            You supply the stock estimate. PrintPlan keeps track of what is already spoken for, so the same recorded
+            grams aren’t promised twice.
+          </p>
+        </div>
+        <div class="carbon-landing-detail-list">
+          <article>
+            <span aria-hidden="true">↳</span>
+            <div>
+              <h3>Choose the spool that suits the job.</h3>
+              <p>
+                Best-fit suggests an eligible spool based on material, colour and available grams. You can choose
+                another eligible spool before confirming.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span aria-hidden="true">↳</span>
+            <div>
+              <h3>Leave room for a safety margin.</h3>
+              <p>
+                The account margin starts at 10% and can be adjusted. Changing it alone leaves existing reservations
+                unchanged.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span aria-hidden="true">↳</span>
+            <div>
+              <h3>Keep plans consistent after printing.</h3>
+              <p>
+                If actual consumption leaves too little recorded stock for other reservations, PrintPlan cancels the
+                newest ones first and tells you what changed.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="carbon-landing-estimate" aria-labelledby="estimate-title">
+        <span class="carbon-landing-estimate-mark" aria-hidden="true">
+          *
+        </span>
+        <div>
+          <h2 id="estimate-title">Good planning starts with your estimate.</h2>
+          <p>
+            PrintPlan uses stock you enter manually. Availability and spool suggestions depend on those estimates; they
+            don’t guarantee that the physical filament will be sufficient.
+          </p>
+        </div>
+      </aside>
+
+      <section class="carbon-landing-faq" aria-labelledby="faq-title">
+        <div>
+          <p class="carbon-label">BEFORE YOU GET STARTED</p>
+          <h2 id="faq-title">A few practical answers.</h2>
+        </div>
+        <div class="carbon-landing-questions">
+          <details>
+            <summary>Does PrintPlan connect to my printer?</summary>
+            <p>
+              No. Stock, print requirements and actual consumption are entered manually. There is no automatic printer
+              tracking or G-code / 3MF import.
+            </p>
+          </details>
+          <details>
+            <summary>Does reserving filament reduce my stock?</summary>
+            <p>
+              No. A reservation holds recorded grams for a planned print. Recorded stock is reduced when you settle the
+              completed print with its actual consumption.
+            </p>
+          </details>
+          <details>
+            <summary>What happens if I cancel a reservation?</summary>
+            <p>
+              The held grams become available again. If the print already consumed material, correct recorded stock
+              separately.
+            </p>
+          </details>
+          <details>
+            <summary>Who is this workspace for?</summary>
+            <p>
+              A hobbyist with a personal filament collection who wants to check material before a specific print. It is
+              not a printer-farm management system.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="carbon-landing-closing" aria-labelledby="closing-title">
+        <div>
+          <p class="carbon-label">NEXT UP / YOUR WORKBENCH</p>
+          <h2 id="closing-title">
+            A clearer plan for
+            <br />
+            the next thing you make.
+          </h2>
+        </div>
+        <a href={primaryHref} class="carbon-dashboard-link carbon-dashboard-link-primary">
+          {primaryLabel} <span aria-hidden="true">↗</span>
+        </a>
       </section>
     </main>
+    <footer class="carbon-landing-wrap carbon-landing-footer">
+      <span>
+        PrintPlan <span class="carbon-landing-muted">/ Make room for the next idea.</span>
+      </span>
+      <span class="carbon-landing-muted">Manually recorded. Thoughtfully reserved.</span>
+    </footer>
   </div>
 </Layout>

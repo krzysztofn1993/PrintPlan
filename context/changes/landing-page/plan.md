@@ -240,8 +240,8 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Automated
 
-- [x] 1.1 Deployment verification passes after the route and metadata changes: `npm run verify:deploy`.
-- [x] 1.2 With local Supabase and Mailpit configured and the built preview running, `npm run smoke` passes with root HTML and direct dashboard destinations after successful sign-in and confirmation.
+- [x] 1.1 Deployment verification passes after the route and metadata changes: `npm run verify:deploy`. — c7f9a5e
+- [x] 1.2 With local Supabase and Mailpit configured and the built preview running, `npm run smoke` passes with root HTML and direct dashboard destinations after successful sign-in and confirmation. — c7f9a5e
 
 #### Manual
 
@@ -252,8 +252,8 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Automated
 
-- [ ] 2.1 Lint and production build pass with the complete C content and public assets: `npm run lint` and `npm run build`.
-- [ ] 2.2 Browser inspection at 320 px, 390 px and 1440 px confirms successful image loading, correct mobile/desktop source selection, no horizontal overflow and no page JavaScript errors; results and screenshots are recorded in `verification.md`.
+- [x] 2.1 Lint and production build pass with the complete C content and public assets: `npm run lint` and `npm run build`.
+- [x] 2.2 Browser inspection at 320 px, 390 px and 1440 px confirms successful image loading, correct mobile/desktop source selection, no horizontal overflow and no page JavaScript errors; results and screenshots are recorded in `verification.md`.
 
 #### Manual
 

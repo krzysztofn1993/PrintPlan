@@ -1,0 +1,24 @@
+
+> 10x-astro-starter@0.0.1 build
+> astro build
+
+19:28:17 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+19:28:17 [types] Generated 55ms
+19:28:17 [build] output: "server"
+19:28:17 [build] mode: "server"
+19:28:17 [build] directory: /root/work/PrintPlan/dist/
+19:28:17 [build] adapter: @astrojs/cloudflare
+19:28:17 [build] Collecting build info...
+19:28:17 [build] ✓ Completed in 142ms.
+19:28:17 [build] Building server entrypoints...
+Using secrets defined in .dev.vars
+19:28:17 [vite] ✓ built in 285ms
+Using secrets defined in .dev.vars
+19:28:18 [vite] ✓ built in 765ms
+19:28:18 [vite] ✓ built in 274ms
+19:28:18 [build] Rearranging server assets...
+19:28:18 [build] ✓ Completed in 1.39s.
+19:28:18 [@astrojs/cloudflare] Injected immutable Cache-Control for /_astro/* into _headers.
+19:28:19 [WARN] [@astrojs/sitemap] The Sitemap integration requires the `site` astro.config option. Skipping.
+19:28:19 [build] Server built in 1.54s
+19:28:19 [build] Complete!
