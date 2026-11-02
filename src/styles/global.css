@@ -60,6 +60,12 @@
   --carbon-collection-gap: 0.75rem;
   --carbon-row-inset: 1rem;
   --carbon-control-height: 2.75rem;
+  --carbon-landing-content-max: 78rem;
+  --carbon-landing-copy-max: 55rem;
+  --carbon-landing-lead-max: 36rem;
+  --carbon-landing-header-height: 6rem;
+  --carbon-landing-section-space: clamp(3rem, 6vw, 6rem);
+  --carbon-landing-title-size: clamp(2.4rem, 4.5vw, 4.1rem);
   color-scheme: light;
 }
 
@@ -177,6 +183,105 @@
 }
 
 @layer components {
+  .carbon-landing {
+    min-height: 100vh;
+  }
+  .carbon-landing-wrap {
+    width: min(100% - 2 * var(--carbon-terminal-page-inset), var(--carbon-landing-content-max));
+    min-width: 0;
+    margin-inline: auto;
+  }
+  .carbon-landing-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--carbon-collection-gap) var(--carbon-terminal-gap);
+    min-height: var(--carbon-landing-header-height);
+    padding-block: var(--carbon-row-inset);
+    border-bottom: 1px solid var(--border);
+  }
+  .carbon-landing-brand {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--carbon-collection-gap);
+    min-height: var(--carbon-control-height);
+    color: var(--foreground);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .carbon-landing-brand:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .carbon-landing-brand-mark {
+    padding: var(--carbon-collection-gap);
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .carbon-landing-brand-mark span,
+  .carbon-landing-title > span {
+    color: var(--primary);
+  }
+  .carbon-landing-brand-suffix {
+    color: var(--muted-foreground);
+    font-size: 0.6rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+  }
+  .carbon-landing-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--carbon-collection-gap);
+    min-width: 0;
+    font-size: 0.8rem;
+  }
+  .carbon-landing-nav .carbon-terminal-link {
+    gap: var(--carbon-collection-gap);
+    width: auto;
+  }
+  .carbon-landing-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--carbon-landing-section-space);
+    padding-block: var(--carbon-landing-section-space);
+  }
+  .carbon-landing-hero-copy {
+    max-width: var(--carbon-landing-copy-max);
+  }
+  .carbon-landing-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--carbon-collection-gap);
+  }
+  .carbon-landing-title {
+    margin-block: var(--carbon-terminal-gap);
+    font-size: var(--carbon-landing-title-size);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.065em;
+    overflow-wrap: anywhere;
+  }
+  .carbon-landing-lead {
+    max-width: var(--carbon-landing-lead-max);
+    color: var(--muted-foreground);
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+  .carbon-landing-micro {
+    margin-top: var(--carbon-row-inset);
+    color: var(--muted-foreground);
+    font-size: 0.65rem;
+    line-height: 1.75;
+  }
+  @media (max-width: 50rem) {
+    .carbon-landing-brand-suffix {
+      display: none;
+    }
+  }
   .carbon-workspace {
     background-color: var(--background);
     background-image: linear-gradient(90deg, var(--carbon-grid-line) 0 1px, transparent 1px 100%);

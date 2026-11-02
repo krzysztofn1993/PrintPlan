@@ -1,0 +1,74 @@
+---
+import Layout from "@/layouts/Layout.astro";
+
+const { user, authUnavailable } = Astro.locals;
+const primaryHref = user ? "/dashboard" : "/auth/signup";
+const primaryLabel = user ? "Open dashboard" : "Create an account";
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+---
+
+<Layout
+  title="PrintPlan — Plan your next print"
+  description="Track your estimated filament stock, reserve material for planned prints, and record actual consumption with PrintPlan."
+>
+  <div class="carbon-workspace carbon-landing">
+    <header class="carbon-landing-wrap carbon-landing-header">
+      <a class="carbon-landing-brand" href="/" aria-label="PrintPlan home">
+        <span class="carbon-landing-brand-mark" aria-hidden="true">
+          P<span>_</span>
+        </span>
+        PrintPlan
+        <span class="carbon-landing-brand-suffix">/ FILAMENT WORKSPACE</span>
+      </a>
+      <nav aria-label="Account navigation" class="carbon-landing-nav">
+        {user ? (
+          <a href="/dashboard" class="carbon-terminal-link">
+            Open dashboard <span aria-hidden="true">↗</span>
+          </a>
+        ) : (
+          <>
+            {authUnavailable && (
+              <span class="carbon-terminal-identity">Authentication status is temporarily unavailable</span>
+            )}
+            <a href="/auth/signin" class="carbon-terminal-link">
+              Sign in <span aria-hidden="true">↗</span>
+            </a>
+          </>
+        )}
+      </nav>
+    </header>
+
+    <main id="top" class="carbon-landing-wrap">
+      <section class="carbon-landing-hero" aria-labelledby="hero-title">
+        <div class="carbon-landing-hero-copy">
+          <p class="carbon-label carbon-landing-eyebrow">
+            <span class="carbon-led" aria-hidden="true"></span>LESS GUESSWORK. MORE MAKING.
+          </p>
+          <h1 id="hero-title" class="carbon-landing-title">
+            Your next print.
+            <br />
+            <span>Your filament,</span>
+            <br />
+            accounted for.
+          </h1>
+          <p class="carbon-landing-lead">
+            Check your estimated stock, reserve material for the next job, and record what you actually use. A little
+            order for your 3D printing corner.
+          </p>
+          <div class="carbon-dashboard-actions">
+            <a href={primaryHref} class="carbon-dashboard-link carbon-dashboard-link-primary">
+              {primaryLabel} <span aria-hidden="true">↗</span>
+            </a>
+            {!user && (
+              <a href="/auth/signin" class="carbon-dashboard-link">
+                Sign in
+              </a>
+            )}
+          </div>
+          <p class="carbon-landing-micro">Manual inputs. Clear numbers. Built for hobbyists.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</Layout>

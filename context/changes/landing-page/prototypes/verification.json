@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-02T17:55:53.506Z",
+  "method": "Headless Chromium; standalone file URL",
+  "illustration": "Actual SpoolInventory SSR with fictional records, compiled application CSS; dashboard shell navigation and heading reproduced from current source; desktop 1440px and mobile 390px screenshots",
+  "results": [
+    "minimal/panel/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "minimal/none/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/panel/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/none/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/panel/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/none/1440: sections, loaded responsive stock preview, no horizontal overflow",
+    "minimal/panel/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "minimal/none/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/panel/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/none/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/panel/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/none/390: sections, loaded responsive stock preview, no horizontal overflow",
+    "minimal/panel/320: sections, loaded responsive stock preview, no horizontal overflow",
+    "minimal/none/320: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/panel/320: sections, loaded responsive stock preview, no horizontal overflow",
+    "short/none/320: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/panel/320: sections, loaded responsive stock preview, no horizontal overflow",
+    "extended/none/320: sections, loaded responsive stock preview, no horizontal overflow"
+  ],
+  "interactions": "Content, illustration, visitor selectors; CTA destinations; FAQ; no browser page errors",
+  "limitations": "Static screenshot controls are not interactive. No live authentication, production routing or deployment checks ran."
+}

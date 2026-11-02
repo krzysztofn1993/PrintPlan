@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PrintPlan — landing page prototypes</title>
+    <meta
+      name="description"
+      content="Compare three PrintPlan landing page prototypes, with or without an illustrative stock panel."
+    />
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <aside class="review" aria-label="Prototype controls">
+      <div class="review-heading">
+        <span class="led"></span><strong>DESIGN REVIEW</strong
+        ><span class="review-note">Prototype · sample data · navigation preview only</span>
+      </div>
+      <div class="review-controls">
+        <label
+          >Content
+          <select id="variant">
+            <option value="minimal">A / Minimal hero</option>
+            <option value="short" selected>B / Short introduction</option>
+            <option value="extended">C / Full presentation</option>
+          </select>
+        </label>
+        <label
+          >Visual
+          <select id="illustration">
+            <option value="panel">Filament stock preview</option>
+            <option value="none">No illustration</option>
+          </select>
+        </label>
+        <label
+          >Visitor
+          <select id="visitor">
+            <option value="guest">Signed out</option>
+            <option value="member">Signed in</option>
+          </select>
+        </label>
+        <p id="review-description" class="review-description" aria-live="polite"></p>
+      </div>
+    </aside>
+
+    <div class="site" data-variant="short" data-visual="panel" data-visitor="guest">
+      <header class="header wrap">
+        <a class="brand" href="#top" aria-label="PrintPlan home"
+          ><span class="brand-mark" aria-hidden="true">P<span>_</span></span
+          >PrintPlan<span class="brand-suffix">/ FILAMENT WORKSPACE</span></a
+        >
+        <nav aria-label="Main navigation">
+          <a class="section-link" href="#workflow">How it works</a>
+          <a class="guest" href="#signin" data-destination="/auth/signin">Sign in <span aria-hidden="true">↗</span></a>
+          <a class="member" href="#dashboard" data-destination="/dashboard"
+            >Open dashboard <span aria-hidden="true">↗</span></a
+          >
+        </nav>
+      </header>
+
+      <main id="top" class="wrap">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="led" aria-hidden="true"></span>LESS GUESSWORK. MORE MAKING.</p>
+            <h1 id="hero-title">Your next print.<br /><span>Your filament,</span><br />accounted for.</h1>
+            <p class="lead">
+              Check your estimated stock, reserve material for the next job, and record what you actually use. A little
+              order for your 3D printing corner.
+            </p>
+            <div class="actions">
+              <a class="button primary guest" href="#signup" data-destination="/auth/signup"
+                >Create an account <span aria-hidden="true">↗</span></a
+              >
+              <a class="button primary member" href="#dashboard" data-destination="/dashboard"
+                >Open dashboard <span aria-hidden="true">↗</span></a
+              >
+              <a class="button secondary guest" href="#signin" data-destination="/auth/signin">Sign in</a>
+            </div>
+            <p class="micro">Manual inputs. Clear numbers. Built for hobbyists.</p>
+          </div>
+
+          <figure class="example" aria-label="Filament stock application preview with fictional data">
+            <figcaption class="panel-heading">
+              <span>FILAMENT STOCK / APPLICATION PREVIEW</span><span class="tag">SAMPLE DATA</span>
+            </figcaption>
+            <picture>
+              <source media="(max-width: 600px)" srcset="filament-stock-390.png" />
+              <img
+                src="filament-stock-1440.png"
+                width="1440"
+                height="700"
+                alt="PrintPlan Filament stock: sidebar navigation, Your spools and the inventory table. PLA Coral has 150 g recorded, 88 g reserved and 62 g available; PETG Black has 420 g available. Each spool has Edit and Delete actions."
+              />
+            </picture>
+            <p class="example-note">
+              Actual inventory component rendered with fictional records. Static preview; controls in the image are not
+              interactive.
+            </p>
+          </figure>
+        </section>
+
+        <section id="workflow" class="workflow beyond-minimal" aria-labelledby="workflow-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">A SMALL ROUTINE. A CLEARER WORKBENCH.</p>
+              <h2 id="workflow-title">From spool to finished print.</h2>
+            </div>
+            <span class="section-number" aria-hidden="true">01 — 03</span>
+          </div>
+          <div class="steps">
+            <article>
+              <span class="step-number">01 / RECORD</span>
+              <h3>Know your starting point.</h3>
+              <p>
+                Add your spools and estimated grams remaining. See recorded, reserved and available material separately.
+              </p>
+            </article>
+            <article>
+              <span class="step-number">02 / RESERVE</span>
+              <h3>Give the next job its share.</h3>
+              <p>
+                Enter a print’s requirements. Use best-fit or choose an eligible spool, with your configured safety
+                margin.
+              </p>
+            </article>
+            <article>
+              <span class="step-number">03 / SETTLE</span>
+              <h3>Close the loop.</h3>
+              <p>
+                Record actual consumption when the print is done. Update your recorded stock and release its
+                reservation.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="details extended-only" aria-labelledby="details-title">
+          <div class="detail-intro">
+            <p class="eyebrow">THE NUMBERS HAVE DIFFERENT JOBS</p>
+            <h2 id="details-title">A useful estimate.<br />An intentional plan.</h2>
+            <p>
+              You supply the stock estimate. PrintPlan keeps track of what is already spoken for, so the same recorded
+              grams aren’t promised twice.
+            </p>
+          </div>
+          <div class="detail-list">
+            <article>
+              <span aria-hidden="true">↳</span>
+              <div>
+                <h3>Choose the spool that suits the job.</h3>
+                <p>
+                  Best-fit suggests an eligible spool based on material, colour and available grams. You can choose
+                  another eligible spool before confirming.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span aria-hidden="true">↳</span>
+              <div>
+                <h3>Leave room for a safety margin.</h3>
+                <p>
+                  The account margin starts at 10% and can be adjusted. Changing it alone leaves existing reservations
+                  unchanged.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span aria-hidden="true">↳</span>
+              <div>
+                <h3>Keep plans consistent after printing.</h3>
+                <p>
+                  If actual consumption leaves too little recorded stock for other reservations, PrintPlan cancels the
+                  newest ones first and tells you what changed.
+                </p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside class="estimate beyond-minimal">
+          <span class="estimate-mark" aria-hidden="true">*</span>
+          <div>
+            <h2>Good planning starts with your estimate.</h2>
+            <p>
+              PrintPlan uses stock you enter manually. Availability and spool suggestions depend on those estimates;
+              they don’t guarantee that the physical filament will be sufficient.
+            </p>
+          </div>
+        </aside>
+
+        <section class="faq extended-only" aria-labelledby="faq-title">
+          <div>
+            <p class="eyebrow">BEFORE YOU GET STARTED</p>
+            <h2 id="faq-title">A few practical answers.</h2>
+          </div>
+          <div class="questions">
+            <details>
+              <summary>Does PrintPlan connect to my printer?</summary>
+              <p>
+                No. Stock, print requirements and actual consumption are entered manually. There is no automatic printer
+                tracking or G-code / 3MF import.
+              </p>
+            </details>
+            <details>
+              <summary>Does reserving filament reduce my stock?</summary>
+              <p>
+                No. A reservation holds recorded grams for a planned print. Recorded stock is reduced when you settle
+                the completed print with its actual consumption.
+              </p>
+            </details>
+            <details>
+              <summary>What happens if I cancel a reservation?</summary>
+              <p>
+                The held grams become available again. If the print already consumed material, correct recorded stock
+                separately.
+              </p>
+            </details>
+            <details>
+              <summary>Who is this workspace for?</summary>
+              <p>
+                A hobbyist with a personal filament collection who wants to check material before a specific print. It
+                is not a printer-farm management system.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <section class="closing beyond-minimal">
+          <div>
+            <p class="eyebrow">NEXT UP / YOUR WORKBENCH</p>
+            <h2>A clearer plan for<br />the next thing you make.</h2>
+          </div>
+          <a class="button primary guest" href="#signup" data-destination="/auth/signup"
+            >Create an account <span aria-hidden="true">↗</span></a
+          ><a class="button primary member" href="#dashboard" data-destination="/dashboard"
+            >Open dashboard <span aria-hidden="true">↗</span></a
+          >
+        </section>
+      </main>
+      <footer class="footer wrap">
+        <span>PrintPlan <span class="muted">/ Make room for the next idea.</span></span
+        ><span class="footer-note">Manually recorded. Thoughtfully reserved.</span>
+      </footer>
+    </div>
+    <dialog id="navigation-dialog">
+      <form method="dialog">
+        <p class="eyebrow">NAVIGATION PREVIEW</p>
+        <h2 id="navigation-title">Create an account</h2>
+        <p>
+          This prototype previews the landing page. In the application, this link opens <code id="destination"></code>.
+        </p>
+        <button class="button primary">Back to prototype</button>
+      </form>
+    </dialog>
+    <script>
+      const site = document.querySelector(".site");
+      const controls = ["variant", "illustration", "visitor"];
+      const params = new URLSearchParams(location.search);
+      const descriptions = {
+        minimal: "A / Hero and account links. The smallest content scope.",
+        short: "B / Hero, three workflow steps, estimate caveat and closing CTA.",
+        extended: "C / Full introduction with feature explanations and practical FAQ.",
+      };
+
+      function update() {
+        const variant = document.querySelector("#variant").value;
+        const visual = document.querySelector("#illustration").value;
+        const visitor = document.querySelector("#visitor").value;
+        site.dataset.variant = variant;
+        site.dataset.visual = visual;
+        site.dataset.visitor = visitor;
+        document.querySelector("#review-description").textContent = descriptions[variant];
+        const next = new URLSearchParams({ variant, illustration: visual, visitor });
+        history.replaceState(null, "", `${location.pathname}?${next}`);
+        document.title = `PrintPlan — ${variant} / ${visual === "panel" ? "example panel" : "no illustration"}`;
+      }
+
+      for (const id of controls) {
+        const control = document.getElementById(id);
+        const requested = params.get(id);
+        if ([...control.options].some((option) => option.value === requested)) control.value = requested;
+        control.addEventListener("change", update);
+      }
+
+      document.querySelectorAll("[data-destination]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          document.querySelector("#destination").textContent = link.dataset.destination;
+          document.querySelector("#navigation-title").textContent = link.textContent.replace("↗", "").trim();
+          document.querySelector("#navigation-dialog").showModal();
+        });
+      });
+
+      update();
+    </script>
+  </body>
+</html>

@@ -43,5 +43,5 @@ export const POST: APIRoute = async (context) => {
     throw new Error("Unexpected Supabase signin error", { cause: error });
   }
 
-  return context.redirect("/");
+  return context.redirect("/dashboard");
 };

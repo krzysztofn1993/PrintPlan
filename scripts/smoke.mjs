@@ -488,12 +488,15 @@ async function runSmoke() {
   );
 
   await step("local preview responds", async () => {
-    const redirect = await appRequest("/");
-    assertRedirect(redirect, { path: "/auth/signin" });
-
-    const response = await appRequest(redirect.location);
+    const response = await appRequest("/");
     assertHttpStatus(response, 200);
     assertBodyContains(response, "<html", "The preview did not render an HTML page");
+  });
+
+  await step("anonymous sign-in page remains available", async () => {
+    const response = await appRequest("/auth/signin");
+    assertHttpStatus(response, 200);
+    assertBodyContains(response, "<html", "The sign-in route did not render an HTML page");
   });
 
   await step("Mailpit v1 JSON API is available", async () => {
@@ -660,7 +663,7 @@ async function runSmoke() {
   const callbackJarA = new CookieJar();
   await step("account A confirmation callback establishes a fresh session", async () => {
     const result = await appRequest(deliveredLinkA.pathname + deliveredLinkA.search, { jar: callbackJarA });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "The successful confirmation callback did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: callbackJarA });
     assertHttpStatus(dashboard, 200);
@@ -723,7 +726,7 @@ async function runSmoke() {
   const callbackJarB = new CookieJar();
   await step("account B confirmation callback establishes a fresh session", async () => {
     const result = await appRequest(deliveredLinkB.pathname + deliveredLinkB.search, { jar: callbackJarB });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "The successful confirmation callback did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: callbackJarB });
     assertHttpStatus(dashboard, 200);
@@ -740,7 +743,7 @@ async function runSmoke() {
         ["password", accountA.password],
       ],
     });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "Successful password signin did not set session cookies");
     const firstPage = await appRequest("/dashboard", { jar: activeJarA });
     assertHttpStatus(firstPage, 200);
@@ -760,7 +763,7 @@ async function runSmoke() {
         ["password", accountB.password],
       ],
     });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "Successful password signin did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: activeJarB });
     assertHttpStatus(dashboard, 200);
