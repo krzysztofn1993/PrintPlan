@@ -264,9 +264,9 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Automated
 
-- [x] 3.1 The final native, lint, type and build gate passes: `npm run verify:deploy`.
-- [x] 3.2 With local Supabase configured, `npm run test:e2e` passes including landing acceptance and all existing recovery tests.
-- [x] 3.3 With local Supabase and Mailpit configured and the built preview running, `npm run smoke` passes including public root, authenticated root, sign-in, confirmation, sign-out and protected-dashboard acceptance.
+- [x] 3.1 The final native, lint, type and build gate passes: `npm run verify:deploy`. — 923a49b
+- [x] 3.2 With local Supabase configured, `npm run test:e2e` passes including landing acceptance and all existing recovery tests. — 923a49b
+- [x] 3.3 With local Supabase and Mailpit configured and the built preview running, `npm run smoke` passes including public root, authenticated root, sign-in, confirmation, sign-out and protected-dashboard acceptance. — 923a49b
 
 #### Manual
 
