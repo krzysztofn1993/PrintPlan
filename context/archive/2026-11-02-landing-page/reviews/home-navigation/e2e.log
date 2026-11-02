@@ -1,0 +1,137 @@
+
+> 10x-astro-starter@0.0.1 test:e2e
+> playwright test tests/e2e/landing-page.spec.ts --project=chromium
+
+[WebServer] 
+[WebServer] > 10x-astro-starter@0.0.1 build
+[WebServer] > astro build
+[WebServer] 
+[WebServer] (node:304665) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 19:52:18 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+[WebServer] 19:52:19 [types] Generated 57ms
+[WebServer] 19:52:19 [build] output: "server"
+[WebServer] 19:52:19 [build] mode: "server"
+[WebServer] 19:52:19 [build] directory: /root/work/PrintPlan/dist/
+[WebServer] 19:52:19 [build] adapter: @astrojs/cloudflare
+[WebServer] 19:52:19 [build] Collecting build info...
+[WebServer] 19:52:19 [build] ✓ Completed in 145ms.
+[WebServer] 19:52:19 [build] Building server entrypoints...
+[WebServer] Using secrets defined in .dev.vars
+[WebServer] 19:52:19 [vite] ✓ built in 258ms
+[WebServer] Using secrets defined in .dev.vars
+[WebServer] 19:52:20 [vite] ✓ built in 678ms
+[WebServer] 19:52:20 [vite] ✓ built in 361ms
+[WebServer] 19:52:20 [build] Rearranging server assets...
+[WebServer] 19:52:20 [build] ✓ Completed in 1.36s.
+[WebServer] 19:52:20 [@astrojs/cloudflare] Injected immutable Cache-Control for /_astro/* into _headers.
+[WebServer] 19:52:20 [WARN] [@astrojs/sitemap] The Sitemap integration requires the `site` astro.config option. Skipping.
+[WebServer] 19:52:20 [build] Server built in 1.51s
+[WebServer] 19:52:20 [build] Complete!
+[WebServer] 
+[WebServer] > 10x-astro-starter@0.0.1 preview
+[WebServer] > astro preview --host 127.0.0.1 --port 4322
+[WebServer] 
+[WebServer] (node:304770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 19:52:21 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+[WebServer] Using secrets defined in dist/server/.dev.vars
+[WebServer] 19:52:21 [@astrojs/cloudflare] 
+[WebServer]  astro  v14.3.1 ready in 51 ms
+[WebServer] 
+[WebServer] ┃ Local    http://127.0.0.1:4322/
+[WebServer] 
+[WebServer] ✨ Parsed 1 valid header rule.
+[WebServer] GET /auth/signin 200 OK (41ms)
+
+Running 10 tests using 1 worker
+
+(node:304965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] GET /auth/signin 200 OK (10ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (4ms)
+[WebServer] GET /_astro/SignInForm.9tXwaoPn.js 200 OK (4ms)
+[WebServer] GET /_astro/client.CLlhDEf_.js 200 OK (3ms)
+[WebServer] GET /_astro/react.B38uhh1B.js 200 OK (2ms)
+[WebServer] GET /_astro/button.DaEiW5um.js 200 OK (3ms)
+[WebServer] GET /_astro/react-dom.cfKh-eDO.js 200 OK (3ms)
+[WebServer] GET /_astro/auth-validation.BVx-W0mx.js 200 OK (3ms)
+[WebServer] POST /api/auth/signin 302 Found (111ms)
+[WebServer] GET /dashboard 200 OK (40ms)
+  ✓   1 [auth setup] › tests/e2e/auth.setup.ts:10:1 › provision a confirmed local account and sign in through the UI (2.4s)
+(node:305221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] GET / 200 OK (6ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (2ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (2ms)
+[WebServer] GET /auth/signin 200 OK (7ms)
+[WebServer] GET /_astro/SignInForm.9tXwaoPn.js 200 OK (2ms)
+[WebServer] GET /_astro/client.CLlhDEf_.js 200 OK (2ms)
+[WebServer] GET /_astro/react.B38uhh1B.js 200 OK (13ms)
+[WebServer] GET /_astro/button.DaEiW5um.js 200 OK (11ms)
+[WebServer] GET /_astro/auth-validation.BVx-W0mx.js 200 OK (11ms)
+[WebServer] GET / 200 OK (8ms)
+[WebServer] GET /_astro/react-dom.cfKh-eDO.js 200 OK (9ms)
+[WebServer] GET /landing/filament-stock-desktop.png 304 Not Modified (1ms)
+[WebServer] GET /auth/signup 200 OK (8ms)
+[WebServer] GET /_astro/SignUpForm.V1GdCMuG.js 200 OK (3ms)
+  ✓   2 [chromium] › tests/e2e/landing-page.spec.ts:38:1 › guest receives public private HTML with metadata, landmarks and account destinations (450ms)
+[WebServer] GET /auth/signin 200 OK (9ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (2ms)
+[WebServer] GET /_astro/SignInForm.9tXwaoPn.js 200 OK (1ms)
+[WebServer] GET /_astro/client.CLlhDEf_.js 200 OK (1ms)
+[WebServer] GET /_astro/react.B38uhh1B.js 200 OK (2ms)
+[WebServer] GET /_astro/button.DaEiW5um.js 200 OK (3ms)
+[WebServer] GET /_astro/auth-validation.BVx-W0mx.js 200 OK (2ms)
+[WebServer] GET /_astro/react-dom.cfKh-eDO.js 200 OK (1ms)
+[WebServer] POST /api/auth/signin 302 Found (101ms)
+[WebServer] GET /dashboard 200 OK (39ms)
+[WebServer] GET / 200 OK (41ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (3ms)
+[WebServer] GET /dashboard 200 OK (39ms)
+  ✓   3 [chromium] › tests/e2e/landing-page.spec.ts:69:1 › fresh UI sign-in enters dashboard directly and the member can still read public root (1.1s)
+[WebServer] POST /api/auth/signin 302 Found (97ms)
+[WebServer] GET /dashboard 200 OK (39ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (1ms)
+[WebServer] POST /api/auth/signout 302 Found (89ms)
+[WebServer] GET / 200 OK (6ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (2ms)
+[WebServer] GET / 200 OK (6ms)
+[WebServer] GET /landing/filament-stock-desktop.png 304 Not Modified (3ms)
+[WebServer] GET /dashboard/spools 302 Found (11ms)
+[WebServer] GET /auth/signin 200 OK (6ms)
+[WebServer] GET /_astro/SignInForm.9tXwaoPn.js 200 OK (2ms)
+[WebServer] GET /_astro/client.CLlhDEf_.js 200 OK (2ms)
+[WebServer] GET /_astro/button.DaEiW5um.js 200 OK (3ms)
+[WebServer] GET /_astro/auth-validation.BVx-W0mx.js 200 OK (3ms)
+[WebServer] GET /_astro/react.B38uhh1B.js 200 OK (3ms)
+[WebServer] GET /_astro/react-dom.cfKh-eDO.js 200 OK (1ms)
+[WebServer] GET / 200 OK (5ms)
+[WebServer] GET /landing/filament-stock-desktop.png 304 Not Modified (2ms)
+  ✓   4 [chromium] › tests/e2e/landing-page.spec.ts:114:1 › fresh isolated member signs out to public root and dashboard remains protected (630ms)
+[WebServer] GET / 200 OK (8ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (1ms)
+[WebServer] GET /landing/filament-stock-mobile.png 200 OK (1ms)
+  ✓   5 [chromium] › tests/e2e/landing-page.spec.ts:136:3 › guest preview loads the correct source without overflow or page errors at 320px (632ms)
+[WebServer] GET / 200 OK (9ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (1ms)
+[WebServer] GET /landing/filament-stock-mobile.png 200 OK (1ms)
+  ✓   6 [chromium] › tests/e2e/landing-page.spec.ts:136:3 › guest preview loads the correct source without overflow or page errors at 390px (626ms)
+[WebServer] GET / 200 OK (8ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (2ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (3ms)
+  ✓   7 [chromium] › tests/e2e/landing-page.spec.ts:136:3 › guest preview loads the correct source without overflow or page errors at 1440px (657ms)
+[WebServer] GET / 200 OK (8ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (2ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (2ms)
+  ✓   8 [chromium] › tests/e2e/landing-page.spec.ts:162:1 › FAQ supports keyboard disclosure with visible focus (170ms)
+[WebServer] GET / 200 OK (8ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (3ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (2ms)
+[WebServer] GET /auth/signup 200 OK (9ms)
+  ✓   9 [chromium] › tests/e2e/landing-page.spec.ts:175:1 › JavaScript-disabled guest can read content, follow account links and open native FAQ (219ms)
+(node:305561) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  10 [auth teardown] › tests/e2e/auth.teardown.ts:10:1 › delete the generated local account and private auth artifacts (1.0s)
+
+  10 passed (14.6s)

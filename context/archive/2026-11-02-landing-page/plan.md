@@ -245,8 +245,8 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Manual
 
-- [ ] 1.3 A guest and a signed-in visitor can each open `/` without redirection and see the appropriate account actions; completing sign-in reaches the dashboard, and signing out returns to the landing shell.
-- [ ] 1.4 A recognized auth-unavailable state leaves public content readable with accurate status wording, while anonymous dashboard access still requires sign-in and outage recovery remains available.
+- [x] 1.3 A guest and a signed-in visitor can each open `/` without redirection and see the appropriate account actions; completing sign-in reaches the dashboard, and signing out returns to the landing shell.
+- [x] 1.4 A recognized auth-unavailable state leaves public content readable with accurate status wording, while anonymous dashboard access still requires sign-in and outage recovery remains available.
 
 ### Phase 2: Full Presentation and Filament Stock Preview
 
@@ -257,8 +257,8 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Manual
 
-- [ ] 2.3 The implemented page matches the selected C content and corrected Filament stock preview, including real inventory labels/actions, both fictional records and a clear static/sample-data caption.
-- [ ] 2.4 Desktop and phone screenshots, 200% zoom, keyboard focus and FAQ interaction are acceptable; estimate limitations and the reservation-versus-consumption distinction remain clear.
+- [x] 2.3 The implemented page matches the selected C content and corrected Filament stock preview, including real inventory labels/actions, both fictional records and a clear static/sample-data caption.
+- [x] 2.4 Desktop and phone screenshots, 200% zoom, keyboard focus and FAQ interaction are acceptable; estimate limitations and the reservation-versus-consumption distinction remain clear.
 
 ### Phase 3: Entry and Presentation Acceptance
 
@@ -270,5 +270,5 @@ No database or stored-data migration is needed. Replace `index.ts` with `index.a
 
 #### Manual
 
-- [ ] 3.4 In current desktop Chrome and Firefox and the phone layout, the author accepts C's content hierarchy, product preview, contrast, keyboard navigation and CTA clarity.
-- [ ] 3.5 Final verification evidence distinguishes implementation results from prototype checks, and all outstanding human checks are explicitly recorded before the change is considered ready to merge.
+- [x] 3.4 In current desktop Chrome and Firefox and the phone layout, the author accepts C's content hierarchy, product preview, contrast, keyboard navigation and CTA clarity.
+- [x] 3.5 Final verification evidence distinguishes implementation results from prototype checks, and all outstanding human checks are explicitly recorded before the change is considered ready to merge.
