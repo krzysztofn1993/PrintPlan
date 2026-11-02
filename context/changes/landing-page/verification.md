@@ -1,6 +1,6 @@
 # Landing page implementation verification
 
-Implementation evidence collected on 2026-11-02. Prototype checks remain comparison-only evidence. All six Manual Progress rows remain pending author review; automated browser inspection does not constitute visual approval.
+Implementation evidence collected on 2026-11-02. Prototype checks remain comparison-only evidence. The author confirmed all six Manual Progress rows after reviewing the running app and the completed evidence record. No manual acceptance items remain pending.
 
 ## Environment
 
@@ -34,7 +34,7 @@ Implementation evidence collected on 2026-11-02. Prototype checks remain compari
 | Chromium 1440px        | [Screenshot](reviews/phase-2/chromium-1440.png)               |
 | 200% equivalent reflow | [Screenshot](reviews/phase-2/chromium-200-percent-reflow.png) |
 
-The reflow capture uses a 720 CSS-pixel viewport and scale factor 2 to approximate a 1440px desktop at 200%. It is an automated reflow simulation; actual browser zoom and author acceptance remain pending.
+The reflow capture uses a 720 CSS-pixel viewport and scale factor 2 to approximate a 1440px desktop at 200%. It is an automated reflow simulation; the author subsequently accepted this manual criterion in row 2.4.
 
 ## Phase 3 — entry and presentation acceptance
 
@@ -51,7 +51,7 @@ The reflow capture uses a 720 CSS-pixel viewport and scale factor 2 to approxima
 | 1440px                            | [Screenshot](reviews/phase-3/chrome-1440.png)               | [Screenshot](reviews/phase-3/firefox-1440.png)               |
 | 200% equivalent reflow simulation | [Screenshot](reviews/phase-3/chrome-200-percent-reflow.png) | [Screenshot](reviews/phase-3/firefox-200-percent-reflow.png) |
 
-All captures show the implemented SSR page, not the standalone prototype. Human browser zoom, visual, navigation and content acceptance remain pending. No deployment or merge is authorized by these automated results.
+All captures show the implemented SSR page, not the standalone prototype. The author subsequently accepted the visual, navigation and content criteria in rows 1.3, 2.3, 2.4 and 3.4. No deployment or merge is authorized by these automated results.
 
 ### Deliberate-break and final repository gates
 
@@ -62,11 +62,20 @@ All captures show the implemented SSR page, not the standalone prototype. Human 
 - Earlier default 100-case native runs had 99 passed and one opt-in real-tools case skipped; the initial phase-3 103-case run had 102 passed and the same opt-in case skipped. The explicit final run above covers that opt-in case; no required gate was omitted.
 - All deliberate production edits were restored; no test assertion was weakened, deleted or bypassed.
 
-## Pending human checklist
+## Human checklist
 
-- [ ] 1.3 A guest and a signed-in visitor can each open `/` without redirection and see the appropriate account actions; completing sign-in reaches the dashboard, and signing out returns to the landing shell.
-- [ ] 1.4 A recognized auth-unavailable state leaves public content readable with accurate status wording, while anonymous dashboard access still requires sign-in and outage recovery remains available.
-- [ ] 2.3 The implemented page matches the selected C content and corrected Filament stock preview, including real inventory labels/actions, both fictional records and a clear static/sample-data caption.
-- [ ] 2.4 Desktop and phone screenshots, 200% zoom, keyboard focus and FAQ interaction are acceptable; estimate limitations and the reservation-versus-consumption distinction remain clear.
-- [ ] 3.4 In current desktop Chrome and Firefox and the phone layout, the author accepts C's content hierarchy, product preview, contrast, keyboard navigation and CTA clarity.
-- [ ] 3.5 Final verification evidence distinguishes implementation results from prototype checks, and all outstanding human checks are explicitly recorded before the change is considered ready to merge.
+- [x] 1.3 A guest and a signed-in visitor can each open `/` without redirection and see the appropriate account actions; completing sign-in reaches the dashboard, and signing out returns to the landing shell.
+- [x] 1.4 A recognized auth-unavailable state leaves public content readable with accurate status wording, while anonymous dashboard access still requires sign-in and outage recovery remains available.
+- [x] 2.3 The implemented page matches the selected C content and corrected Filament stock preview, including real inventory labels/actions, both fictional records and a clear static/sample-data caption.
+- [x] 2.4 Desktop and phone screenshots, 200% zoom, keyboard focus and FAQ interaction are acceptable; estimate limitations and the reservation-versus-consumption distinction remain clear.
+- [x] 3.4 In current desktop Chrome and Firefox and the phone layout, the author accepts C's content hierarchy, product preview, contrast, keyboard navigation and CTA clarity.
+- [x] 3.5 Final verification evidence distinguishes implementation results from prototype checks, and all outstanding human checks are explicitly recorded before the change is considered ready to merge.
+
+## Author review follow-up
+
+- Author confirmation: 1.3, 2.3, 2.4 and 3.4 accepted in conversation on 2026-11-02; 1.4 subsequently accepted explicitly ("1.4 works"). The author subsequently accepted the documentation record in row 3.5 and requested a commit. No commit SHA is assigned to human confirmations.
+- 1.4 accepted by the author: authentication-outage behavior works.
+- 3.5 evidence review: prototype-only checks are identified separately; implementation command logs and Chrome/Firefox screenshots are linked above, and every other Manual row is now author-confirmed. No outstanding application checks remain. The author accepted this documentation item explicitly; no additional runtime test was required.
+- Implemented navigation improvement: added a token-styled Home link in the signed-in account navigation, returning to `/` without signing out. Extended the existing fresh-login browser journey to click Home from the dashboard and verify member actions on the landing page.
+
+- Follow-up verification: `npm run verify:deploy` passed ([log](reviews/home-navigation/verification.log)). `E2E_PORT=4322 npm run test:e2e -- tests/e2e/landing-page.spec.ts --project=chromium` passed all 10 cases including setup/teardown, dashboard Home navigation, retained member session, sign-out, responsive preview, FAQ and JavaScript-disabled content ([log](reviews/home-navigation/e2e.log)). Original ignored environment configuration restored afterward.

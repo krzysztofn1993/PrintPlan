@@ -23,6 +23,9 @@ const linkClass = terminalPresentation
     <>
       <span class:list={identityClass}>{user.email}</span>
       <div class:list={linksClass}>
+        <a href="/" aria-current={currentPath === "/" ? "page" : undefined} class:list={linkClass}>
+          Home
+        </a>
         <a href="/dashboard" aria-current={currentPath === "/dashboard" ? "page" : undefined} class:list={linkClass}>
           Dashboard
         </a>

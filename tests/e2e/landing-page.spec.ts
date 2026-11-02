@@ -87,7 +87,15 @@ test("fresh UI sign-in enters dashboard directly and the member can still read p
     expect(result.status()).toBe(302);
     expect(result.headers().location).toBe("/dashboard");
     await expect(page).toHaveURL(`${baseURL}/dashboard`);
-    const response = await page.goto("/");
+    const home = page
+      .getByRole("navigation", { name: "Account navigation" })
+      .getByRole("link", { name: "Home", exact: true });
+    await expect(home).toHaveAttribute("href", "/");
+    const landingResponse = page.waitForResponse(
+      (response) => response.request().isNavigationRequest() && new URL(response.url()).pathname === "/",
+    );
+    await home.click();
+    const response = await landingResponse;
     expectPrivateHtml(response);
     await expect(page).toHaveURL(`${baseURL}/`);
     const dashboard = page.getByRole("link", { name: "Open dashboard" });
