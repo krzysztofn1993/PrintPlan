@@ -610,3 +610,60 @@ test("middleware finalizes refreshed cookies even when the subsequent identity l
   assert.equal(response.headers.get("Expires"), "0");
   assert.equal(response.headers.get("Pragma"), "no-cache");
 });
+
+test("public root remains reachable with missing, invalid and rejected refresh sessions", async () => {
+  for (const options of [{ incomingCookies: [] }, { lookup: "401" }, { expired: true, refresh: "400" }]) {
+    const request = middlewareRequest(makeAuthFixture(options), { path: "/" });
+    const response = await request.run();
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Location"), null);
+    assert.equal(await response.text(), "route response");
+    assert.equal(request.nextCalls(), 1);
+    assert.equal(request.context.locals.user, null);
+    assert.equal(request.context.locals.authUnavailable, false);
+    if (options.expired) {
+      assert.deepEqual(request.context.locals.authCookies.getAll(), []);
+      assert.ok(request.emitted.some(({ options }) => options.maxAge === 0));
+      assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+    }
+  }
+});
+
+test("public root receives recognized auth outages while dashboard keeps recovery", async (t) => {
+  t.mock.method(console, "error", () => undefined);
+  t.mock.method(console, "warn", () => undefined);
+  for (const failure of ["503", "network", "429"]) {
+    for (const path of ["/", "/dashboard"]) {
+      const fixture = makeAuthFixture({ lookup: failure });
+      const request = middlewareRequest(fixture, { path });
+      const response = await request.run();
+      assert.equal(request.context.locals.authUnavailable, true);
+      assert.equal(request.context.locals.user, null);
+      assert.equal(response.headers.get("Location"), null);
+      assert.deepEqual(request.context.locals.authCookies.getAll(), fixture.initialCookies);
+      assert.deepEqual(request.emitted, []);
+      if (path === "/") {
+        assert.equal(response.status, 200);
+        assert.equal(await response.text(), "route response");
+        assert.equal(request.nextCalls(), 1);
+      } else {
+        assert.equal(response.status, 503);
+        assert.equal(request.nextCalls(), 0);
+        assert.match(response.headers.get("Cache-Control"), /private.*no-store/);
+        assert.match(await response.text(), /href="\/dashboard"/);
+      }
+    }
+  }
+});
+
+test("unconfigured auth leaves public root readable but retains dashboard recovery", async () => {
+  for (const path of ["/", "/dashboard"]) {
+    const request = middlewareRequest({ initialCookies: [], createClient: () => null }, { path });
+    const response = await request.run();
+    assert.equal(request.context.locals.authUnavailable, true);
+    assert.equal(request.context.locals.user, null);
+    assert.equal(response.status, path === "/" ? 200 : 503);
+    assert.equal(request.nextCalls(), path === "/" ? 1 : 0);
+    assert.deepEqual(request.emitted, []);
+  }
+});

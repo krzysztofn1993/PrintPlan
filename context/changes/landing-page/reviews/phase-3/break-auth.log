@@ -1,0 +1,64 @@
+✖ public root remains reachable with missing, invalid and rejected refresh sessions (27.525574ms)
+✖ public root receives recognized auth outages while dashboard keeps recovery (9.98839ms)
+✖ unconfigured auth leaves public root readable but retains dashboard recovery (0.802635ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 185.239499
+
+✖ failing tests:
+
+test at scripts/auth-contracts.test.mjs:614:1
+✖ public root remains reachable with missing, invalid and rejected refresh sessions (27.525574ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  302 !== 200
+  
+      at TestContext.<anonymous> (file:///root/work/PrintPlan/scripts/auth-contracts.test.mjs:618:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 302,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/auth-contracts.test.mjs:632:1
+✖ public root receives recognized auth outages while dashboard keeps recovery (9.98839ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 200
+  
+      at TestContext.<anonymous> (file:///root/work/PrintPlan/scripts/auth-contracts.test.mjs:646:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts/auth-contracts.test.mjs:659:1
+✖ unconfigured auth leaves public root readable but retains dashboard recovery (0.802635ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 200
+  
+      at TestContext.<anonymous> (file:///root/work/PrintPlan/scripts/auth-contracts.test.mjs:665:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
