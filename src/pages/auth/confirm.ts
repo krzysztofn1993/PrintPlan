@@ -33,5 +33,5 @@ export const GET: APIRoute = async (context) => {
   if (result.error) return confirmationFailure(context, result.error);
   if (!result.data.session) return context.redirect(invalidLink);
 
-  return context.redirect("/");
+  return context.redirect("/dashboard");
 };

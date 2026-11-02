@@ -342,6 +342,26 @@ function assertBodyContains(result, content, description) {
   ensure(result.body.includes(content), description);
 }
 
+function assertLandingHtml(result, signedIn = false) {
+  assertHttpStatus(result, 200);
+  ensure(result.location === "", "The public landing unexpectedly redirected");
+  ensure((result.headers.get("content-type") ?? "").includes("text/html"), "The public landing was not HTML");
+  const directives = new Set((result.headers.get("cache-control") ?? "").split(",").map((value) => value.trim()));
+  ensure(directives.has("private") && directives.has("no-store"), "The public landing was not private/no-store");
+  assertBodyContains(result, "<html", "The public landing document was missing");
+  if (signedIn) {
+    assertBodyContains(result, 'href="/dashboard"', "The member landing did not link to the dashboard");
+    assertBodyContains(result, "Open dashboard", "The member landing action was missing");
+    ensure(!result.body.includes('href="/auth/signup"'), "The member landing offered guest registration");
+    ensure(!result.body.includes('href="/auth/signin"'), "The member landing offered guest sign-in");
+  } else {
+    assertBodyContains(result, 'href="/auth/signup"', "The guest landing did not link to registration");
+    assertBodyContains(result, "Create an account", "The guest landing primary action was missing");
+    assertBodyContains(result, 'href="/auth/signin"', "The guest landing did not link to sign-in");
+    ensure(!result.body.includes("Open dashboard"), "The guest landing offered member navigation");
+  }
+}
+
 function mailAddresses(message) {
   const recipients = message?.To ?? message?.to ?? [];
   if (!Array.isArray(recipients)) return [];
@@ -488,12 +508,14 @@ async function runSmoke() {
   );
 
   await step("local preview responds", async () => {
-    const redirect = await appRequest("/");
-    assertRedirect(redirect, { path: "/auth/signin" });
+    const response = await appRequest("/");
+    assertLandingHtml(response);
+  });
 
-    const response = await appRequest(redirect.location);
+  await step("anonymous sign-in page remains available", async () => {
+    const response = await appRequest("/auth/signin");
     assertHttpStatus(response, 200);
-    assertBodyContains(response, "<html", "The preview did not render an HTML page");
+    assertBodyContains(response, "<html", "The sign-in route did not render an HTML page");
   });
 
   await step("Mailpit v1 JSON API is available", async () => {
@@ -660,7 +682,7 @@ async function runSmoke() {
   const callbackJarA = new CookieJar();
   await step("account A confirmation callback establishes a fresh session", async () => {
     const result = await appRequest(deliveredLinkA.pathname + deliveredLinkA.search, { jar: callbackJarA });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "The successful confirmation callback did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: callbackJarA });
     assertHttpStatus(dashboard, 200);
@@ -723,7 +745,7 @@ async function runSmoke() {
   const callbackJarB = new CookieJar();
   await step("account B confirmation callback establishes a fresh session", async () => {
     const result = await appRequest(deliveredLinkB.pathname + deliveredLinkB.search, { jar: callbackJarB });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "The successful confirmation callback did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: callbackJarB });
     assertHttpStatus(dashboard, 200);
@@ -740,7 +762,7 @@ async function runSmoke() {
         ["password", accountA.password],
       ],
     });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "Successful password signin did not set session cookies");
     const firstPage = await appRequest("/dashboard", { jar: activeJarA });
     assertHttpStatus(firstPage, 200);
@@ -760,11 +782,18 @@ async function runSmoke() {
         ["password", accountB.password],
       ],
     });
-    assertRedirect(result, { path: "/" });
+    assertRedirect(result, { path: "/dashboard" });
     ensure(result.cookieWrites.length > 0, "Successful password signin did not set session cookies");
     const dashboard = await appRequest("/dashboard", { jar: activeJarB });
     assertHttpStatus(dashboard, 200);
     assertBodyContains(dashboard, accountB.email, "The dashboard did not show account B identity after signin");
+  });
+
+  await step("authenticated root remains public with member actions and private HTML", async () => {
+    const landing = await appRequest("/", { jar: activeJarA });
+    assertLandingHtml(landing, true);
+    ensure(!landing.body.includes(accountA.email), "The public landing exposed the signed-in account identity");
+    ensure(!landing.body.includes(accountB.email), "The public landing exposed another account identity");
   });
 
   await runSpoolSmoke({
@@ -848,6 +877,7 @@ async function runSmoke() {
     assertRedirect(result, { path: "/" });
     assertDeletedCookies(result, accountBCookieNames);
     assertNoAuthCookies(activeJarB, "Successful signout left account B auth cookies in its jar");
+    assertLandingHtml(await appRequest(result.location, { jar: activeJarB }));
   });
 
   const expiryDeadline = Math.max(expiryA, expiryB) * 1000 + 2000;
@@ -901,6 +931,7 @@ async function runSmoke() {
     assertRedirect(signout, { path: "/" });
     assertDeletedCookies(signout, accountACookieNames);
     assertNoAuthCookies(activeJarA, "Successful signout left account A auth cookies in its jar");
+    assertLandingHtml(await appRequest(signout.location, { jar: activeJarA }));
 
     const afterSignout = await appRequest("/dashboard", { jar: activeJarA });
     assertRedirect(afterSignout, { path: "/auth/signin" });

@@ -1,0 +1,197 @@
+{
+  "checkedAt": "2026-11-02T18:28:36.423Z",
+  "command": "node /tmp/landing-inspect.mjs context/changes/landing-page/reviews/phase-2",
+  "results": [
+    {
+      "browser": "chromium",
+      "width": 320,
+      "loaded": true,
+      "src": "http://127.0.0.1:4321/landing/filament-stock-mobile.png",
+      "naturalWidth": 390,
+      "scrollWidth": 320,
+      "viewport": 320,
+      "headings": [
+        {
+          "level": "H1",
+          "text": "Your next print.Your filament,accounted for."
+        },
+        {
+          "level": "H2",
+          "text": "From spool to finished print."
+        },
+        {
+          "level": "H3",
+          "text": "Know your starting point."
+        },
+        {
+          "level": "H3",
+          "text": "Give the next job its share."
+        },
+        {
+          "level": "H3",
+          "text": "Close the loop."
+        },
+        {
+          "level": "H2",
+          "text": "A useful estimate.An intentional plan."
+        },
+        {
+          "level": "H3",
+          "text": "Choose the spool that suits the job."
+        },
+        {
+          "level": "H3",
+          "text": "Leave room for a safety margin."
+        },
+        {
+          "level": "H3",
+          "text": "Keep plans consistent after printing."
+        },
+        {
+          "level": "H2",
+          "text": "Good planning starts with your estimate."
+        },
+        {
+          "level": "H2",
+          "text": "A few practical answers."
+        },
+        {
+          "level": "H2",
+          "text": "A clearer plan forthe next thing you make."
+        }
+      ],
+      "errors": [],
+      "faqKeyboard": "PASS",
+      "focusOutline": "PASS"
+    },
+    {
+      "browser": "chromium",
+      "width": 390,
+      "loaded": true,
+      "src": "http://127.0.0.1:4321/landing/filament-stock-mobile.png",
+      "naturalWidth": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headings": [
+        {
+          "level": "H1",
+          "text": "Your next print.Your filament,accounted for."
+        },
+        {
+          "level": "H2",
+          "text": "From spool to finished print."
+        },
+        {
+          "level": "H3",
+          "text": "Know your starting point."
+        },
+        {
+          "level": "H3",
+          "text": "Give the next job its share."
+        },
+        {
+          "level": "H3",
+          "text": "Close the loop."
+        },
+        {
+          "level": "H2",
+          "text": "A useful estimate.An intentional plan."
+        },
+        {
+          "level": "H3",
+          "text": "Choose the spool that suits the job."
+        },
+        {
+          "level": "H3",
+          "text": "Leave room for a safety margin."
+        },
+        {
+          "level": "H3",
+          "text": "Keep plans consistent after printing."
+        },
+        {
+          "level": "H2",
+          "text": "Good planning starts with your estimate."
+        },
+        {
+          "level": "H2",
+          "text": "A few practical answers."
+        },
+        {
+          "level": "H2",
+          "text": "A clearer plan forthe next thing you make."
+        }
+      ],
+      "errors": [],
+      "faqKeyboard": "PASS",
+      "focusOutline": "PASS"
+    },
+    {
+      "browser": "chromium",
+      "width": 1440,
+      "loaded": true,
+      "src": "http://127.0.0.1:4321/landing/filament-stock-desktop.png",
+      "naturalWidth": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headings": [
+        {
+          "level": "H1",
+          "text": "Your next print.Your filament,accounted for."
+        },
+        {
+          "level": "H2",
+          "text": "From spool to finished print."
+        },
+        {
+          "level": "H3",
+          "text": "Know your starting point."
+        },
+        {
+          "level": "H3",
+          "text": "Give the next job its share."
+        },
+        {
+          "level": "H3",
+          "text": "Close the loop."
+        },
+        {
+          "level": "H2",
+          "text": "A useful estimate.An intentional plan."
+        },
+        {
+          "level": "H3",
+          "text": "Choose the spool that suits the job."
+        },
+        {
+          "level": "H3",
+          "text": "Leave room for a safety margin."
+        },
+        {
+          "level": "H3",
+          "text": "Keep plans consistent after printing."
+        },
+        {
+          "level": "H2",
+          "text": "Good planning starts with your estimate."
+        },
+        {
+          "level": "H2",
+          "text": "A few practical answers."
+        },
+        {
+          "level": "H2",
+          "text": "A clearer plan forthe next thing you make."
+        }
+      ],
+      "errors": [],
+      "faqKeyboard": "PASS",
+      "focusOutline": "PASS"
+    },
+    {
+      "browser": "chromium",
+      "zoomEvidence": "1440px desktop at 200% equivalent: 720 CSS px, scale factor 2; reflow simulation, author browser zoom review pending",
+      "overflow": false
+    }
+  ]
+}

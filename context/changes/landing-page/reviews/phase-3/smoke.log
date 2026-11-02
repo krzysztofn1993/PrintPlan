@@ -1,0 +1,97 @@
+
+> 10x-astro-starter@0.0.1 smoke
+> node scripts/smoke.mjs
+
+PASS  local preview responds
+PASS  anonymous sign-in page remains available
+PASS  Mailpit v1 JSON API is available
+PASS  anonymous dashboard access redirects to sign in
+PASS  missing signup confirmation is rejected
+PASS  mismatched signup passwords are rejected
+PASS  non-string signup password is rejected
+PASS  invalid signup email is rejected
+PASS  malformed signup requests do not send confirmation email
+PASS  missing confirmation type is rejected
+PASS  unsupported confirmation type is rejected without establishing a session
+PASS  missing confirmation token is rejected
+PASS  malformed confirmation token is rejected
+PASS  account A signup returns pending confirmation
+PASS  pending signup page explains email confirmation
+PASS  unconfirmed account A cannot access protected pages
+PASS  correct password is denied before account A confirmation
+PASS  Mailpit receives account A confirmation
+PASS  account A confirmation callback establishes a fresh session
+PASS  consumed account A confirmation link cannot establish another session
+PASS  consumed confirmation result page explains the invalid link
+PASS  wrong password for confirmed account A is rejected independently
+PASS  account B signup returns pending confirmation
+PASS  Mailpit receives account B confirmation
+PASS  account B confirmation callback establishes a fresh session
+PASS  account A can sign in from an empty cookie jar
+PASS  account B can sign in from a separate empty cookie jar
+PASS  authenticated root remains public with member actions and private HTML
+PASS  anonymous stock API access is denied with private JSON
+PASS  account A starts with an SSR-rendered empty inventory
+PASS  account A creates an uppercase-material three-colour spool
+PASS  duplicate spool labels remain separate records
+PASS  anonymous stock mutations are denied without changing the owner's record
+PASS  invalid, repeated, file-valued, and JSON fields are rejected
+PASS  cross-origin form posts are rejected by the framework
+PASS  missing and foreign application targets cannot be changed
+PASS  application responses stay private without refreshing account A's session
+PASS  direct REST access enforces owner scope and database contracts
+PASS  API correction to zero survives SSR rereads
+PASS  logout and relogin preserve the owner's recorded stock
+PASS  selected duplicate deletion preserves the exact records for both owners
+PASS  final stock deletion leaves an SSR-rendered empty inventory
+PASS  both authenticated sessions remain valid for the existing expiry checks
+PASS  anonymous planned-print API is denied and page redirects to sign in
+PASS  account A starts with a private SSR empty list
+PASS  unnamed print saves canonical labels without requiring stock
+PASS  identical and normalized named prints remain independent
+PASS  anonymous planned-print mutations are denied without changing the owner's record
+PASS  strict payload, media, method, and grams validation is enforced
+PASS  API updates clear optional names and preserve creation order
+PASS  account B cannot read or mutate account A prints through the app
+PASS  direct REST reads stay owner-scoped and all authenticated writes require supported RPC routes
+PASS  competing updates with one expected version produce exactly one winner
+PASS  logout and relogin preserve print data and private responses do not refresh cookies
+PASS  deleted print is absent from API and SSR rereads
+PASS  both account sessions remain usable with future expiry before auth expiry checks
+PASS  an unreserved edit returns its saved transaction result
+PASS  best-fit preview applies the default margin and identifies the spool
+PASS  reserve, retry, and fresh reads preserve recorded stock
+PASS  second print is rejected until the first reservation is released
+PASS  foreign reservation reads are indistinguishable from missing IDs
+PASS  release and replacement are safe against stale cancellation
+PASS  stale print versions conflict and a new request can reserve after release
+PASS  authenticated reserved edits retain identity and age before a no-fit edit releases capacity
+PASS  logout and a fresh login retain reservation state
+PASS  authenticated direct writes remain closed for product and reservation tables
+PASS  anonymous settings page and API remain protected with private responses
+PASS  both accounts read the same isolated default setting
+PASS  saving five percent preserves the original reservation and stock contribution
+PASS  authenticated direct settings table writes remain denied
+PASS  a new 80 g print reserves 84 g with the saved five percent setting
+PASS  manual selection also reserves 84 g under the same setting
+PASS  authenticated RPC accepts a present witness and rejects a witness-less fresh request
+PASS  fresh account A login reads the persisted five percent setting
+PASS  anonymous settlement results and mutations are denied
+PASS  a foreign owner cannot read or settle another account's print
+PASS  positive settlement deducts stock and cancels only the newest fitting prefix
+PASS  same-key retry returns one immutable receipt and a new key conflicts
+PASS  settled print rejects edits at its current version without changing persisted fields
+PASS  fresh reads preserve settlement and leave unrelated records unchanged
+PASS  a fresh login retains the receipt, completion and exact stock
+PASS  deleting a completed print keeps the receipt and does not refund stock
+PASS  zero-gram settlement completes a print without consuming estimated stock
+PASS  consumption above recorded stock warns and cancels every other reservation
+PASS  both fresh JWT expiry windows match local Auth configuration
+PASS  account B signout revokes its session and deletes cookie chunks
+PASS  wait until both access tokens expire without authenticated requests
+PASS  expired account A session refreshes and rotates cookie tokens
+PASS  refreshed account A session persists across a subsequent request
+PASS  revoked account B refresh is rejected and auth chunks are deleted
+PASS  account A signout deletes its rotated session and denies later access
+
+All auth smoke steps passed

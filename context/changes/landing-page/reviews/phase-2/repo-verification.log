@@ -1,0 +1,327 @@
+
+> 10x-astro-starter@0.0.1 verify:deploy
+> npm run test:hooks && npm run test:auth && npm run test:spools && npm run test:prints && npm run test:reservations && npm run test:settlements && npm run test:settings && astro sync && npm run lint && astro check && npm run build
+
+
+> 10x-astro-starter@0.0.1 test:hooks
+> node --experimental-strip-types --test scripts/agent-hooks.test.mjs
+
+✔ per-edit: checks only named files, reports lint on stderr, and runs direct-import tests (651.205799ms)
+✔ per-edit: supports Astro and tooling MJS files (189.984543ms)
+✔ per-edit: skips unsupported, deleted/nonexistent, ignored and path-less payloads (360.907739ms)
+✔ per-edit: multi-file, rename, raw patch and subdirectory payloads (478.860525ms)
+✔ per-edit: foreign repositories and symlink escapes are skipped (127.78552ms)
+✔ per-edit: absent linter and unavailable git fail visibly (228.648692ms)
+✔ stop: clean checkout and malformed payloads run no checks (180.350353ms)
+✔ stop: shell-written tracked and untracked lint errors are caught; retry guard allows finish (208.207986ms)
+✔ stop: documentation-only and deleted-only changes launch no tools (113.779399ms)
+✔ stop: lint-clean code skips Astro and native tests even when their fixtures would fail (175.163209ms)
+✔ stop: missing linter and unavailable Git fail visibly (102.365685ms)
+✔ checkout: stale project-dir variables cannot redirect the checks (199.717247ms)
+✔ checkout: sibling worktree edits are registered and swept from the original cwd (209.705841ms)
+✔ config: every command runs from a worktree subdirectory and ignores nonexistent project-dir (163.643646ms)
+✔ config: missing script and Node runtime fail on the model-visible channel (51.267169ms)
+✔ pre-push: prepare installs Husky in checkouts and a failed full gate blocks refs (578.141283ms)
+﹣ real tools: deliberate lint errors fail, then repairs pass through both hooks (0.208576ms) # SKIP
+ℹ tests 17
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 4081.210119
+
+> 10x-astro-starter@0.0.1 test:auth
+> node --experimental-strip-types --test scripts/auth-contracts.test.mjs
+
+AuthApiError: Private provider failure
+    at handleError (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:88:11)
+    at async _handleRequest (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:133:9)
+    at async _request (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:113:18)
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:4030:24
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:221:36 {
+  __isAuthError: true,
+  status: 400,
+  code: undefined
+}
+AuthApiError: Private provider failure
+    at handleError (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:88:11)
+    at async _handleRequest (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:133:9)
+    at async _request (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:113:18)
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:4030:24
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:221:36 {
+  __isAuthError: true,
+  status: 400,
+  code: undefined
+}
+AuthApiError: Private provider failure
+    at handleError (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:88:11)
+    at async _handleRequest (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:133:9)
+    at async _request (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:113:18)
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:4030:24
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:221:36 {
+  __isAuthError: true,
+  status: 400,
+  code: undefined
+}
+AuthApiError: Private provider failure
+    at handleError (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:88:11)
+    at async _handleRequest (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:133:9)
+    at async _request (/root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:113:18)
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:4030:24
+    at async /root/work/PrintPlan/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:221:36 {
+  __isAuthError: true,
+  status: 400,
+  code: undefined
+}
+✔ signup rejects missing, repeated and non-string fields (20.031643ms)
+✔ signup validates confirmation and the six-character boundary (0.205424ms)
+✔ password whitespace is preserved and signin accepts short nonempty passwords (0.223714ms)
+✔ unreadable auth form bodies are returned as form errors (3.328565ms)
+✔ auth failures distinguish invalid sessions from retryable outages (0.521716ms)
+✔ protected path matching respects dashboard path segments (0.13439ms)
+✔ auth cookie overlay and checkpoint restore retain only accepted writes (0.409791ms)
+✔ auth outage responses are private 503s with a usable retry (2.387958ms)
+✔ finalized auth responses retain the full SDK cookie cache-header contract (0.293738ms)
+✔ SDK signout 503 returns retryable 503 without cookie deletions (11.377572ms)
+✔ SDK signout network returns retryable 503 without cookie deletions (4.08531ms)
+✔ failed signout preserves middleware refresh chunks and privacy headers (9.440393ms)
+✔ successful global signout still emits cookie deletions (1.861785ms)
+✔ middleware lookup 503 preserves cookies and recovers on a fresh request (6.91253ms)
+✔ middleware lookup network preserves cookies and recovers on a fresh request (5.141081ms)
+✔ middleware refresh 503 preserves cookies and recovers on a fresh request (10.169096ms)
+✔ middleware refresh network preserves cookies and recovers on a fresh request (9.97294ms)
+✔ middleware redirects missing and rejected sessions but treats lookup 429 as unavailable (9.232558ms)
+✔ middleware finalizes successful refresh on a downstream redirect and isolates later requests (4.776773ms)
+✔ middleware skips identity lookup for credential POSTs and carries outages to public and API routes (7.892169ms)
+✔ middleware retains unexpected returned and thrown session error causes (0.720906ms)
+✔ middleware finalizes refreshed cookies even when the subsequent identity lookup fails (2.860467ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 264.320889
+
+> 10x-astro-starter@0.0.1 test:spools
+> node --experimental-strip-types --test scripts/spool-contracts.test.mjs
+
+✔ installed SDK connection failures retain transport status and produce private retryable responses (35.100541ms)
+✔ installed SDK gateway statuses survive every operation without hiding permanent failures (19.323007ms)
+✔ stock form validation requires one text value for every editable field (2.541583ms)
+✔ stock quantities accept decimal digits only and create/edit have distinct zero rules (0.435717ms)
+✔ stock labels preserve non-whitespace characters and decomposed colour spelling (0.346433ms)
+✔ label normalization uses the cross-layer whitespace set and preserves label meaning (0.370991ms)
+✔ label bounds count Unicode code points and database canonicalization stays authoritative (0.436446ms)
+✔ create returns committed canonical values through the RPC and shared read view (0.540996ms)
+✔ update and delete use owner-checked RPC receipts (0.442543ms)
+✔ list distinguishes empty inventory from database failure (0.676316ms)
+✔ inventory pagination is bounded, complete, ordered and terminates at empty or exact pages (3.129473ms)
+✔ a later page failure discards partial inventory and maps to an HTTP failure (1.873369ms)
+✔ stock HTTP failures use stable authorization, validation, method and cache contracts (1.255462ms)
+✔ page diagnostics retain safe database causes, stop at cycles, and skip expected failures (0.283106ms)
+✔ stock POST content types and malformed form bodies are handled at the boundary (1.597828ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 190.418646
+
+> 10x-astro-starter@0.0.1 test:prints
+> node --experimental-strip-types --test scripts/print-contracts.test.mjs
+
+✔ print forms normalize optional names, preserve Unicode, and enforce code-point bounds (20.236422ms)
+✔ browser print DTO requires explicit completion state and rejects settled reservations (1.369995ms)
+✔ print labels share the database whitespace set while preserving Unicode and multicolour order (0.389256ms)
+✔ print labels preserve non-whitespace characters and decomposed names and colours (0.193252ms)
+✔ required grams are positive whole decimal digits on create and edit (0.317598ms)
+✔ form extraction rejects repeated, file-valued, missing, and unknown fields (0.83804ms)
+✔ create rejects expectedVersion while edit requires one decimal-digit version in range (0.673715ms)
+✔ print form content type, malformed body, and identifiers are constrained (3.736639ms)
+✔ create returns the reservation-aware committed row through RPC and the shared view (0.880531ms)
+✔ update is owner, ID, and expected-version scoped and returns the incremented committed row (0.511041ms)
+✔ update rejects malformed and inconsistent committed receipts (0.647798ms)
+✔ update receipts enforce recalculation arithmetic across outcomes and rounding boundaries (0.599849ms)
+✔ database RPC distinguishes stale print version from missing print (0.211835ms)
+✔ RPC update transport failures remain database errors (0.12338ms)
+✔ delete uses the owner-checked RPC and returns its release receipt (0.252574ms)
+✔ reserved print deletion preserves the cancellation summary and existing release fields (6.790657ms)
+✔ database canonicalization constraints map back to print fields (0.436669ms)
+✔ installed SDK status stays separate and status-0 mutation errors return private 503 refresh guidance (1.988406ms)
+✔ installed SDK HTTP statuses map transient and unexpected failures without leaking diagnostics (4.352585ms)
+✔ read failures are retryable while all generated response categories are private (1.14011ms)
+✔ unexpected diagnostics allowlist only bounded safe causes and known source coordinates (0.607809ms)
+✔ print list reads all ordered bounded pages and hides owner and matching-key columns (4.296154ms)
+✔ a later page failure discards the entire accumulated print list (0.99543ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 198.572416
+
+> 10x-astro-starter@0.0.1 test:reservations
+> node --experimental-strip-types --test scripts/reservation-contracts.test.mjs
+
+✔ reservation form validation rejects duplicates, files, unknown fields and malformed IDs (25.682214ms)
+✔ reservation form transport accepts only supported form media types (3.952434ms)
+✔ shared DTO mappers retain real stock totals and strict nullable reservation state (1.203582ms)
+✔ preview RPC maps its advisory result and eligible spools through the shared DTO (0.418027ms)
+✔ preview RPC refuses fractional margins and out-of-range adjusted grams (0.313161ms)
+✔ reserve and release commands call exact RPCs and return the committed reservation-aware view (1.050322ms)
+✔ reserve confirmation rejects a same-ID reassignment between its paired reads (2.900379ms)
+✔ original reserve replay survives settings-only changes and is rejected after recalculation (0.427022ms)
+✔ stale active releases pass the reviewed version and map to cancellation refresh guidance (0.680533ms)
+✔ reservation responses are private and business failures keep precise status codes (2.78183ms)
+✔ reservation failures distinguish outages and internal errors while preserving private recovery guidance (2.12574ms)
+✔ a committed reservation preserves the original failure and status when its confirmation read fails (1.582043ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 162.050451
+
+> 10x-astro-starter@0.0.1 test:settlements
+> node --experimental-strip-types --test scripts/settlement-contracts.test.mjs
+
+✔ settlement input accepts zero and the maximum whole grams, and rejects invalid boundaries (21.801735ms)
+✔ settlement form transport accepts only URL-encoded and multipart forms (3.970183ms)
+✔ receipt decoder validates nested snapshots, arithmetic, IDs and cancellation order strictly (1.380749ms)
+✔ settlement command and result RPCs return durable receipts without projection reads (2.597736ms)
+✔ settlement business failures map to named 404, 409 and 422 outcomes (2.549356ms)
+✔ settlement responses are private and unexpected provider failures stay sanitized (1.246828ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 138.431898
+
+> 10x-astro-starter@0.0.1 test:settings
+> node --experimental-strip-types --test scripts/settings-contracts.test.mjs
+
+✔ settings form accepts only whole in-range values and exactly one text value per field (23.540199ms)
+✔ shared settings DTO reader accepts only the exact bounded runtime shape (0.26149ms)
+✔ settings service separates the default preference from failed reads and preserves RPC errors (0.476563ms)
+✔ settings save calls the versioned RPC and validates its receipt (0.326781ms)
+✔ settings responses are private and map version conflicts and sanitized failures (4.247733ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 124.177742
+19:29:04 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+19:29:05 [types] Generated 105ms
+
+> 10x-astro-starter@0.0.1 lint
+> eslint .
+
+19:29:29 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+19:29:29 [types] Generated 75ms
+19:29:29 [check] Getting diagnostics for Astro files in /root/work/PrintPlan...
+[96mpackages/ai-reviewer/evals/provider.mjs[0m:[93m44[0m:[93m17[0m - [93mwarning[0m[90m ts(6133): [0m'prompt' is declared but its value is never read.
+
+[7m44[0m   async callApi(prompt, context = {}) {
+[7m  [0m [93m                ~~~~~~[0m
+
+[96mpackages/ai-reviewer/evals/cases/case-13/after.mjs[0m:[93m1[0m:[93m51[0m - [93mwarning[0m[90m ts(6133): [0m'marginPercent' is declared but its value is never read.
+
+[7m1[0m export function acceptsReservation(requiredGrams, marginPercent, response) {
+[7m [0m [93m                                                  ~~~~~~~~~~~~~[0m
+[96mpackages/ai-reviewer/evals/cases/case-13/after.mjs[0m:[93m1[0m:[93m36[0m - [93mwarning[0m[90m ts(6133): [0m'requiredGrams' is declared but its value is never read.
+
+[7m1[0m export function acceptsReservation(requiredGrams, marginPercent, response) {
+[7m [0m [93m                                   ~~~~~~~~~~~~~[0m
+
+[96mpackages/ai-reviewer/evals/cases/case-14/before.mjs[0m:[93m1[0m:[93m51[0m - [93mwarning[0m[90m ts(6133): [0m'marginPercent' is declared but its value is never read.
+
+[7m1[0m export function acceptsReservation(requiredGrams, marginPercent, response) {
+[7m [0m [93m                                                  ~~~~~~~~~~~~~[0m
+[96mpackages/ai-reviewer/evals/cases/case-14/before.mjs[0m:[93m1[0m:[93m36[0m - [93mwarning[0m[90m ts(6133): [0m'requiredGrams' is declared but its value is never read.
+
+[7m1[0m export function acceptsReservation(requiredGrams, marginPercent, response) {
+[7m [0m [93m                                   ~~~~~~~~~~~~~[0m
+
+[96mpackages/ai-reviewer/src/providers/openai.mjs[0m:[93m274[0m:[93m42[0m - [93mwarning[0m[90m ts(6385): [0m'response' is deprecated.
+
+[7m274[0m           responseModel: safeText(result.response?.modelId, /^[A-Za-z0-9_.-]+$/, 128),
+[7m   [0m [93m                                         ~~~~~~~~[0m
+[96mpackages/ai-reviewer/src/providers/openai.mjs[0m:[93m270[0m:[93m44[0m - [93mwarning[0m[90m ts(6385): [0m'response' is deprecated.
+
+[7m270[0m         const responseId = safeText(result.response?.id, /^resp_[A-Za-z0-9_-]+$/);
+[7m   [0m [93m                                           ~~~~~~~~[0m
+[96mpackages/ai-reviewer/src/providers/openai.mjs[0m:[93m251[0m:[93m30[0m - [93mwarning[0m[90m ts(80007): [0m'await' has no effect on the type of this expression.
+
+[7m251[0m         const responseBody = await responseBodyMetadataPromise;
+[7m   [0m [93m                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96mscripts/reservation-concurrency.mjs[0m:[93m1221[0m:[93m14[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m1221[0m       verify(f, { final, waiterReceipt }) {
+[7m    [0m [93m             ~[0m
+[96mscripts/reservation-concurrency.mjs[0m:[93m1208[0m:[93m14[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m1208[0m       verify(f, { final, holderReceipt }) {
+[7m    [0m [93m             ~[0m
+[96mscripts/reservation-concurrency.mjs[0m:[93m1122[0m:[93m14[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m1122[0m       verify(f, { final, waiterReceipt }) {
+[7m    [0m [93m             ~[0m
+[96mscripts/reservation-concurrency.mjs[0m:[93m1009[0m:[93m21[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m1009[0m       async blocked(f, holder, waiter, holderBackend) {
+[7m    [0m [93m                    ~[0m
+[96mscripts/reservation-concurrency.mjs[0m:[93m883[0m:[93m14[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m883[0m       verify(f, { final, holderState, holderReceipt, waiterReceipt }) {
+[7m   [0m [93m             ~[0m
+[96mscripts/reservation-concurrency.mjs[0m:[93m534[0m:[93m21[0m - [93mwarning[0m[90m ts(6133): [0m'f' is declared but its value is never read.
+
+[7m534[0m       async blocked(f, holder, waiter, holderBackend) {
+[7m   [0m [93m                    ~[0m
+
+Result (191 files): 
+- 0 errors
+- 0 warnings
+- 14 hints
+
+
+> 10x-astro-starter@0.0.1 build
+> astro build
+
+19:29:40 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+19:29:40 [types] Generated 59ms
+19:29:40 [build] output: "server"
+19:29:40 [build] mode: "server"
+19:29:40 [build] directory: /root/work/PrintPlan/dist/
+19:29:40 [build] adapter: @astrojs/cloudflare
+19:29:40 [build] Collecting build info...
+19:29:40 [build] ✓ Completed in 155ms.
+19:29:40 [build] Building server entrypoints...
+Using secrets defined in .dev.vars
+19:29:40 [vite] ✓ built in 309ms
+Using secrets defined in .dev.vars
+19:29:41 [vite] ✓ built in 724ms
+19:29:41 [vite] ✓ built in 251ms
+19:29:41 [build] Rearranging server assets...
+19:29:41 [build] ✓ Completed in 1.35s.
+19:29:41 [@astrojs/cloudflare] Injected immutable Cache-Control for /_astro/* into _headers.
+19:29:41 [WARN] [@astrojs/sitemap] The Sitemap integration requires the `site` astro.config option. Skipping.
+19:29:41 [build] Server built in 1.51s
+19:29:41 [build] Complete!

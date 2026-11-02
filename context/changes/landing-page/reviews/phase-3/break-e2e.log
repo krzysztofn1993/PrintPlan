@@ -1,0 +1,98 @@
+
+> 10x-astro-starter@0.0.1 test:e2e
+> playwright test tests/e2e/landing-page.spec.ts --project=chromium --grep guest receives
+
+[WebServer] 
+[WebServer] > 10x-astro-starter@0.0.1 build
+[WebServer] > astro build
+[WebServer] 
+[WebServer] (node:274342) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 19:38:43 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+[WebServer] 19:38:43 [types] Generated 55ms
+[WebServer] 19:38:43 [build] output: "server"
+[WebServer] 19:38:43 [build] mode: "server"
+[WebServer] 19:38:43 [build] directory: /root/work/PrintPlan/dist/
+[WebServer] 19:38:43 [build] adapter: @astrojs/cloudflare
+[WebServer] 19:38:43 [build] Collecting build info...
+[WebServer] 19:38:43 [build] ✓ Completed in 159ms.
+[WebServer] 19:38:43 [build] Building server entrypoints...
+[WebServer] Using secrets defined in .dev.vars
+[WebServer] 19:38:44 [vite] ✓ built in 267ms
+[WebServer] Using secrets defined in .dev.vars
+[WebServer] 19:38:45 [vite] ✓ built in 774ms
+[WebServer] 19:38:45 [vite] ✓ built in 393ms
+[WebServer] 19:38:45 [build] Rearranging server assets...
+[WebServer] 19:38:45 [build] ✓ Completed in 1.51s.
+[WebServer] 19:38:45 [@astrojs/cloudflare] Injected immutable Cache-Control for /_astro/* into _headers.
+[WebServer] 19:38:45 [WARN] [@astrojs/sitemap] The Sitemap integration requires the `site` astro.config option. Skipping.
+[WebServer] 19:38:45 [build] Server built in 1.68s
+[WebServer] 19:38:45 [build] Complete!
+[WebServer] 
+[WebServer] > 10x-astro-starter@0.0.1 preview
+[WebServer] > astro preview --host 127.0.0.1 --port 4321
+[WebServer] 
+[WebServer] (node:274453) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 19:38:46 [@astrojs/cloudflare] Enabling image processing with Cloudflare Images for production with the "IMAGES" Images binding.
+[WebServer] Using secrets defined in dist/server/.dev.vars
+[WebServer] 19:38:46 [@astrojs/cloudflare] 
+[WebServer]  astro  v14.3.1 ready in 51 ms
+[WebServer] 
+[WebServer] ┃ Local    http://127.0.0.1:4321/
+[WebServer] 
+[WebServer] ✨ Parsed 1 valid header rule.
+[WebServer] GET /auth/signin 200 OK (36ms)
+
+Running 3 tests using 1 worker
+
+(node:274483) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] GET /auth/signin 200 OK (8ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (4ms)
+[WebServer] GET /_astro/SignInForm.9tXwaoPn.js 200 OK (2ms)
+[WebServer] GET /_astro/client.CLlhDEf_.js 200 OK (2ms)
+[WebServer] GET /_astro/react.B38uhh1B.js 200 OK (2ms)
+[WebServer] GET /_astro/button.DaEiW5um.js 200 OK (3ms)
+[WebServer] GET /_astro/auth-validation.BVx-W0mx.js 200 OK (3ms)
+[WebServer] GET /_astro/react-dom.cfKh-eDO.js 200 OK (2ms)
+[WebServer] POST /api/auth/signin 302 Found (102ms)
+[WebServer] GET /dashboard 200 OK (46ms)
+  ✓  1 [auth setup] › tests/e2e/auth.setup.ts:10:1 › provision a confirmed local account and sign in through the UI (2.0s)
+(node:274716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] GET / 200 OK (10ms)
+[WebServer] GET /_astro/Layout.CK_lumJW.css 200 OK (2ms)
+[WebServer] GET /landing/filament-stock-desktop.png 200 OK (1ms)
+  ✘  2 [chromium] › tests/e2e/landing-page.spec.ts:38:1 › guest receives public private HTML with metadata, landmarks and account destinations (193ms)
+(node:274845) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 [auth teardown] › tests/e2e/auth.teardown.ts:10:1 › delete the generated local account and private auth artifacts (985ms)
+
+
+  1) [chromium] › tests/e2e/landing-page.spec.ts:38:1 › guest receives public private HTML with metadata, landmarks and account destinations 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    Expected: ArrayContaining ["private", "no-store"]
+    Received: ["public"]
+
+      11 |     ["cache-control"].split(",")
+      12 |     .map((value) => value.trim());
+    > 13 |   expect(directives).toEqual(expect.arrayContaining(["private", "no-store"]));
+         |                      ^
+      14 | }
+      15 |
+      16 | async function expectGuestLinks(page: Page): Promise<void> {
+        at expectPrivateHtml (/root/work/PrintPlan/tests/e2e/landing-page.spec.ts:13:22)
+        at /root/work/PrintPlan/tests/e2e/landing-page.spec.ts:40:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-page-guest-receive-7f50d-ks-and-account-destinations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-page-guest-receive-7f50d-ks-and-account-destinations-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/landing-page.spec.ts:38:1 › guest receives public private HTML with metadata, landmarks and account destinations 
+  2 passed (9.6s)
